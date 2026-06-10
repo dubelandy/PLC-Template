@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_ModuleModeFlags" Id="{a40783c5-17d9-4ae3-bbcd-2219c352f862}">
+    <Declaration><![CDATA[TYPE ST_ModuleModeFlags :
+STRUCT
+	Manual				: BOOL; 		//in manual mode
+	Automatic			: BOOL; 		//in automatic mode
+	LocalControl 		: BOOL; 		//in local control mode
+	DryCycle			: BOOL; 		//in dry cycle mode
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

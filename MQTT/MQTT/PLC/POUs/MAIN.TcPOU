@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN" Id="{4db6d972-4f74-41c6-99a2-361264a8ef89}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	init : BOOL := TRUE; // Explicitly initialized to TRUE on the first scan 
+	// --- MQTT client & control ---
+    fbMqttClient    : FB_IotMqttClient;
+    bSetParameter   : BOOL := TRUE;
+    bConnect        : BOOL := TRUE;
+    bSubscribed     : BOOL;
+
+    // --- Broker & topics ---
+    sHostName       : STRING(255) := 'broker.hivemq.com'; // or your broker IP/DNS
+    nHostPort       : UINT := 1883;                        // 8883 for TLS
+    sTopic          : STRING(255) := 'terminus/machinestate';
+	sUserName		: STRING(255) :='test';
+	sPassword		: STRING(255) :='test';
+
+    // --- Publish payload ---
+    sPayloadPub     : STRING(255);
+    iCounter        : UDINT;
+    fbPubTimer      : TON := (PT := T#1S);
+
+    // --- Receive queue ---
+    fbMessageQueue  : FB_IotMqttMessageQueue;
+    fbMessage       : FB_IotMqttMessage;
+    {attribute 'TcEncoding' := 'UTF-8'}
+    sTopicRcv       : STRING(255);
+    {attribute 'TcEncoding' := 'UTF-8'}
+    sPayloadRcv     : STRING(255);
+	
+	fbTenSecTimer : TON := (PT := T#10S); // 10-second timer
+	PubSub: BOOL;
+	// Machine code
+	Machine1 : Machine;
+	//Machine2 : Machine;
+	rStateChange : R_TRIG;   // instance of the edge detector
+	rAbort : R_TRIG; // instance of rising edge
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[Machine1();
+init := FALSE;
+]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="2" Count="0" />
+      <LineId Id="302" Count="0" />
+      <LineId Id="132" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

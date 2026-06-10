@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_TriggerTellControl" Id="{35e2e531-dbc6-432d-a9cc-2c6cb9a29552}">
+    <Declaration><![CDATA[TYPE ST_TriggerTellControl :
+STRUCT
+	sim	  	: BOOL;
+	start 	: BOOL;
+	reset	: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

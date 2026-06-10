@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="GVL_Lib_GeneralConstants" Id="{9cf965a7-03b1-436e-9807-a19505201cfa}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL CONSTANT
+	{attribute 'displaymode':='binary'}
+	ALL_TRUE_INT		: INT := -1; //1111 1111 1111 1111 (all bits true)
+	{attribute 'displaymode':='binary'}
+	ALL_TRUE_DINT		: DINT := -1; 
+	{attribute 'displaymode':='binary'}
+	LOWEST_BIT_FALSE	: INT := -2; //1111 1111 1111 1110
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

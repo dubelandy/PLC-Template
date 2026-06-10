@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="T_DeviceNameString" Id="{22e7e291-042c-4c6a-a281-daf99205770f}">
+    <Declaration><![CDATA[TYPE T_DeviceNameString : STRING[50]; END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

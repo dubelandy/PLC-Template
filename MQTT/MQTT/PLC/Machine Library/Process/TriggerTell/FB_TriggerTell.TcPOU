@@ -1,0 +1,419 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_TriggerTell" Id="{26e97785-4114-4206-b8ae-82fd880b8b51}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_TriggerTell
+VAR_INPUT
+	cfg		: ST_TriggerTellConfiguration;
+	ctrl	: ST_TriggerTellControl;
+	
+	// Input variables required to complete a full sequence
+	bRequest_ACK : BOOL; // Completes Request_ACK state
+	bWorkDone 	 : BOOL; // Completes Working state
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}//read only
+	sts : ST_TriggerTellStatus;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+	bInit  : BOOL := TRUE;
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	stHandshake : ST_TriggerTellHandshake;
+	
+	rtBusy 		: R_TRIG;
+	timeout 	: TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bInit THEN
+	Init();
+	bInit := FALSE;
+END_IF
+
+// Custom logic goes here
+StateMachine();
+Status();
+]]></ST>
+    </Implementation>
+    <Folder Name="Control" Id="{e19f06ce-f7da-4d2d-b618-972c5b712b48}" />
+    <Folder Name="Logic" Id="{fb6ff705-9132-42d0-af45-524d56dac53a}">
+      <Folder Name="Protected" Id="{029b958c-53ef-407c-b30a-78ea5dd5004b}" />
+    </Folder>
+    <Method Name="Abort" Id="{cc00408b-60f1-42ca-851f-ea9f79672a66}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD Abort : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Clear all ALL handshake bits including SW-write bits
+stHandshake.attention 	:= FALSE;
+stHandshake.trigger		:= FALSE;
+stHandshake.trigger_ack := FALSE;
+stHandshake.tell		:= FALSE;
+stHandshake.tell_ack 	:= FALSE;
+
+// Clear input bits
+bRequest_ACK := FALSE;
+bWorkDone 	 := FALSE;
+
+// Clear results packet
+Response_Cleanup();
+
+// Set state back to idle
+sts.state := E_TriggerTellState.Idle;
+
+// Throw cancelation error (will get reset upon ctrl.reset or a new transaction)
+sts.errorID 	:= 'Transaction canceled by PLC';
+sts.errCanceled := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DisableSimulation" Id="{61c2364e-7bd3-4994-be51-711a6bd73ed7}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD DisableSimulation : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.sim := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableSimulation" Id="{a3cd9959-1ba7-4167-a8f9-6a9a1664846a}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD EnableSimulation : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.sim := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FinishWork" Id="{17dd54ab-b16d-485b-9df7-57615eb2ce8a}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD FinishWork : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bWorkDone := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Init" Id="{6f61c592-3576-4c02-9473-170ceaef92ea}" FolderPath="Logic\Protected\">
+      <Declaration><![CDATA[METHOD PROTECTED Init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{c857b312-a4ba-45f9-bee3-6714d21d6f08}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD Reset : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sts.errorID 	:= '';
+sts.errCanceled := FALSE;
+sts.errTimeout  := FALSE;
+
+// Force equipment manager variables back to false in case
+// they got set an extra time by calling program.
+bRequest_ACK 	:= FALSE;
+bWorkDone 		:= FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Response_Cleanup" Id="{8c107f3f-82d3-41f7-80f6-66c9ee2add4a}" FolderPath="Logic\">
+      <Declaration><![CDATA[METHOD Response_Cleanup : BOOL
+VAR
+	INDEX : INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetAttention" Id="{918040fe-fc9b-42be-ad2c-a9fced7ffda9}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD SetAttention : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.start := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetRequestACK" Id="{afe54616-7695-4e3a-a3e0-6ae258991e04}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD SetRequestACK : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bRequest_ACK := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Start" Id="{5abcee7c-fce0-4d54-9e25-30839ed2ef38}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD Start : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.start := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{236d7d16-5876-4d13-b7fc-48511bc5a3da}" FolderPath="Logic\Protected\">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Manage state transition requests
+CASE sts.State OF
+	
+	E_TriggerTellState.Idle:
+		IF NOT cfg.bDisableAttention THEN
+			IF ctrl.start THEN
+				ctrl.start  := FALSE;
+				stHandshake.attention := TRUE;
+				sts.State 	:= E_TriggerTellState.Attention;
+			END_IF			
+		ELSE 
+			IF (stHandshake.trigger OR sts.sim) AND cfg.bDisableAttention THEN
+				sts.state := E_TriggerTellState.Request_Start;
+			END_IF
+		END_IF
+
+	E_TriggerTellState.Attention:
+		IF stHandshake.trigger OR sts.sim THEN
+			sts.state := E_TriggerTellState.Attention_OK;
+		END_IF
+		
+	E_TriggerTellState.Attention_OK:
+		stHandshake.attention := FALSE;
+		sts.state := E_TriggerTellState.Request_Start;
+
+	E_TriggerTellState.Request_Start:
+		IF bRequest_ACK THEN
+			bRequest_ACK := FALSE;
+			stHandshake.trigger_ack := TRUE;
+			sts.state := E_TriggerTellState.Request_ACK;
+		END_IF
+
+	E_TriggerTellState.Request_ACK:
+		IF (NOT stHandshake.trigger) OR sts.sim THEN
+			sts.state := E_TriggerTellState.Working;
+		END_IF
+
+	E_TriggerTellState.Working:
+		IF bWorkDone THEN
+			bWorkDone := FALSE;
+			stHandshake.tell := TRUE;
+			sts.state := E_TriggerTellState.Response_Start;
+		END_IF
+
+	E_TriggerTellState.Response_Start:
+		IF stHandshake.tell_ack OR sts.sim THEN
+			sts.state := E_TriggerTellState.Response_ACK;
+		END_IF
+
+	E_TriggerTellState.Response_ACK:
+		stHandshake.tell := FALSE;
+		sts.state := E_TriggerTellState.Response_Done;
+
+	E_TriggerTellState.Response_Done:
+		// Call method to unlatch all info stored in fromPLC response struct
+		Response_Cleanup();	
+		stHandshake.trigger_ack := FALSE;
+		sts.state := E_TriggerTellState.Completed;
+		
+	E_TriggerTellState.Completed:
+		IF (NOT stHandshake.tell_ack) OR sts.sim THEN
+			sts.state := E_TriggerTellState.Idle;
+		END_IF
+
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Status" Id="{c642f44e-0bb2-4533-8df1-9b52ecf72719}" FolderPath="Logic\Protected\">
+      <Declaration><![CDATA[METHOD PROTECTED Status : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Status Out
+
+sts.bBusy := (sts.state <> E_TriggerTellState.Idle);
+rtBusy (CLK := sts.bBusy);
+IF rtBusy.Q OR ctrl.reset THEN
+	ctrl.reset := FALSE;
+	Reset();
+END_IF
+
+sts.sim   := ctrl.sim;
+
+sts.Idle 			:= (sts.state = E_TriggerTellState.Idle);
+sts.Attention 		:= (sts.state = E_TriggerTellState.Attention);
+sts.Request_Start 	:= (sts.state = E_TriggerTellState.Request_Start);
+sts.Attention_OK 	:= (sts.state = E_TriggerTellState.Attention_OK);
+sts.Request_ACK 	:= (sts.state = E_TriggerTellState.Request_ACK);
+sts.Working 		:= (sts.state = E_TriggerTellState.Working);
+sts.Response_Start 	:= (sts.state = E_TriggerTellState.Response_Start);
+sts.Response_ACK 	:= (sts.state = E_TriggerTellState.Response_ACK);
+sts.Response_Done 	:= (sts.state = E_TriggerTellState.Response_Done);
+sts.Completed 		:= (sts.state = E_TriggerTellState.Completed);
+
+// Time all functions that depend on software so we can track
+// stretches of software <> plc communication timeout
+timeout(IN := sts.Attention OR 
+			  sts.Request_ACK OR 
+			  sts.Response_Start OR
+			  sts.Completed, 
+		PT := cfg.commTimeout);
+sts.errTimeout := timeout.Q;
+
+// Only update error ID if it hasn't already been set by errCanceled, which
+// is a higher priority error
+IF sts.errTimeout AND (sts.errorID = '') THEN
+	sts.errorID := 'Software communication timeout';
+END_IF
+
+sts.bError := sts.errCanceled OR sts.errTimeout;
+IF NOT sts.bError THEN
+	sts.errorID := '';
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_TriggerTell">
+      <LineId Id="80" Count="6" />
+      <LineId Id="118" Count="0" />
+      <LineId Id="87" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.Abort">
+      <LineId Id="5" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="14" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.DisableSimulation">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.EnableSimulation">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.FinishWork">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.Init">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.Reset">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="12" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="11" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.Response_Cleanup">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.SetAttention">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.SetRequestACK">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.Start">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.StateMachine">
+      <LineId Id="6" Count="1" />
+      <LineId Id="242" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="135" Count="0" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="62" Count="1" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="155" Count="0" />
+      <LineId Id="158" Count="0" />
+      <LineId Id="157" Count="0" />
+      <LineId Id="213" Count="0" />
+      <LineId Id="215" Count="1" />
+      <LineId Id="214" Count="0" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="196" Count="4" />
+      <LineId Id="68" Count="0" />
+      <LineId Id="70" Count="0" />
+      <LineId Id="167" Count="0" />
+      <LineId Id="169" Count="1" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="142" Count="0" />
+      <LineId Id="171" Count="0" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="74" Count="1" />
+      <LineId Id="173" Count="0" />
+      <LineId Id="177" Count="0" />
+      <LineId Id="176" Count="0" />
+      <LineId Id="107" Count="0" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="178" Count="1" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="80" Count="0" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="230" Count="1" />
+      <LineId Id="229" Count="0" />
+      <LineId Id="220" Count="0" />
+      <LineId Id="222" Count="0" />
+      <LineId Id="226" Count="0" />
+      <LineId Id="228" Count="0" />
+      <LineId Id="225" Count="0" />
+      <LineId Id="53" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TriggerTell.Status">
+      <LineId Id="6" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="7" Count="5" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="13" Count="11" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="39" Count="4" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="29" Count="3" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="47" Count="2" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,2252 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="GVL_Lib_TcErrors" Id="{bfc89e73-e3b6-47df-9fd7-08f67411cd19}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL CONSTANT
+	//This GVL contains a list of TwinCAT Errors and their corresponding error codes.
+	MAX_INDEX		: INT := 744;
+	
+	{warning disable C0198} //disable string length warning, strings will automatically be truncated
+	List			: ARRAY[0..MAX_INDEX] OF ST_TcError :=
+	[
+		//0 -----------------------------------
+		(code		:= 0
+		,message 	:= '0.  No Error')
+		//1 -----------------------------------
+		,(code		:= 1
+		,message 	:= '1.  Internal error')
+		//2 -----------------------------------
+		,(code		:= 2
+		,message 	:= '2.  No Rtime')
+		//3 -----------------------------------
+		,(code		:= 3
+		,message 	:= '3.  Allocation locked memory error')
+		//4 -----------------------------------
+		,(code		:= 4
+		,message 	:= '4.  Insert mailbox error')
+		//5 -----------------------------------
+		,(code		:= 5
+		,message 	:= '5.  Wrong receive HMSG')
+		//6 -----------------------------------
+		,(code		:= 6
+		,message 	:= '6.  target port not found')
+		//7 -----------------------------------
+		,(code		:= 7
+		,message 	:= '7.  target machine not found')
+		//8 -----------------------------------
+		,(code		:= 8
+		,message 	:= '8.  Unknown command ID')
+		//9 -----------------------------------
+		,(code		:= 9
+		,message 	:= '9.  Bad task ID')
+		//10 -----------------------------------
+		,(code		:= 10
+		,message 	:= '10.  No IO')
+		//11 -----------------------------------
+		,(code		:= 11
+		,message 	:= '11.  Unknown ADS command')
+		//12 -----------------------------------
+		,(code		:= 12
+		,message 	:= '12.  Win 32 error')
+		//13 -----------------------------------
+		,(code		:= 13
+		,message 	:= '13.  Port not connected')
+		//14 -----------------------------------
+		,(code		:= 14
+		,message 	:= '14.  Invalid ADS length')
+		//15 -----------------------------------
+		,(code		:= 15
+		,message 	:= '15.  Invalid ADS Net ID')
+		//16 -----------------------------------
+		,(code		:= 16
+		,message 	:= '16.  Low Installation level')
+		//17 -----------------------------------
+		,(code		:= 17
+		,message 	:= '17.  No debug available')
+		//18 -----------------------------------
+		,(code		:= 18
+		,message 	:= '18.  Port disabled')
+		//19 -----------------------------------
+		,(code		:= 19
+		,message 	:= '19.  Port already connected')
+		//20 -----------------------------------
+		,(code		:= 20
+		,message 	:= '20.  ADS Sync Win32 error')
+		//21 -----------------------------------
+		,(code		:= 21
+		,message 	:= '21.  ADS Sync Timeout')
+		//22 -----------------------------------
+		,(code		:= 22
+		,message 	:= '22.  ADS Sync AMS error')
+		//23 -----------------------------------
+		,(code		:= 23
+		,message 	:= '23.  ADS Sync no index map')
+		//24 -----------------------------------
+		,(code		:= 24
+		,message 	:= '24.  Invalid ADS port')
+		//25 -----------------------------------
+		,(code		:= 25
+		,message 	:= '25.  No memory')
+		//26 -----------------------------------
+		,(code		:= 26
+		,message 	:= '26.  TCP send error')
+		//27 -----------------------------------
+		,(code		:= 27
+		,message 	:= '27.  Host unreachable')
+		//28 -----------------------------------
+		,(code		:= 28
+		,message 	:= '28.  Invalid AMS fragment')
+		//29 -----------------------------------
+		,(code		:= 1280
+		,message 	:= '1280.  No locked memory can be allocated')
+		//30 -----------------------------------
+		,(code		:= 1281
+		,message 	:= '1281.  The size of the router memory could not be changed')
+		//31 -----------------------------------
+		,(code		:= 1282
+		,message 	:= '1282.  The mailbox has reached the maximum number of possible messages. The current sent message was rejected')
+		//32 -----------------------------------
+		,(code		:= 1283
+		,message 	:= '1283.  The mailbox has reached the maximum number of possible messages.')
+		//33 -----------------------------------
+		,(code		:= 1284
+		,message 	:= '1284.  Unknown port type')
+		//34 -----------------------------------
+		,(code		:= 1285
+		,message 	:= '1285.  Router is not initialized')
+		//35 -----------------------------------
+		,(code		:= 1286
+		,message 	:= '1286.  The desired port number is already assigned')
+		//36 -----------------------------------
+		,(code		:= 1287
+		,message 	:= '1287.  Port not registered')
+		//37 -----------------------------------
+		,(code		:= 1288
+		,message 	:= '1288.  The maximum number of Ports reached')
+		//38 -----------------------------------
+		,(code		:= 1289
+		,message 	:= '1289.  Invalid port')
+		//39 -----------------------------------
+		,(code		:= 1290
+		,message 	:= '1290.  TwinCAT Router not active')
+		//40 -----------------------------------
+		,(code		:= 1792
+		,message 	:= '1792.  error class <device error>')
+		//41 -----------------------------------
+		,(code		:= 1793
+		,message 	:= '1793.  Service is not supported by server')
+		//42 -----------------------------------
+		,(code		:= 1794
+		,message 	:= '1794.  invalid index group')
+		//43 -----------------------------------
+		,(code		:= 1795
+		,message 	:= '1795.  invalid index offset')
+		//44 -----------------------------------
+		,(code		:= 1796
+		,message 	:= '1796.  reading/writing not permitted')
+		//45 -----------------------------------
+		,(code		:= 1797
+		,message 	:= '1797.  parameter size not correct')
+		//46 -----------------------------------
+		,(code		:= 1798
+		,message 	:= '1798.  invalid parameter value(s)')
+		//47 -----------------------------------
+		,(code		:= 1799
+		,message 	:= '1799.  device is not in a ready state')
+		//48 -----------------------------------
+		,(code		:= 1800
+		,message 	:= '1800.  device is busy')
+		//49 -----------------------------------
+		,(code		:= 1801
+		,message 	:= '1801.  invalid context (must be in Windows)')
+		//50 -----------------------------------
+		,(code		:= 1802
+		,message 	:= '1802.  out of memory')
+		//51 -----------------------------------
+		,(code		:= 1803
+		,message 	:= '1803.  invalid parameter value(s)')
+		//52 -----------------------------------
+		,(code		:= 1804
+		,message 	:= '1804.  not found (files, ...)')
+		//53 -----------------------------------
+		,(code		:= 1805
+		,message 	:= '1805.  syntax error in command or file')
+		//54 -----------------------------------
+		,(code		:= 1806
+		,message 	:= '1806.  objects do not match')
+		//55 -----------------------------------
+		,(code		:= 1807
+		,message 	:= '1807.  object already exists')
+		//56 -----------------------------------
+		,(code		:= 1808
+		,message 	:= '1808.  symbol not found')
+		//57 -----------------------------------
+		,(code		:= 1809
+		,message 	:= '1809.  symbol version invalid')
+		//58 -----------------------------------
+		,(code		:= 1810
+		,message 	:= '1810.  server is in invalid state')
+		//59 -----------------------------------
+		,(code		:= 1811
+		,message 	:= '1811.  AdsTransMode not supported')
+		//60 -----------------------------------
+		,(code		:= 1812
+		,message 	:= '1812.  Notification handle is invalid')
+		//61 -----------------------------------
+		,(code		:= 1813
+		,message 	:= '1813.  Notification client not registered')
+		//62 -----------------------------------
+		,(code		:= 1814
+		,message 	:= '1814.  no more notification handles')
+		//63 -----------------------------------
+		,(code		:= 1815
+		,message 	:= '1815.  size for watch too big')
+		//64 -----------------------------------
+		,(code		:= 1816
+		,message 	:= '1816.  device not initialized')
+		//65 -----------------------------------
+		,(code		:= 1817
+		,message 	:= '1817.  device has a timeout')
+		//66 -----------------------------------
+		,(code		:= 1818
+		,message 	:= '1818.  query interface failed')
+		//67 -----------------------------------
+		,(code		:= 1819
+		,message 	:= '1819.  wrong interface required')
+		//68 -----------------------------------
+		,(code		:= 1820
+		,message 	:= '1820.  class ID is invalid')
+		//69 -----------------------------------
+		,(code		:= 1821
+		,message 	:= '1821.  object ID is invalid')
+		//70 -----------------------------------
+		,(code		:= 1822
+		,message 	:= '1822.  request is pending')
+		//71 -----------------------------------
+		,(code		:= 1823
+		,message 	:= '1823.  request is aborted')
+		//72 -----------------------------------
+		,(code		:= 1824
+		,message 	:= '1824.  signal warning')
+		//73 -----------------------------------
+		,(code		:= 1825
+		,message 	:= '1825.  invalid array index')
+		//74 -----------------------------------
+		,(code		:= 1826
+		,message 	:= '1826.  symbol not active')
+		//75 -----------------------------------
+		,(code		:= 1827
+		,message 	:= '1827.  access denied')
+		//76 -----------------------------------
+		,(code		:= 1828
+		,message 	:= '1828.  missing license')
+		//77 -----------------------------------
+		,(code		:= 1829
+		,message 	:= '1829.  license expired')
+		//78 -----------------------------------
+		,(code		:= 1830
+		,message 	:= '1830.  license exceeded')
+		//79 -----------------------------------
+		,(code		:= 1831
+		,message 	:= '1831.  license invalid')
+		//80 -----------------------------------
+		,(code		:= 1832
+		,message 	:= '1832.  license invalid system id')
+		//81 -----------------------------------
+		,(code		:= 1833
+		,message 	:= '1833.  license not time limited')
+		//82 -----------------------------------
+		,(code		:= 1834
+		,message 	:= '1834.  license issue time in the future')
+		//83 -----------------------------------
+		,(code		:= 1835
+		,message 	:= '1835.  license time period to long')
+		//84 -----------------------------------
+		,(code		:= 1836
+		,message 	:= '1836.  exception occured during system start')
+		//85 -----------------------------------
+		,(code		:= 1837
+		,message 	:= '1837.  License file read twice')
+		//86 -----------------------------------
+		,(code		:= 1838
+		,message 	:= '1838.  invalid signature')
+		//87 -----------------------------------
+		,(code		:= 1839
+		,message 	:= '1839.  public key certificate')
+		//88 -----------------------------------
+		,(code		:= 1856
+		,message 	:= '1856.  Error class <client error>')
+		//89 -----------------------------------
+		,(code		:= 1857
+		,message 	:= '1857.  invalid parameter at service')
+		//90 -----------------------------------
+		,(code		:= 1858
+		,message 	:= '1858.  polling list is empty')
+		//91 -----------------------------------
+		,(code		:= 1859
+		,message 	:= '1859.  var connection already in use')
+		//92 -----------------------------------
+		,(code		:= 1860
+		,message 	:= '1860.  invoke ID in use')
+		//93 -----------------------------------
+		,(code		:= 1861
+		,message 	:= '1861.  timeout elapsed')
+		//94 -----------------------------------
+		,(code		:= 1862
+		,message 	:= '1862.  error in win32 subsystem')
+		//95 -----------------------------------
+		,(code		:= 1863
+		,message 	:= '1863.  Invalid client timeout value')
+		//96 -----------------------------------
+		,(code		:= 1864
+		,message 	:= '1864.  ads-port not opened')
+		//97 -----------------------------------
+		,(code		:= 1872
+		,message 	:= '1872.  internal error in ads sync')
+		//98 -----------------------------------
+		,(code		:= 1873
+		,message 	:= '1873.  hash table overflow')
+		//99 -----------------------------------
+		,(code		:= 1874
+		,message 	:= '1874.  key not found in hash')
+		//100 -----------------------------------
+		,(code		:= 1875
+		,message 	:= '1875.  no more symbols in cache')
+		//101 -----------------------------------
+		,(code		:= 1876
+		,message 	:= '1876.  invalid response received')
+		//102 -----------------------------------
+		,(code		:= 1877
+		,message 	:= '1877.  sync port is locked')
+		//103 -----------------------------------
+		,(code		:= 4096
+		,message 	:= '4096.  Internal fatal error in the TwinCAT real-time system')
+		//104 -----------------------------------
+		,(code		:= 4097
+		,message 	:= '4097.  Timer value not vaild')
+		//105 -----------------------------------
+		,(code		:= 4098
+		,message 	:= '4098.  Task pointer has the invalid value ZERO')
+		//106 -----------------------------------
+		,(code		:= 4099
+		,message 	:= '4099.  Task stack pointer has the invalid value ZERO')
+		//107 -----------------------------------
+		,(code		:= 4100
+		,message 	:= '4100.  The demand task priority is already assigned')
+		//108 -----------------------------------
+		,(code		:= 4101
+		,message 	:= '4101.  No more free TCB (Task Control Block) available. Maximum number of TCBs is 64')
+		//109 -----------------------------------
+		,(code		:= 4102
+		,message 	:= '4102.  No more free semaphores available. Maximum number of semaphores is 64')
+		//110 -----------------------------------
+		,(code		:= 4103
+		,message 	:= '4103.  No more free queue available. Maximum number of queue is 64')
+		//111 -----------------------------------
+		,(code		:= 4109
+		,message 	:= '4109.  An external synchronization interrupt is already applied')
+		//112 -----------------------------------
+		,(code		:= 4110
+		,message 	:= '4110.  No external synchronization interrupt applied')
+		//113 -----------------------------------
+		,(code		:= 4111
+		,message 	:= '4111.  The apply of the external synchronization interrupt failed')
+		//114 -----------------------------------
+		,(code		:= 4112
+		,message 	:= '4112.  Call of a service function in the wrong context')
+		//115 -----------------------------------
+		,(code		:= 4119
+		,message 	:= '4119.  Intel VT-x extension is not supported')
+		//116 -----------------------------------
+		,(code		:= 4120
+		,message 	:= '4120.  Intel VT-x extension is not enabled in system BIOS')
+		//117 -----------------------------------
+		,(code		:= 4121
+		,message 	:= '4121.  Missing function in Intel VT-x extension')
+		//118 -----------------------------------
+		,(code		:= 4122
+		,message 	:= '4122.  Enabling Intel VT-x fails')
+		//119 -----------------------------------
+		,(code		:= 10060
+		,message 	:= '10060.  A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.')
+		//120 -----------------------------------
+		,(code		:= 10061
+		,message 	:= '10061.  No connection could be made because the target machine actively refused it. This error normally occurs when you try to connect to a service which is inactive on a different host - a service without a server application.')
+		//121 -----------------------------------
+		,(code		:= 10065
+		,message 	:= '10065.  No route to a host. A socket operation was attempted to an unreachable host')
+		//122 -----------------------------------
+		,(code		:= 16384
+		,message 	:= '16384.  Internal error Internal system error in the NC on ring 0, no further details.')
+		//123 -----------------------------------
+		,(code		:= 16385
+		,message 	:= '16385.  Memory error The ring-0 memory management is not providing the required memory. This is usually a result of another error, as a result of which the controller will halt normal operation (now if not before).')
+		//124 -----------------------------------
+		,(code		:= 16386
+		,message 	:= '16386.  Nc retain data error (persistent data) Error while loading the Nc retain data. The axes concerned are no longer referenced (status flag Homed is set to FALSE).')
+		//125 -----------------------------------
+		,(code		:= 16400
+		,message 	:= '16400.  Channel identifier not allowed Either an unacceptable value (not 1...255) has been used, or a channel that does not exist in the system has been named.')
+		//126 -----------------------------------
+		,(code		:= 16401
+		,message 	:= '16401.  Group identifier not allowed Either an unacceptable value (not 1...255) has been used, or a group that does not exist in the system has been named.')
+		//127 -----------------------------------
+		,(code		:= 16402
+		,message 	:= '16402.  Axis identifier not allowed Either an unacceptable value (not 1...255) has been used, or an axis that does not exist in the system has been named.')
+		//128 -----------------------------------
+		,(code		:= 16403
+		,message 	:= '16403.  Encoder identifier not allowed Either an unacceptable value (not 1...255) has been used, or a encoder that does not exist in the system has been named.')
+		//129 -----------------------------------
+		,(code		:= 16404
+		,message 	:= '16404.  Controller identifier not allowed Either an unacceptable value (not 1...255) has been used, or a controller that does not exist in the system has been named.')
+		//130 -----------------------------------
+		,(code		:= 16405
+		,message 	:= '16405.  Drive identifier not allowed Either an unacceptable value (not 1...255) has been used, or a drive that does not exist in the system has been named.')
+		//131 -----------------------------------
+		,(code		:= 16406
+		,message 	:= '16406.  Table identifier not allowed Either an unacceptable value (not 1...255) has been used, or a table that does not exist in the system has been named.')
+		//132 -----------------------------------
+		,(code		:= 16416
+		,message 	:= '16416.  No process image No PLC-axis interface during creation of an axis.')
+		//133 -----------------------------------
+		,(code		:= 16417
+		,message 	:= '16417.  No process image No axis-PLC interface during creation of an axis.')
+		//134 -----------------------------------
+		,(code		:= 16418
+		,message 	:= '16418.  No process image No encoder-I/O interface during creation of an axis.')
+		//135 -----------------------------------
+		,(code		:= 16419
+		,message 	:= '16419.  No process image No I/O-encoder interface during creation of an axis.')
+		//136 -----------------------------------
+		,(code		:= 16420
+		,message 	:= '16420.  No process image No drive-I/O interface during creation of an axis.')
+		//137 -----------------------------------
+		,(code		:= 16421
+		,message 	:= '16421.  No process image No I/O-drive interface during creation of an axis.')
+		//138 -----------------------------------
+		,(code		:= 16432
+		,message 	:= '16432.  Coupling type not allowed Unacceptable master/slave coupling type.')
+		//139 -----------------------------------
+		,(code		:= 16433
+		,message 	:= '16433.  Axis type not allowed Unacceptable type specification during creation of an axis.')
+		//140 -----------------------------------
+		,(code		:= 16448
+		,message 	:= '16448.  Axis is incompatible Axis is not suitable for the intended purpose. A high speed/low speed axis, for example, cannot function as a slave in an axis coupling.')
+		//141 -----------------------------------
+		,(code		:= 16464
+		,message 	:= '16464.  Channel not ready for operation The channel is not complete, and is therefore not ready for operation. This is usually a consequence of problems at system start-up.')
+		//142 -----------------------------------
+		,(code		:= 16465
+		,message 	:= '16465.  Group not ready for operation The group is not complete, and is therefore not ready for operation. This is usually a consequence of problems at system start-up.')
+		//143 -----------------------------------
+		,(code		:= 16466
+		,message 	:= '16466.  Axis not ready for operation The axis is not complete, and is therefore not ready for operation. This is usually a consequence of problems at system start-up.')
+		//144 -----------------------------------
+		,(code		:= 16480
+		,message 	:= '16480.  Channel exists The channel that is to be created already exists.')
+		//145 -----------------------------------
+		,(code		:= 16481
+		,message 	:= '16481.  Group exists The group that is to be created already exists.')
+		//146 -----------------------------------
+		,(code		:= 16482
+		,message 	:= '16482.  Axis exists The axis that is to be created already exists.')
+		//147 -----------------------------------
+		,(code		:= 16483
+		,message 	:= '16483.  Table exists The table that is to be created already exists, resp. it is tried internally to use an already existing table id ( e.g. for the universal flying saw).')
+		//148 -----------------------------------
+		,(code		:= 16496
+		,message 	:= '16496.  Axis index not allowed The location within the channel specified for an axis is not allowed.')
+		//149 -----------------------------------
+		,(code		:= 16497
+		,message 	:= '16497.  Axis index not allowed The location within the group specified for an axis is not allowed.')
+		//150 -----------------------------------
+		,(code		:= 16641
+		,message 	:= '16641.  Group index not allowed The location within the channel specified for an group is not allowed.')
+		//151 -----------------------------------
+		,(code		:= 16642
+		,message 	:= '16642.  Null pointer The pointer to the group is invalid. This is usually a consequence of an error at system start-up.')
+		//152 -----------------------------------
+		,(code		:= 16643
+		,message 	:= '16643.  No process image It is not possible to exchange data with the PLC. Possible causes: n The channel does not have an interface (no interpreter present) n The connection to the PLC is faulty')
+		//153 -----------------------------------
+		,(code		:= 16644
+		,message 	:= '16644.  M-function index not allowed Unacceptable M-function (not 0...159) detected at the execution level.')
+		//154 -----------------------------------
+		,(code		:= 16645
+		,message 	:= '16645.  No memory No more system memory is available. This is usually the result of another error.')
+		//155 -----------------------------------
+		,(code		:= 16646
+		,message 	:= '16646.  Not ready The function is not presently available, because a similar function is already being processed. This is usually the result of access conflicts: more than one instance wants to issue commands to the channel. This can, for example, be the consequence of an incorrect PLC program.')
+		//156 -----------------------------------
+		,(code		:= 16647
+		,message 	:= '16647.  Function/command not supported A requested function or command is not supported by the channel.')
+		//157 -----------------------------------
+		,(code		:= 16648
+		,message 	:= '16648.  Invalid parameter while starting Parameters to start the channel (TwinCAT-Start) are invalid. Typically there is an invalid memory size or channel type requested.')
+		//158 -----------------------------------
+		,(code		:= 16649
+		,message 	:= '16649.  Channel function/command not executable A channel function e.g. interpreter start is not executable because the channel is already busy, no program is loaded or in an error state.')
+		//159 -----------------------------------
+		,(code		:= 16650
+		,message 	:= '16650.  ItpGoAhead not executable The requested command is not executable, because the interpreter is not executing a dekoder stop.')
+		//160 -----------------------------------
+		,(code		:= 16656
+		,message 	:= '16656.  Error opening a file The specified file does not exist. Example: NC program unknown.')
+		//161 -----------------------------------
+		,(code		:= 16657
+		,message 	:= '16657.  Syntax error during loading The NC has found a syntax error when loading an NC program.')
+		//162 -----------------------------------
+		,(code		:= 16658
+		,message 	:= '16658.  Syntax error during interpretation The NC has found a syntax error when executing an NC program.')
+		//163 -----------------------------------
+		,(code		:= 16659
+		,message 	:= '16659.  Missing subroutine The NC has found a missing subroutine while loading.')
+		//164 -----------------------------------
+		,(code		:= 16660
+		,message 	:= '16660.  Loading buffer of interpreter is too small The capacity of the interpreter loading buffer has been exceeded.')
+		//165 -----------------------------------
+		,(code		:= 16661
+		,message 	:= '16661.  ?Symbolic?  - reserved')
+		//166 -----------------------------------
+		,(code		:= 16662
+		,message 	:= '16662.  ?Symbolic?  - reserved')
+		//167 -----------------------------------
+		,(code		:= 16663
+		,message 	:= '16663.  ?Subroutine incomplete?  Header of subroutine is missing')
+		//168 -----------------------------------
+		,(code		:= 16672
+		,message 	:= '16672.  Divide by zero The NC encountered a computation error during execution: division by 0.')
+		//169 -----------------------------------
+		,(code		:= 16673
+		,message 	:= '16673.  Invalid circle parameterisation The NC encountered a computation error during execution: The specified circle cannot be calculated.')
+		//170 -----------------------------------
+		,(code		:= 16674
+		,message 	:= '16674.  ?Invalid FPU-Operation? The NC encountered an invalid FPU-Operation during exectuion. This error occurs e.g. by calculating the square root of a negative number.')
+		//171 -----------------------------------
+		,(code		:= 16688
+		,message 	:= '16688.  Stack overflow: subroutines The NC encountered a stack overflow during execution: too many subroutine levels.')
+		//172 -----------------------------------
+		,(code		:= 16689
+		,message 	:= '16689.  Stack underflow: subroutines The NC encountered a stack underflow during execution: too many subroutine return commands. Note: A main program must not end with a return command.')
+		//173 -----------------------------------
+		,(code		:= 16690
+		,message 	:= '16690.  Stack overflow: arithmetic unit The NC encountered a stack overflow during execution: The calculation is too complex, or has not been correctly written.')
+		//174 -----------------------------------
+		,(code		:= 16691
+		,message 	:= '16691.  Stack underflow: arithmetic unit The NC encountered a stack underflow during execution: The calculation is too complex, or has not been correctly written.')
+		//175 -----------------------------------
+		,(code		:= 16704
+		,message 	:= '16704.  Register index not allowed The NC encountered an unacceptable register index during execution: Either the program contains an unacceptable value (not R0...R999) or a pointer register contains an unacceptable value.')
+		//176 -----------------------------------
+		,(code		:= 16705
+		,message 	:= '16705.  Unacceptable G-function index The NC has encountered an unacceptable G-function (not 0...159) during execution.')
+		//177 -----------------------------------
+		,(code		:= 16706
+		,message 	:= '16706.  Unacceptable M-function index The NC has encountered an unacceptable M-function (not 0...159) during execution.')
+		//178 -----------------------------------
+		,(code		:= 16707
+		,message 	:= '16707.  Unacceptable extended address The NC has encountered an unacceptable extended address (not 1...9) during execution.')
+		//179 -----------------------------------
+		,(code		:= 16708
+		,message 	:= '16708.  Unacceptable index to the internal H-function The NC has encountered an unacceptable internal H-function in the course of processing. This is usually a consequence of an error during loading.')
+		//180 -----------------------------------
+		,(code		:= 16709
+		,message 	:= '16709.  Machine data value unacceptable While processing instructions the NC has detected an impermissible value for the machine data (MDB) (not 0?7).')
+		//181 -----------------------------------
+		,(code		:= 16720
+		,message 	:= '16720.  Cannot change tool params here The NC has encountered an unacceptable change of parameters for the tool compensation during execution. This error occured for instance by changing the tool radius and programming a circle in the same block.')
+		//182 -----------------------------------
+		,(code		:= 16721
+		,message 	:= '16721.  Cannot calculate tool compensation The NC has encountered an error by  the calculation of the tool compensation')
+		//183 -----------------------------------
+		,(code		:= 16722
+		,message 	:= '16722.  Tool compensation: The plane for the tool compensation cannot be changed here. This error occured for instance by changing the tool plane when the compensation is turned on or active.')
+		//184 -----------------------------------
+		,(code		:= 16723
+		,message 	:= '16723.  Tool compensation:  The D-Word is missing or invalid by turning on the tool compensation.')
+		//185 -----------------------------------
+		,(code		:= 16724
+		,message 	:= '16724.  Tool compensation:  The spezified tool radius is invalid because the value is less or equal zero.')
+		//186 -----------------------------------
+		,(code		:= 16725
+		,message 	:= '16725.  Tool compensation: The tool radius cannot be changed here')
+		//187 -----------------------------------
+		,(code		:= 16726
+		,message 	:= '16726.  Tool compensation:  Collision Detection Table is full.')
+		//188 -----------------------------------
+		,(code		:= 16727
+		,message 	:= '16727.  Tool compensation: Internal error while turning on the contour collision detection.')
+		//189 -----------------------------------
+		,(code		:= 16728
+		,message 	:= '16728.  Tool compensation:  Internal error within the contour collision detection - update reversed geo failed.')
+		//190 -----------------------------------
+		,(code		:= 16729
+		,message 	:= '16729.  Tool compensation:  Unexpected combination of geometrie types by active contour collision detection.')
+		//191 -----------------------------------
+		,(code		:= 16730
+		,message 	:= '16730.  Tool compensation: Programmed inner circle is smaller than the cutter radius')
+		//192 -----------------------------------
+		,(code		:= 16731
+		,message 	:= '16731.  Tool compensation:  Bottle neck detection recognized contour violation')
+		//193 -----------------------------------
+		,(code		:= 16732
+		,message 	:= '16732.  Table for corrected entries is full')
+		//194 -----------------------------------
+		,(code		:= 16733
+		,message 	:= '16733.  Input table for tangential following is full')
+		//195 -----------------------------------
+		,(code		:= 16734
+		,message 	:= '16734.  Executing table for tangential following is full')
+		//196 -----------------------------------
+		,(code		:= 16735
+		,message 	:= '16735.  Geometric entry for tangential following can not be calculated')
+		//197 -----------------------------------
+		,(code		:= 16736
+		,message 	:= '16736.  reserved')
+		//198 -----------------------------------
+		,(code		:= 16737
+		,message 	:= '16737.  reserved')
+		//199 -----------------------------------
+		,(code		:= 16738
+		,message 	:= '16738.  The acutal active interpolation rules (g-code), zero-shifts, or rotation cannot be detected')
+		//200 -----------------------------------
+		,(code		:= 16752
+		,message 	:= '16752.  Error while loading: Invalid parameter The NC has found an invalid parameter while loading an NC program.')
+		//201 -----------------------------------
+		,(code		:= 16753
+		,message 	:= '16753.  Invalid contour start position The NC encountered a computation error during execution: The specified contour cannot be calculated because the initial position is not on the contour.')
+		//202 -----------------------------------
+		,(code		:= 16754
+		,message 	:= '16754.  Retrace: Invalid internal entry index The NC encountered an invalid internal entry index during execution of the retrace function.')
+		//203 -----------------------------------
+		,(code		:= 16896
+		,message 	:= '16896.  Group ID not allowed The value for the group ID is not allowed, e.g. because it has already been assigned, is less than or equal to zero, or is greater than 255.')
+		//204 -----------------------------------
+		,(code		:= 16897
+		,message 	:= '16897.  Group type not allowed The value for the group type is unacceptable because it is not defined. Type 1: PTP group with slaves (servo) Type 5: DXD group with slaves (3D group) Type 6: High/low speed group Type 7: Stepper motor group Type 8: 0D group')
+		//205 -----------------------------------
+		,(code		:= 16898
+		,message 	:= '16898.  Master axis index not allowed  The value for the master axis index in an interpolating 3D group is not allowed, because, for instance, it has gone outside the value range. Index 0: X axis (first master axis) Index 1: Y axis (second master axis) Index 2: Z axis (third master axis)')
+		//206 -----------------------------------
+		,(code		:= 16899
+		,message 	:= '16899.  Slave axis index not allowed (INTERNAL ERROR) The value for the slave axis index in a group is not allowed, because, for instance, it has passed outside the value range, the slave location to be used when inserting a new slave connection is already occupied, or because no slave is present when such a connection is being removed. Index 0: First slave axis Index 1: Second slave axis Index 2: etc.')
+		//207 -----------------------------------
+		,(code		:= 16900
+		,message 	:= '16900.  (INTERNAL ERROR) GROUPERR_INTERNAL')
+		//208 -----------------------------------
+		,(code		:= 16901
+		,message 	:= '16901.  Invalid cycle time for statement execution task (SAF) The value of the cycle time for the NC block execution task (SAF 1/2) is not allowed, because it has passed outside the value range.')
+		//209 -----------------------------------
+		,(code		:= 16902
+		,message 	:= '16902.  GROUPERR_RANGE_MAXELEMENTSINAXIS')
+		//210 -----------------------------------
+		,(code		:= 16903
+		,message 	:= '16903.  Invalid cycle time for the statement preparation task (SVB) The value of the cycle time for the NC statement preparation task (SVB 1/2) is not allowed, because it has passed outside the value range.')
+		//211 -----------------------------------
+		,(code		:= 16904
+		,message 	:= '16904.  Single step mode not allowed The flag for the activation or deactivation of single step mode is not allowed. Value 0: Passive (buffered operation) Value 1: Active (single-block operation)')
+		//212 -----------------------------------
+		,(code		:= 16905
+		,message 	:= '16905.  Group deactivation not allowed (INTERNAL ERROR) The flag for the deactivation or activation of the complete group is not allowed. Value 0: Group active Value 1: Group passive')
+		//213 -----------------------------------
+		,(code		:= 16906
+		,message 	:= '16906.  Statement execution state (SAF state) not allowed (INTERNAL ERROR) The value for the state of the block execution state machine (SAF state) is not allowed. This error occurs on passing outside the range of values, or if the state machine enters an error state.')
+		//214 -----------------------------------
+		,(code		:= 16907
+		,message 	:= '16907.  Channel address The group does not have a channel, or the channel address has not been initialised.')
+		//215 -----------------------------------
+		,(code		:= 16908
+		,message 	:= '16908.  Axis address (master axis) The group does not have a master axis (or axes) or the axis address(es) has (have) not been initialised.')
+		//216 -----------------------------------
+		,(code		:= 16909
+		,message 	:= '16909.  Master axis address A new master/slave coupling is to be inserted into the group, but there is no valid address for the leading master axis.')
+		//217 -----------------------------------
+		,(code		:= 16910
+		,message 	:= '16910.  Slave axis address A master/slave coupling is to be inserted into the group, but there is no valid address for the slave axis.')
+		//218 -----------------------------------
+		,(code		:= 16911
+		,message 	:= '16911.  Slave set value generator address A master/slave coupling is to be inserted into the group, but there is no valid address for the slave set value generator.')
+		//219 -----------------------------------
+		,(code		:= 16912
+		,message 	:= '16912.  Encoder address An axis in the group does not have an encoder, or the encoder address has not been initialised.')
+		//220 -----------------------------------
+		,(code		:= 16913
+		,message 	:= '16913.  Controller address An axis in the group does not have a controller, or the controller address has not been initialised.')
+		//221 -----------------------------------
+		,(code		:= 16914
+		,message 	:= '16914.  Drive address An axis in the group does not have a drive, or the drive address has not been initialised.')
+		//222 -----------------------------------
+		,(code		:= 16915
+		,message 	:= '16915.  GROUPERR_ADDR_MASTERGENERATOR')
+		//223 -----------------------------------
+		,(code		:= 16916
+		,message 	:= '16916.  Axis interface NC to PLC address Group/axis does not have an axis interface from the NC to the PLC, or the axis interface address has not been initialised.')
+		//224 -----------------------------------
+		,(code		:= 16917
+		,message 	:= '16917.  Slave axis address An existing master/slave coupling is to be removed from the group, but there is no valid address for the slave axis.')
+		//225 -----------------------------------
+		,(code		:= 16918
+		,message 	:= '16918.  ?Table adress unknown? The table, respectively the table ID, is unknown. This table is used for the master/slave coupling or for the characteristic curve.')
+		//226 -----------------------------------
+		,(code		:= 16919
+		,message 	:= '16919.  NcControl address The NcControl address has not been initialised.')
+		//227 -----------------------------------
+		,(code		:= 16920
+		,message 	:= '16920.  Axis is blocked for commands while persistent NC data are queued Axis is blocked for commands while waiting for valid IO data to accept the queued persistent NC data.')
+		//228 -----------------------------------
+		,(code		:= 16921
+		,message 	:= '16921.  The scaling mode MASTER-AUTOOFFSET is invalid because no reference table was found. The used scaling mode MASTER-AUTOOFFSET is invalid in this context because an existing reference table is missing.')
+		//229 -----------------------------------
+		,(code		:= 16922
+		,message 	:= '16922.  The master axis start position does not permit synchronisation When a slave axis is being coupled on, the position of the master axis does not permit synchronisation at the given synchronisation positions.')
+		//230 -----------------------------------
+		,(code		:= 16923
+		,message 	:= '16923.  Slave coupling factor (gearing factor) of 0.0 is not allowed A master/slave coupling with a gearing factor of 0.0 is being created. This value is not allowed, since it does not correspond to any possible coupling, and division will generate an FPU exception.')
+		//231 -----------------------------------
+		,(code		:= 16924
+		,message 	:= '16924.  Insertion of master axis into group not allowed  A master axis is to be inserted into a group at a location that is already occupied by another master axis.')
+		//232 -----------------------------------
+		,(code		:= 16925
+		,message 	:= '16925.  Deletion of master axis from group not allowed (INTERNAL ERROR) A master axis is to be removed from a location in a group that is not in fact occupied by master axis.')
+		//233 -----------------------------------
+		,(code		:= 16926
+		,message 	:= '16926.  ?Function/feature is not supported from the setpoint generator A function or feature is not supported from the setpoint generator (e.g. PTP master setpoint generator). This can be in general or only in a special situation.')
+		//234 -----------------------------------
+		,(code		:= 16927
+		,message 	:= '16927.  Group initialisation Group has not been initialised. Although the group has been created, the rest of the initialisation has not been performed (1. Initialisation of group I/O, 2. Initialisation of group, 3. Reset group).')
+		//235 -----------------------------------
+		,(code		:= 16928
+		,message 	:= '16928.  Group not ready / group not ready for new task The group is being given a new task while it is still in the process of executing an existing task. This request is not allowed because it would interrupt the execution of the previous task. The new task could, for instance, be a positioning command, or the set actual position function. Precisely the converse relationships apply for the set new end position function. In that case, the group/axis must still be actively moving in order to be able to cause a change in the end position.')
+		//236 -----------------------------------
+		,(code		:= 16929
+		,message 	:= '16929.  Requested set velocity is not allowed The value requested for the set velocity of a positioning task is less than or equal to zero, larger than the maximum velocity (see axis parameters), or, in the case of servo-drives, is larger than the reference velocity of the axis (see drive parameters).')
+		//237 -----------------------------------
+		,(code		:= 16930
+		,message 	:= '16930.  Requested target position is not allowed (master axis) The requested value for the target position of a positioning task is not within the software end locations. In other words, it is either less than the minimum software end location or larger than the maximum software end location. This check is only carried out if the relevant end position monitoring is active.')
+		//238 -----------------------------------
+		,(code		:= 16931
+		,message 	:= '16931.  No enable for controller and/or feed (Master axis) The axis enables for the master axis needed for positioning are not present. This can involve the controller enable and/or the relevant, direction-dependent feed enable (see axis interface PLC®NC).')
+		//239 -----------------------------------
+		,(code		:= 16932
+		,message 	:= '16932.  Movement smaller than one encoder increment (INTERNAL ERROR) The distance that a group/axis is supposed to move is smaller than the physical significance of one encoder increment. In other words the movement is smaller than the scaling factor of the axis. The reaction to this is that the axis is reported as having logically finished without having actively moved. This means that an external error is not generated for the user. This error is also issued for high/low speed axes if a loop movement with non-zero parameters is smaller than the sum of the creeping and braking distances. In such a case it is not meaningful to either exceed or to fail to reach the target position.')
+		//240 -----------------------------------
+		,(code		:= 16933
+		,message 	:= '16933.  Drive not ready during axis start During an axis start it is ascertained that the drive is not ready. The following are possible causes: - the drive is in failure state (hardware fault) - the drive is in the starting-up stage (e.g. following an axis reset preceded by a hardware fault) - the drive has not been enabled Remark: The time required for booting a drive after a hardware fault can amount to several seconds.')
+		//241 -----------------------------------
+		,(code		:= 16934
+		,message 	:= '16934.  Invalid parameters of the emergency stop. The parameter of the E-Stop are invalid. Either the deceleration and the jerk are less than zero or one of the parameters is weaker than the corresponding parameter of the start data.')
+		//242 -----------------------------------
+		,(code		:= 16935
+		,message 	:= '16935.  The setpoint generator is inactive such that no instructions are accepted.')
+		//243 -----------------------------------
+		,(code		:= 16936
+		,message 	:= '16936.  ?Requested traverse distance is not allowed? The requested traverse distance or looping distance is smaller than the braking distance of the two/speed axis.')
+		//244 -----------------------------------
+		,(code		:= 16937
+		,message 	:= '16937.  Requested target position is not allowed (slave axis) The value for the target position of a positioning task when calculated for the slave axis is not within the software end locations. In other words, it is either less than the minimum software end location or larger than the maximum software end location. This check is only carried out if the relevant end position monitoring is active.')
+		//245 -----------------------------------
+		,(code		:= 16938
+		,message 	:= '16938.  No enable for controller and/or feed (slave axis) The axis enables for one or more coupled slave axes needed for positioning are not present. This can involve the controller enable and/or the relevant, direction-dependent feed enable (see axis interface PLC®NC).')
+		//246 -----------------------------------
+		,(code		:= 16939
+		,message 	:= '16939.  The activation position (position threshold) is out of range of the actual positioning')
+		//247 -----------------------------------
+		,(code		:= 16940
+		,message 	:= '16940.  The start or activation data of the external setpoint generation are not valid?This may be caused through:')
+		//248 -----------------------------------
+		,(code		:= 16941
+		,message 	:= '16941.  ?Velocity is not constant? For changing the dynamic parameter acceleration und deceleration the axis has to be in dynamic state without acceleration and deceleration (that means constant velocity).')
+		//249 -----------------------------------
+		,(code		:= 16942
+		,message 	:= '16942.  Jerk less than or equal to 0.0 is not allowed A value less than or equal to 0.0 for the jerk (PTP and CNC) is not allowed, since the jerk is by definition positive, and with a jerk of 0.0, division will generate an FPU exception.')
+		//250 -----------------------------------
+		,(code		:= 16943
+		,message 	:= '16943.  Acceleration less than or equal to 0.0 is not allowed A value less than or equal to 0.0 for the acceleration (PTP and CNC) is not allowed, since the acceleration is positive by definition, and an acceleration of 0.0 will not allow a motion to be generated.')
+		//251 -----------------------------------
+		,(code		:= 16944
+		,message 	:= '16944.  Absolute deceleration value less than or equal to 0.0 is not allowed A value less than or equal to 0.0 for the absolute value of the deceleration (PTP and CNC) is not allowed, since the absolute value of the deceleration is positive by definition, and an absolute value of the deceleration of 0.0 will not allow a motion to be generated.')
+		//252 -----------------------------------
+		,(code		:= 16945
+		,message 	:= '16945.  Set velocity less than or equal to 0.0 is not allowed A value less than or equal to 0.0 or outside the range from 10-3 up to 10+10 for the set velocity (PTP and CNC) is not allowed, since the set velocity is by definition strictly positive, and with a set velocity of 0.0, division will generate an FPU exception.')
+		//253 -----------------------------------
+		,(code		:= 16946
+		,message 	:= '16946.  ?Loss of precision when trying a positioning? The positioning is so long in space or time that decimal parts loose there relevance LOSS_OF_PRECISION).')
+		//254 -----------------------------------
+		,(code		:= 16947
+		,message 	:= '16947.  Cycle time less than or equal to 0.0 is not allowed A value less than or equal to 0.0 for the cycle time (PTP and CNC) is not allowed, since the cycle time is by definition strictly positive, and with a cycle time of 0.0, division will generate an FPU exception.')
+		//255 -----------------------------------
+		,(code		:= 16948
+		,message 	:= '16948.  PTP data type <intasdouble> range exceeded Such extreme parameters have been supplied for the start task, the override or the new target position that the internal data type loses its precision.')
+		//256 -----------------------------------
+		,(code		:= 16949
+		,message 	:= '16949.  PTP LHL velocity profile cannot be generated (INTERNAL ERROR) Such extreme parameters have been supplied for the start task, the override or the new target position that it is not possible to generate a velocity profile of the type LHL (Low-High-Low).')
+		//257 -----------------------------------
+		,(code		:= 16950
+		,message 	:= '16950.  PTP HML velocity profile cannot be generated (INTERNAL ERROR) Such extreme parameters have been supplied for the override or the new target position that it is not possible to generate a velocity profile of the type HML (High-Middle-Low).')
+		//258 -----------------------------------
+		,(code		:= 16951
+		,message 	:= '16951.  Start data address is invalid The address of the start data is invalid.')
+		//259 -----------------------------------
+		,(code		:= 16952
+		,message 	:= '16952.  Velocity override (start override) is not allowed The value for the velocity override is not allowed, because it is less than 0.0% or more than 100.0% (see axis interface PlcToNc). Here, 100.0 % corresponds to the integral value 1000000 in the axis interface. Value range: [0 ... 1000000]')
+		//260 -----------------------------------
+		,(code		:= 16953
+		,message 	:= '16953.  Start type not allowed The start type supplied does not exist.')
+		//261 -----------------------------------
+		,(code		:= 16954
+		,message 	:= '16954.  Velocity overflow (overshoot in the velocity) The new dynamic with the parameterized jerk is so weak that a velocity overflow will occur (overshoot in the velocity). The command is therefore not supported.')
+		//262 -----------------------------------
+		,(code		:= 16955
+		,message 	:= '16955.  Start parameter for the axis structure is invalid External or internal parameters for the start structure for a positioning task are invalid. Thus, for instance, the scaling factor, the SAF cycle time or the requested velocity may be less than or equal to zero, which is not allowed.')
+		//263 -----------------------------------
+		,(code		:= 16956
+		,message 	:= '16956.  Override generator initialisation parameter invalid One of the override generator (re)initialisation parameters is invalid.')
+		//264 -----------------------------------
+		,(code		:= 16957
+		,message 	:= '16957.  Slave axis has not set value generator (INTERNAL ERROR) It is found that a slave axis within a group does not have a valid slave generator (set value generator). A slave axis and a slave set value generator must always be present as a pair. This is an internal error.')
+		//265 -----------------------------------
+		,(code		:= 16958
+		,message 	:= '16958.  Table is empty Either the SVB table or the SAF table does not contain any entries.')
+		//266 -----------------------------------
+		,(code		:= 16959
+		,message 	:= '16959.  Table is full The SVB table or the SAF table has no more free lines.')
+		//267 -----------------------------------
+		,(code		:= 16960
+		,message 	:= '16960.  No memory available SVB memory allocation for dynamic entry in SAF table failed.')
+		//268 -----------------------------------
+		,(code		:= 16961
+		,message 	:= '16961.  Table already contains an entry(INTERNAL ERROR) SAF table entry abandoned, because, incorrectly, an entry already exists.')
+		//269 -----------------------------------
+		,(code		:= 16962
+		,message 	:= '16962.  Stop is already active The stop instruction is not forwarded, because it has already been activated.')
+		//270 -----------------------------------
+		,(code		:= 16963
+		,message 	:= '16963.  Compensation has not been carried out over the full compensation sectionThe compensations start parameters do not permit compensation over the full section to be compensated. For this reason the compensation will be carried out over a smaller section.')
+		//271 -----------------------------------
+		,(code		:= 16964
+		,message 	:= '16964.  Start parameter address for the compensation invalid (INTERNAL ERROR)Invalid address.')
+		//272 -----------------------------------
+		,(code		:= 16965
+		,message 	:= '16965.  Compensation active Start of compensation refused, because compensation is already active.  Its also possible that the M/S axes are not active moved. Therefore an execution of the compensation is impossible.')
+		//273 -----------------------------------
+		,(code		:= 16966
+		,message 	:= '16966.  Compensation not active Stop of compensation refused, because compensation is not active.')
+		//274 -----------------------------------
+		,(code		:= 16967
+		,message 	:= '16967.  Compensation type invalid The type supplied for the section compensation is invalid. At the present time only compensation type 1 (trapezoidal velocity profile) is allowed.')
+		//275 -----------------------------------
+		,(code		:= 16968
+		,message 	:= '16968.  Axis address for compensation invalid (INTERNAL ERROR) The address of the master of slave axis on which the section compensation is to act is invalid. This is an internal error.')
+		//276 -----------------------------------
+		,(code		:= 16969
+		,message 	:= '16969.  Invalid slave address (INTERNAL ERROR) The slave address given for on-line coupling/decoupling is invalid.')
+		//277 -----------------------------------
+		,(code		:= 16970
+		,message 	:= '16970.  Coupling velocity invalid The velocity of what is to become the master axis is 0, which means that on-line coupling is not possible.')
+		//278 -----------------------------------
+		,(code		:= 16971
+		,message 	:= '16971.  Coupling velocities not constant The velocity of what is to become the master axis and the velocity of what is to become the slave axis are not constant, so that on-line coupling is not possible.')
+		//279 -----------------------------------
+		,(code		:= 16972
+		,message 	:= '16972.  Cycle time less than or equal to 0.0 is not allowed A value less than or equal to 0.0 for the cycle time (Slave) is not allowed, since the cycle time is by definition strictly positive, and with a cycle time of 0.0, division will generate an FPU exception.')
+		//280 -----------------------------------
+		,(code		:= 16973
+		,message 	:= '16973.  Decoupling task not allowed The slave axis is of such a type (e.g. a table slave) or is in such a state (master velocity 0) that on-line decoupling is not possible.')
+		//281 -----------------------------------
+		,(code		:= 16974
+		,message 	:= '16974.  Function not allowed The function cannot logically be executed, e.g. some commands are not possible and not allowed for slave axes.')
+		//282 -----------------------------------
+		,(code		:= 16975
+		,message 	:= '16975.  No valid table weighting has been set The weighting factor of each table is 0, so that no table can be read.')
+		//283 -----------------------------------
+		,(code		:= 16976
+		,message 	:= '16976.  Axis type, actual position type or end position type is not allowed The start type for a positioning task in invalid. Valid start types are ABSOLUTE (1), RELATIVE (2), CONTINUOUS POSITIVE (3), CONTINUOUS NEGATIVE (4), MODULO (5), etc. . It is also possible that the types for setting a new actual position or for travel to a new end position are invalid.')
+		//284 -----------------------------------
+		,(code		:= 16977
+		,message 	:= '16977.  Function not presently supported An NC function has been activated that is currently not released for use, or which is not even implemented. This can be a command which is not possible or not allowed for master axes.')
+		//285 -----------------------------------
+		,(code		:= 16978
+		,message 	:= '16978.  State of state machine invalid (INTERNAL ERROR) The state of an internal state machine is invalid. This is an internal error.')
+		//286 -----------------------------------
+		,(code		:= 16979
+		,message 	:= '16979.  Reference cam became free too soon During the referencing process for an axis it is moved in the direction of the referencing cam, and is only stopped again when the cam signal is reached. After the axis has then also physically stopped, the referencing cam must remain occupied until the axis subsequently starts back down from the cam in the normal way.')
+		//287 -----------------------------------
+		,(code		:= 16980
+		,message 	:= '16980.  Clearance monitoring between activation of the hardware latch and appearance of the sync pulse When the clearance monitoring is active, a check is kept on whether the number of increments between activation of the hardware latch and occurrence of the sync pulse (zero pulse) has become smaller than a pre-set value. This error is generated when that happens. (See parameters for the incremental encoder)')
+		//288 -----------------------------------
+		,(code		:= 16981
+		,message 	:= '16981.  No memory available The dynamic memory allocation for the set value generator, the SVB table or the SAF table has failed.')
+		//289 -----------------------------------
+		,(code		:= 16982
+		,message 	:= '16982.  The table slave axis has no active table Although the table slave axis has tables, none of the tables is designated as active. If this occurs during the run time the whole master/slave group is stopped by a run time error.')
+		//290 -----------------------------------
+		,(code		:= 16983
+		,message 	:= '16983.  Function not allowed The requested function or the requested task is not logically allowed. An example for such an error message would be set an actual position for an absolute encoder (M3000, KL5001, etc.).')
+		//291 -----------------------------------
+		,(code		:= 16984
+		,message 	:= '16984.  Stopping compensation not allowed It is not possible to stop the compensation, since compensation is already in the stopping phase.')
+		//292 -----------------------------------
+		,(code		:= 16985
+		,message 	:= '16985.  Slave table is being used The slave table cannot be activated, because it is currently being used.')
+		//293 -----------------------------------
+		,(code		:= 16986
+		,message 	:= '16986.  Master or slave axis is processing a job (e.g. positioning command) while coupling is requested A master/slave coupling of a certain slave type (e.g. linear coupling) can not be executed. he master or intended slave axis is not in stand still state and is executing a job (e.g. positioning) at the same time as the coupling request received. For this couple type this is not allowed.')
+		//294 -----------------------------------
+		,(code		:= 16987
+		,message 	:= '16987.  Slave (start) parameter is incorrect One of the slave start/coupling parameters is not allowed (Coupling factor is zero,t he master position scaling of an cam is zero, etc) .')
+		//295 -----------------------------------
+		,(code		:= 16988
+		,message 	:= '16988.  Slave type is incorrect The slave type does not match up to the (SVB) start type.')
+		//296 -----------------------------------
+		,(code		:= 16989
+		,message 	:= '16989.  Axis stop is already active The axis stop/Estop is not initiated, because the stop/estop is already active.')
+		//297 -----------------------------------
+		,(code		:= 16990
+		,message 	:= '16990.  Maximum number of tables per slavegenerator reached The maximum number of tables per slave generator is reached (e.g. MC_MultiCamIn is limited to 4 tables).')
+		//298 -----------------------------------
+		,(code		:= 16991
+		,message 	:= '16991.  The scaling mode is invalid. The used scaling is invalid in this context. Either the mode is not defined or yet not implemented or however it cannot in this constellation be put into action.')
+		//299 -----------------------------------
+		,(code		:= 16992
+		,message 	:= '16992.  Controller enable Controller enable for the axis or for a coupled slave axis is not present (see axis interface PlcToNc). This error occurs if the controller enable is withdrawn while an axis or a group of axes (also a master/slave group) is being actively positioned. The error also occurs if a PTP axis or a coupled slave axis is started without controller enable.')
+		//300 -----------------------------------
+		,(code		:= 16993
+		,message 	:= '16993.  Table not found No table exists with the ID prescribed or the table ID is not unique.')
+		//301 -----------------------------------
+		,(code		:= 16994
+		,message 	:= '16994.  Incorrect table type The table referred to in the function is of the incorrect type.')
+		//302 -----------------------------------
+		,(code		:= 16995
+		,message 	:= '16995.  Single step mode This error occurs if single step mode is selected for a group or axis and a new task is requested while one of the individual tasks is still being processed.')
+		//303 -----------------------------------
+		,(code		:= 16996
+		,message 	:= '16996.  Group task unknown (asynchronous table entry) The group has received a task whose type or sub-type is unknown. Valid tasks can be single or multi-dimensional positioning tasks (Geo 1D, Geo 3D), referencing tasks, etc..')
+		//304 -----------------------------------
+		,(code		:= 16997
+		,message 	:= '16997.  Group function unknown (synchronous function) The group has received a function whose type is unknown. Valid functions are Reset, Stop, New end position, Start/stop section compensation, Set actual position, Set/reset referencing status etc..')
+		//305 -----------------------------------
+		,(code		:= 16998
+		,message 	:= '16998.  Group task for slave not allowed Group tasks are usually only possible for master axes, not for slave axes. A slave axis only moves as an indirect result of a positioning task given to its associated master axis. A slave can thus never directly be given a task.')
+		//306 -----------------------------------
+		,(code		:= 16999
+		,message 	:= '16999.  Group function for slave not allowed Group functions are in principle only possible for master axes, not for slave axes. The only exception is represented by the Start/stop section compensation function, which is possible both for masters and for slaves. A slave cannot directly execute any other functions beyond this.')
+		//307 -----------------------------------
+		,(code		:= 17000
+		,message 	:= '17000.  GROUPERR_GROUPFUNC_NOMOTION')
+		//308 -----------------------------------
+		,(code		:= 17001
+		,message 	:= '17001.  ?Startposition=Setpoint Position? Invalid position parameters.')
+		//309 -----------------------------------
+		,(code		:= 17002
+		,message 	:= '17002.  ?Parameters of the delay-denerator are invalid? Invalid external/internal parameters of the delay generator (delay time, cycle time, tics).')
+		//310 -----------------------------------
+		,(code		:= 17003
+		,message 	:= '17003.  ?External parameters of the superimposed instruction are invalid? Invalid external parameters of the superimposed functionality (acceleration, deceleration, velocity, process velocity, length).')
+		//311 -----------------------------------
+		,(code		:= 17004
+		,message 	:= '17004.  Invalid overridetype. The override type does not exist.')
+		//312 -----------------------------------
+		,(code		:= 17005
+		,message 	:= '17005.  ?Activation position under/overrun? The requested activation position is located in the past of the master (e.g. when exchanging a cam table).')
+		//313 -----------------------------------
+		,(code		:= 17006
+		,message 	:= '17006.  ?Activation impossible: Master is standing? The required activation of the correction is impossible since the master axis is  not moving.   A synchronisation is not possible, because the master axis standing and the slave axis is still not synchronous.')
+		//314 -----------------------------------
+		,(code		:= 17007
+		,message 	:= '17007.  ?Activation mode not possible? The requested activation mode is not possible when the slave axis is moving (otherwise the slave velocity would jump to zero).')
+		//315 -----------------------------------
+		,(code		:= 17008
+		,message 	:= '17008.  Start parameter for the compensation is invalid One of the dynamic parameters for the compensation is invalid (necessary condition): Acceleration (>0) Deceleration (>0) Process velocity (>0)')
+		//316 -----------------------------------
+		,(code		:= 17009
+		,message 	:= '17009.  Start parameter for the compensation is invalid Velocity camber is negative.')
+		//317 -----------------------------------
+		,(code		:= 17010
+		,message 	:= '17010.  Start parameter for the compensation is invalid The section on which the compensation is to occur is not positive.')
+		//318 -----------------------------------
+		,(code		:= 17011
+		,message 	:= '17011.  ?Target position under/overrun? (INTERNAL ERROR) The position (calculated from the modulo-target-position) where the axis should stand at end of oriented stop has been run over.')
+		//319 -----------------------------------
+		,(code		:= 17012
+		,message 	:= '17012.  ?Target position will be under/overrun? (INTERNAL ERROR) The position (calculated from the modulo-target-position) where the axis should stand at end of oriented stop is too near and will be run over.')
+		//320 -----------------------------------
+		,(code		:= 17014
+		,message 	:= '17014.  GROUPERR_GUIDERSTARTDATA')
+		//321 -----------------------------------
+		,(code		:= 17015
+		,message 	:= '17015.  ?Dynamic parameters not permitted? (INTERNAL ERROR) The dynamic parameters resulting from internal calculation like acceleration, deceleration and jerk are not permitted.')
+		//322 -----------------------------------
+		,(code		:= 17017
+		,message 	:= '17017.  GROUPERR_GUIDEROVERRUN')
+		//323 -----------------------------------
+		,(code		:= 17018
+		,message 	:= '17018.  GROUPERR_GUIDERLOOKAHEAD')
+		//324 -----------------------------------
+		,(code		:= 17019
+		,message 	:= '17019.  GROUPERR_GUIDERLOOKAHEADEND')
+		//325 -----------------------------------
+		,(code		:= 17020
+		,message 	:= '17020.  GROUPERR_GUIDERLOOKAHEADREQU')
+		//326 -----------------------------------
+		,(code		:= 17021
+		,message 	:= '17021.  GROUPERR_GUIDERMODE')
+		//327 -----------------------------------
+		,(code		:= 17022
+		,message 	:= '17022.  ?A requested motion command could not be realized (BISECTION)? A requested motion command could not be realized using the requested parameters. The command has been executed best possible and this message is therefore to be understood just as a warning.')
+		//328 -----------------------------------
+		,(code		:= 17023
+		,message 	:= '17023.  ?The new target position either has been overrun or will be overrun? The new target position either has been overrun or will be overrun, since until there it is impossible to stop. A internal stop command is commended.')
+		//329 -----------------------------------
+		,(code		:= 17024
+		,message 	:= '17024.  Group not ready / group not ready for new task (INTERNAL ERROR / INFORMATION) The group is being given a new task while it is still in the process of executing an existing task. This request is not allowed because it would interrupt the execution of the previous task. The new task could, for instance, be a positioning command, or the set actual position function. Precisely the converse relationships apply for the set new end position function. In that case, the group/axis must still be actively moving in order to be able to cause a change in the end position.')
+		//330 -----------------------------------
+		,(code		:= 17025
+		,message 	:= '17025.  The parameters of the oriented stop (O-Stop) are not admitted. The modulo-target position should not be smaller than zero and not larger or equal than the encoder mod-period ( e.g. in the interval [0.0,360.0) ).')
+		//331 -----------------------------------
+		,(code		:= 17026
+		,message 	:= '17026.  The modulo target position of the modulo-start is invalid The modulo target position is outside of the valid parameter range. So the position value should not be smaller than zero and not greater or equal than the encoder modulo-period (e. g. in the interval [0.0,360.0) for the modulo starttype SHORTEST_WAY (261) ).')
+		//332 -----------------------------------
+		,(code		:= 17027
+		,message 	:= '17027.  The online change activation mode is invalid. The activation can be used with online scaling or with online modification of motion function. The used activation is invalid in this context. Either the mode is not defined or yet not implemented or however it cannot in this constellation be put into action (e.g. when linear tables are used with an unexpected cyclic activation mode NEXTCYCLE or NEXTCYCLEONCE).')
+		//333 -----------------------------------
+		,(code		:= 17028
+		,message 	:= '17028.  The parameterized jerk rate is not permitted. The jerk rate is smaller than the minimum jerk rate. The minimum value for jerk rate is 1.0 (e.g. mm/s^3).')
+		//334 -----------------------------------
+		,(code		:= 17029
+		,message 	:= '17029.  The parameterized acceleration or deceleration is not permitted. The parameterized acceleration or deceleration is lower than the permitted minimum acceleration. The value for minimum acceleration is calculated from minimum jerk rate and NC cycle time (minimum jerk rate multiplied with NC cycle time). The unit for example is mm/s^2.')
+		//335 -----------------------------------
+		,(code		:= 17030
+		,message 	:= '17030.  The parameterized velocity is not permitted. The parameterized target velocity is lower than the minimum velocity (but the value zero is permitted). The value for minimum velocity is calculated from the minimum jerk rate and the NC cycle time (minimum jerk rate multiplied with the square of the NC cycle time. The unit for example is mm/s.')
+		//336 -----------------------------------
+		,(code		:= 17031
+		,message 	:= '17031.  A activation cannot be executed due to a pending activation A activation e.g. CamIn, CamScaling or WriteMotionFunction cannot be executed due to a pending activation (e.g. CamIn, CamScaling, WriteMotionFunction). Onle activation can be enabled.')
+		//337 -----------------------------------
+		,(code		:= 17032
+		,message 	:= '17032.  ?Illegal combination of different cycle times within an axis group? A logical axis group includes elements (axes) with different cycle times for a common setpoint generator and I/O-execution, resp. This situation can occur with Master/Slave-coupling or configuring 3D- and FIFO-groups (including path, auxiliary, and slave axes).')
+		//338 -----------------------------------
+		,(code		:= 17033
+		,message 	:= '17033.  Illegal motion reversal Due to the actual dynamical state a motion reversal will happen. To avoid this motion reversal the axis command is not performed and the previous system state restored.')
+		//339 -----------------------------------
+		,(code		:= 17034
+		,message 	:= '17034.  ?Illegal moment for an axis command because there is an old axis command with activation position still active? The moment for the command is illegal because there is still an old command with activation position active (e.g. go to new velocity at threshold position or reach new velocity at threshold position).')
+		//340 -----------------------------------
+		,(code		:= 17035
+		,message 	:= '17035.  Error in the stop-calculation routine (INTERNAL ERROR) Due to an internal error in the stop-calculation routine the current commando cannot be performed. The previous system state is restored.')
+		//341 -----------------------------------
+		,(code		:= 17036
+		,message 	:= '17036.  A command with activation position cannot fully be performed because the remaining path is too short')
+		//342 -----------------------------------
+		,(code		:= 17037
+		,message 	:= '17037.  Illegal decoupletype when decoupling a slave axis The decouple and restart command contains an invalid decouple type.')
+		//343 -----------------------------------
+		,(code		:= 17038
+		,message 	:= '17038.  Illegal target velocity when decoupling a slave axis The decouple and restart command contains an illegal target velocity [1 < V <Vmax].')
+		//344 -----------------------------------
+		,(code		:= 17039
+		,message 	:= '17039.  The command new dynamic parameter cannot be performed since this would require a new target velocity')
+		//345 -----------------------------------
+		,(code		:= 17040
+		,message 	:= '17040.  ?A command with activation position cannot be performed becaus the axis is already in the brake phase?')
+		//346 -----------------------------------
+		,(code		:= 17041
+		,message 	:= '17041.  ?Decouple routine of slave axis doesnt return a valid solution?')
+		//347 -----------------------------------
+		,(code		:= 17042
+		,message 	:= '17042.  ?Command not be executed because the command buffer is full filled?')
+		//348 -----------------------------------
+		,(code		:= 17043
+		,message 	:= '17043.  ?Command is rejected due to an internal error in the Look Ahead? (INTERNAL ERROR)')
+		//349 -----------------------------------
+		,(code		:= 17044
+		,message 	:= '17044.  ?Command is rejected because the segment target velocity is not realized?')
+		//350 -----------------------------------
+		,(code		:= 17045
+		,message 	:= '17045.  ?Successive commands have the same final position?')
+		//351 -----------------------------------
+		,(code		:= 17046
+		,message 	:= '17046.  ?Logical positioning direction is inconsistent with the direction of the buffer command?')
+		//352 -----------------------------------
+		,(code		:= 17047
+		,message 	:= '17047.  ?Command is rejected because the remaining positioning length is to small?')
+		//353 -----------------------------------
+		,(code		:= 17052
+		,message 	:= '17052.  ?Reference cam is not found?  During the referencing process for an axis it is moved in the direction of the referencing cam. This reference cam, however, was not found as expected (=> leads to the abortion of the referencing procedure).')
+		//354 -----------------------------------
+		,(code		:= 17053
+		,message 	:= '17053.  Reference cam became not free During the referencing process for an axis it is moved in the direction of the referencing cam, and is only stopped again when the cam signal is reached.  After the axis has also come to a physical standstill, the axis is subsequently started regularly from the cam again. In this case, the reference cam did not become free again as expected when driving down (=> leads to the abortion of the referencing procedure).')
+		//355 -----------------------------------
+		,(code		:= 17054
+		,message 	:= '17054.  ?IO sync pulse was not found (only when using hardware latch)?. If the hardware latch is activated, a sync pulse (zero pulse) is expected to be found and a sync event triggered following the expiry of a certain time or a certain distance. If this is not the case, the reaction is an error and the abortion of the referencing procedure.')
+		//356 -----------------------------------
+		,(code		:= 17056
+		,message 	:= '17056.  Group/axis consequential error Consequential error resulting from another causative error related to another axis within the group. Group/axis consequential errors can occur in relation to master/slave couplings or with multiple axis interpolating DXD groups. If, for instance, it is detected that the following error limit of a master axis has been exceeded, then this consequential error is assigned to all the other master axes and slave axes in this group.')
+		//357 -----------------------------------
+		,(code		:= 17057
+		,message 	:= '17057.  Velocity reduction factor for C0/C1 transition is not allowed A C0 transition describes two geometries which, while they are themselves continuous, no not have either continuous first or second differentials. The velocity reduction factor C0 acts on such transitions.')
+		//358 -----------------------------------
+		,(code		:= 17058
+		,message 	:= '17058.  Critical angle at segment transition not allowed')
+		//359 -----------------------------------
+		,(code		:= 17059
+		,message 	:= '17059.  Radius of the tolerance sphere is in an invalid range')
+		//360 -----------------------------------
+		,(code		:= 17060
+		,message 	:= '17060.  Not implemented.')
+		//361 -----------------------------------
+		,(code		:= 17061
+		,message 	:= '17061.  Start type')
+		//362 -----------------------------------
+		,(code		:= 17062
+		,message 	:= '17062.  Not implemented.')
+		//363 -----------------------------------
+		,(code		:= 17063
+		,message 	:= '17063.  Blending with given parameters not possible')
+		//364 -----------------------------------
+		,(code		:= 17064
+		,message 	:= '17064.  Not implemented.')
+		//365 -----------------------------------
+		,(code		:= 17065
+		,message 	:= '17065.  Curve velocity reduction method not allowed (INTERNAL ERROR) The curve velocity reduction method does not exist.')
+		//366 -----------------------------------
+		,(code		:= 17066
+		,message 	:= '17066.  Minimum velocity not allowed The minimum velocity that has been entered is less than 0.0.')
+		//367 -----------------------------------
+		,(code		:= 17067
+		,message 	:= '17067.  Power function input not allowed (INTERNAL ERROR) The input parameters in the power_() function lead to an FPU exception.')
+		//368 -----------------------------------
+		,(code		:= 17068
+		,message 	:= '17068.  Dynamic change parameter not allowed A parameter that controls alterations to the dynamics is invalid. parameters: 1. Absolute motion dynamics change: All parameters must be strictly positive. 2. Relative reduction c_f: 0.0 < c_f <= 1.0')
+		//369 -----------------------------------
+		,(code		:= 17069
+		,message 	:= '17069.  Memory allocation error (INTERNAL ERROR)')
+		//370 -----------------------------------
+		,(code		:= 17070
+		,message 	:= '17070.  The calculated end position differs from the end position in the nc instruction (internal error).')
+		//371 -----------------------------------
+		,(code		:= 17071
+		,message 	:= '17071.  Calculate remaining chord length')
+		//372 -----------------------------------
+		,(code		:= 17072
+		,message 	:= '17072.  Set value generator SVB active Starting the set value generator (SVB, SAF) has been refused, since the SVB task is already active.')
+		//373 -----------------------------------
+		,(code		:= 17073
+		,message 	:= '17073.  SVB parameter not allowed (INTERNAL ERROR) A parameter related to the internal structure of the set value generator (SVB) results in logical errors and/or to an FPU exception. Affects these parameters: Minimum velocity (>0.0), TimeMode, ModeDyn, ModeGeo, StartType, DistanceToEnd, TBallRadius.')
+		//374 -----------------------------------
+		,(code		:= 17074
+		,message 	:= '17074.  Velocity reduction factor not allowed A parameter that controls reduction of the velocity at segment transitions is invalid. Parameters: 1. Transitions with continuous first differential: VeloVertexFactorC1 2. Transitions without continuous differentials: VeloVertexFactorC0 CriticalVertexAngleLow, CriticalVertexAngleHigh.')
+		//375 -----------------------------------
+		,(code		:= 17075
+		,message 	:= '17075.  Helix is a circle The helix has degenerated to a circle, and should be entered as such.')
+		//376 -----------------------------------
+		,(code		:= 17076
+		,message 	:= '17076.  Helix is a straight line The helix has degenerated to a straight line, and should be entered as such.')
+		//377 -----------------------------------
+		,(code		:= 17077
+		,message 	:= '17077.  Guider parameter not allowed One of the guiders parameters leads to logical errors and/or to an FPU exception.')
+		//378 -----------------------------------
+		,(code		:= 17078
+		,message 	:= '17078.  Invalid segment address (INTERNAL ERROR) The geometry segment does not have a valid geometry structure address or does not have a valid dynamic structure address.')
+		//379 -----------------------------------
+		,(code		:= 17079
+		,message 	:= '17079.  Unparametrised generator (INTERNAL ERROR) The SVB generator is not yet parameterised and is therefore unable to operate.')
+		//380 -----------------------------------
+		,(code		:= 17080
+		,message 	:= '17080.  Unparametrised table (INTERNAL ERROR) The table has no information concerning the address of the corresponding dynamic generator.')
+		//381 -----------------------------------
+		,(code		:= 17082
+		,message 	:= '17082.  The calculation of the arc length of the smoothed path failed (internal error).')
+		//382 -----------------------------------
+		,(code		:= 17083
+		,message 	:= '17083.  The radius of the tolerance ball is too small (smaller than 0.1 mm).')
+		//383 -----------------------------------
+		,(code		:= 17084
+		,message 	:= '17084.  Error while calculating DXD-Software-Limitswitches (internal error))')
+		//384 -----------------------------------
+		,(code		:= 17085
+		,message 	:= '17085.  NC-Block violates software limit switches of the group At least one path axis with active software limit monitoring has violated the limit switches Therefore the geometric entry is denied with an error.')
+		//385 -----------------------------------
+		,(code		:= 17086
+		,message 	:= '17086.  GROUPERR_DXD_SOFTENDCHECK')
+		//386 -----------------------------------
+		,(code		:= 17087
+		,message 	:= '17087.  GROUPERR_DXD_RTTG_VELOREFERENCE')
+		//387 -----------------------------------
+		,(code		:= 17088
+		,message 	:= '17088.  Interpolating group contains axes of an incorrect axis type An interpolating 3D group may only contain continuously guided axes of axis type 1 (SERVO).')
+		//388 -----------------------------------
+		,(code		:= 17089
+		,message 	:= '17089.  Scalar product can not be calculated The length of one of the given vectors is 0.0.')
+		//389 -----------------------------------
+		,(code		:= 17090
+		,message 	:= '17090.  Inverse cosine can not be calculated The length of one of the given vectors is 0.0.')
+		//390 -----------------------------------
+		,(code		:= 17091
+		,message 	:= '17091.  Invalid table entry type The given table entry type is unknown.')
+		//391 -----------------------------------
+		,(code		:= 17092
+		,message 	:= '17092.  Invalid DIN66025 information type (INTERNAL ERROR) The given DIN66025 information type is unknown. Known types: G0, G1, G2, G3, G17, G18, G19.')
+		//392 -----------------------------------
+		,(code		:= 17093
+		,message 	:= '17093.  Invalid dimension (INTERNAL ERROR) The CNC dimension is unknown. Known dimensions: 1, 2, 3. Or: The CNC dimension is invalid for the given geometrical object. For a circle the dimension must be 2 or 3, while for a helix it must be 3.')
+		//393 -----------------------------------
+		,(code		:= 17094
+		,message 	:= '17094.  Geometrical object is not a straight line The given object, interpreted as a straight line, has a length of 0.0.')
+		//394 -----------------------------------
+		,(code		:= 17095
+		,message 	:= '17095.  Geometrical object is not a circle Interpreted as a circular arc, the given object has a length of 0.0, or an angle of 0.0 or a radius of 0.0.')
+		//395 -----------------------------------
+		,(code		:= 17096
+		,message 	:= '17096.  Geometrical object is not a helix Interpreted as a circular arc, the given object has a length of 0.0, or an angle of 0.0, or a radius of 0.0. or a height of 0.0.')
+		//396 -----------------------------------
+		,(code		:= 17097
+		,message 	:= '17097.  Set velocity less than or equal to 0.0 is invalid A value less than or equal to 0.0 for the set velocity (CNC) is not allowed, since the set velocity is positive by definition, and a set velocity of 0.0 cannot generate any motion.')
+		//397 -----------------------------------
+		,(code		:= 17098
+		,message 	:= '17098.  Address for look-ahead invalid (INTERNAL ERROR) The address supplied for the look-ahead is invalid.')
+		//398 -----------------------------------
+		,(code		:= 17099
+		,message 	:= '17099.  Set value generator SAF active Starting the set value generator (SAF) has been refused, since the SAF task is already active.')
+		//399 -----------------------------------
+		,(code		:= 17100
+		,message 	:= '17100.  CNC set value generation not active Stop or change of override refused, because the set value generation is not active.')
+		//400 -----------------------------------
+		,(code		:= 17101
+		,message 	:= '17101.  CNC set value generation in the stop phase Stop or change of override refused, because the set value generation is in the stop phase.')
+		//401 -----------------------------------
+		,(code		:= 17102
+		,message 	:= '17102.  Override not allowed An override of less than 0.0% or more than 100.0% is invalid.')
+		//402 -----------------------------------
+		,(code		:= 17103
+		,message 	:= '17103.  Invalid table address (INTERNAL ERROR) The table address given for the initialisation of the set value generator is invalid, or no valid logger connection (report file) is present.')
+		//403 -----------------------------------
+		,(code		:= 17104
+		,message 	:= '17104.  Invalid table entry type The given table entry type is unknown.')
+		//404 -----------------------------------
+		,(code		:= 17105
+		,message 	:= '17105.  Memory allocation failed Memory allocation for the table has failed.')
+		//405 -----------------------------------
+		,(code		:= 17106
+		,message 	:= '17106.  Memory allocation failed Memory allocation for the filter has failed.')
+		//406 -----------------------------------
+		,(code		:= 17107
+		,message 	:= '17107.  Invalid parameter Filter parameter is not allowed.')
+		//407 -----------------------------------
+		,(code		:= 17108
+		,message 	:= '17108.  Delete Distance To Go failed Delete Distance to go (only interpolation) failed. This error occured, if e.g. the command DelDTG was not programmed in the actual movement of the nc program.')
+		//408 -----------------------------------
+		,(code		:= 17109
+		,message 	:= '17109.  The setpoint generator of the fying saw generates incompatible values (internal error)')
+		//409 -----------------------------------
+		,(code		:= 17110
+		,message 	:= '17110.  Axis will be stopped since otherwise it will overrun its target position (old PTP setpoint generator) If, for example, in case of a slave to master transformation for the new master a target position is commanded that will be overrun because of the actual dynamics the axis will be stopped internally to guarantee that the target position will not be overrun.')
+		//410 -----------------------------------
+		,(code		:= 17111
+		,message 	:= '17111.  Internal error in the transformation from slave to master.')
+		//411 -----------------------------------
+		,(code		:= 17112
+		,message 	:= '17112.  Wrong direction in the transformation of slave to master.')
+		//412 -----------------------------------
+		,(code		:= 17114
+		,message 	:= '17114.  Parameter of Motion Function (MF) table incorrect The parameter of the Motion Function (MF) are incorrect. This may refer to the first time created data set or to online changed data.')
+		//413 -----------------------------------
+		,(code		:= 17115
+		,message 	:= '17115.  Parameter of Motion Function (MF) table incorrect The parameter of the Motion Function (MF) are invalid. This may refer to the first time created data set or to online changed data. The error cause can be, that an active MF point (no IGNORE point) points at a passive MF point (IGNORE point).')
+		//414 -----------------------------------
+		,(code		:= 17116
+		,message 	:= '17116.  Internal error by using Motion Function (MF) An internal error occurs by using the Function (MF). This error can not be solved by the user. Plaese ask the TwinCAT Support.')
+		//415 -----------------------------------
+		,(code		:= 17117
+		,message 	:= '17117.  Axis coupling with synchronization generator declined because of incorrect axis dynamic values The axis coupling with the synchronization generator has been declined, because one of the slave dynamic parameter (machine data) is incorrect (e.g. the maximum velocity, the acceleration, the deceleration or the jerk is smaller or equal to zero, or the expected synchronous velocity of the slave axis is higher as the maximum allowed slave velocity.')
+		//416 -----------------------------------
+		,(code		:= 17118
+		,message 	:= '17118.  Coupling conditions of synchronization generator incorrect')
+		//417 -----------------------------------
+		,(code		:= 17119
+		,message 	:= '17119.  Moving profile of synchronization generator declines dynamic limit of slave axis or required characterstic of profile One of the parameterized checks has recognized an overstepping of the dynamic limits (max. velocity, max. acceleration, max. deceleration or max. jerk) of the slave axis, or an profile characteristic (e.g. overshoot or undershoot in the position or velocity) is incorrect. See also further messages in the windows event log and in the message window of the System Manager.')
+		//418 -----------------------------------
+		,(code		:= 17120
+		,message 	:= '17120.  Invalid parameter The encoder generator parameter is not allowed.')
+		//419 -----------------------------------
+		,(code		:= 17121
+		,message 	:= '17121.  Invalid parameter The external (Fifo) generator parameter is not allowed.')
+		//420 -----------------------------------
+		,(code		:= 17122
+		,message 	:= '17122.  External generator is active The external generator cannot be started, as it is already active.')
+		//421 -----------------------------------
+		,(code		:= 17123
+		,message 	:= '17123.  External generator is not active The external generator cannot be stopped, as it is not active.')
+		//422 -----------------------------------
+		,(code		:= 17124
+		,message 	:= '17124.  NC-Block with auxiliary axis violates software limit switches of the group At least one auxiliary axis with active software limit monitoring has violated the limit switches Therefore the geometric entry is denied with an error.')
+		//423 -----------------------------------
+		,(code		:= 17125
+		,message 	:= '17125.  NC-Block type Bezier spline curve contains a cusp (singularity) The Bezier spline curve contain a cusp, i.e. at a certain interior point both the curvature and the modulus of the velocity tend to 0 such that the radius of curvature is infinite.')
+		//424 -----------------------------------
+		,(code		:= 17127
+		,message 	:= '17127.  ?Value for dead time compensation not allowed? The value for the dead time compensation in seconds for a slave coupling to an encoder axis (virtual axis) is not allowed.')
+		//425 -----------------------------------
+		,(code		:= 17128
+		,message 	:= '17128.  GROUPERR_RANGE_NOMOTIONWINDOW')
+		//426 -----------------------------------
+		,(code		:= 17129
+		,message 	:= '17129.  GROUPERR_RANGE_NOMOTIONFILTERTIME')
+		//427 -----------------------------------
+		,(code		:= 17130
+		,message 	:= '17130.  GROUPERR_RANGE_TIMEUNITFIFO')
+		//428 -----------------------------------
+		,(code		:= 17131
+		,message 	:= '17131.  GROUPERR_RANGE_OVERRIDETYPE')
+		//429 -----------------------------------
+		,(code		:= 17132
+		,message 	:= '17132.  GROUPERR_RANGE_OVERRIDECHANGETIME')
+		//430 -----------------------------------
+		,(code		:= 17133
+		,message 	:= '17133.  GROUPERR_FIFO_INVALIDDIMENSION')
+		//431 -----------------------------------
+		,(code		:= 17134
+		,message 	:= '17134.  GROUPERR_ADDR_FIFOTABLE')
+		//432 -----------------------------------
+		,(code		:= 17135
+		,message 	:= '17135.  Axis is locked for motion commands because a stop command is still activeThe axis/group is locked for motion commands because a stop command is still active. The axis can be released by calling MC_Stop with Execute=FALSE or by using MC_Reset (TcMC2.Lib).')
+		//433 -----------------------------------
+		,(code		:= 17136
+		,message 	:= '17136.  Invalid number of auxiliary axes The local number of auxiliary axes does not tally with the global number of auxiliary axes.')
+		//434 -----------------------------------
+		,(code		:= 17137
+		,message 	:= '17137.  Invalid reduction parameter for auxiliary axes The velocity reduction parameters for the auxiliary axes are inconsistent.')
+		//435 -----------------------------------
+		,(code		:= 17138
+		,message 	:= '17138.  Invalid dynamic parameter for auxiliary axes The dynamic parameters for the auxiliary axes are inconsistent.')
+		//436 -----------------------------------
+		,(code		:= 17139
+		,message 	:= '17139.  Invalid coupling parameter for auxiliary axes The coupling parameters for the auxiliary axes are inconsistent.')
+		//437 -----------------------------------
+		,(code		:= 17140
+		,message 	:= '17140.  Invalid auxiliary axis entry The auxiliary axis entry is empty (no axis motion).')
+		//438 -----------------------------------
+		,(code		:= 17142
+		,message 	:= '17142.  Invalid parameter The limit for velocity reduction of the auxiliary axes is invalid. It has to be in the interval 0..1.0')
+		//439 -----------------------------------
+		,(code		:= 17151
+		,message 	:= '17151.  GROUPERR_HYMMEN_WATCHDOG')
+		//440 -----------------------------------
+		,(code		:= 17152
+		,message 	:= '17152.  Axis ID not allowed The value for the axis ID is not allowed, e.g. because it has already been assigned, is less than or equal to zero, is greater than 255, or does not exist in the current configuration.')
+		//441 -----------------------------------
+		,(code		:= 17153
+		,message 	:= '17153.  Axis type not allowed The value for the axis type is unacceptable because it is not defined. Type 1: Servo Type 2: High/low speed Type 3: Stepper motor')
+		//442 -----------------------------------
+		,(code		:= 17158
+		,message 	:= '17158.  Slow manual velocity not allowed The value for the slow manual velocity is not allowed.')
+		//443 -----------------------------------
+		,(code		:= 17159
+		,message 	:= '17159.  Fast manual velocity not allowed The value for the fast manual velocity is not allowed.')
+		//444 -----------------------------------
+		,(code		:= 17160
+		,message 	:= '17160.  High speed not allowed The value for the high speed is not allowed.')
+		//445 -----------------------------------
+		,(code		:= 17161
+		,message 	:= '17161.  Acceleration not allowed The value for the axis acceleration is not allowed.')
+		//446 -----------------------------------
+		,(code		:= 17162
+		,message 	:= '17162.  Deceleration not allowed The value for the axis deceleration is not allowed.')
+		//447 -----------------------------------
+		,(code		:= 17163
+		,message 	:= '17163.  Jerk not allowed The value for the axis jerk is not allowed.')
+		//448 -----------------------------------
+		,(code		:= 17164
+		,message 	:= '17164.  Delay time between position and velocity is not allowed The value for the delay time between position and velocity (idle time compensation) is not allowed.')
+		//449 -----------------------------------
+		,(code		:= 17165
+		,message 	:= '17165.  ?Override-Type not allowed? The value for the velocity override type is not allowed. Type 1: With respect to the internal reduced velocity (default value) Type 2: With respect to the original external start velocity')
+		//450 -----------------------------------
+		,(code		:= 17166
+		,message 	:= '17166.  NCI: Velo-Jump-Factor not allowed')
+		//451 -----------------------------------
+		,(code		:= 17167
+		,message 	:= '17167.  NCI: Radius of tolerance sphere for the auxiliary axes is invalid')
+		//452 -----------------------------------
+		,(code		:= 17168
+		,message 	:= '17168.  NCI: Value for maximum deviation for the auxiliary axes is invalid')
+		//453 -----------------------------------
+		,(code		:= 17170
+		,message 	:= '17170.  Referencing velocity in direction of cam not allowed The value for the referencing velocity in the direction of the referencing cam is not allowed.')
+		//454 -----------------------------------
+		,(code		:= 17171
+		,message 	:= '17171.  Referencing velocity in sync direction not allowed The value for the referencing velocity in the direction of the sync pulse (zero track) is not allowed.')
+		//455 -----------------------------------
+		,(code		:= 17172
+		,message 	:= '17172.  Pulse width in positive direction not allowed The value for the pulse width in the positive direction is not allowed (pulsed operation). The use of the pulse width for positioning is chosen implicitly through the axis start type. Pulsed operation corresponds to positioning with a relative displacement that corresponds precisely to the pulse width.')
+		//456 -----------------------------------
+		,(code		:= 17173
+		,message 	:= '17173.  Pulse width in negative direction not allowed The value for the pulse width in the negative direction is not allowed (pulsed operation). The use of the pulse width for positioning is chosen implicitly through the axis start type. Pulsed operation corresponds to positioning with a relative displacement that corresponds precisely to the pulse width.')
+		//457 -----------------------------------
+		,(code		:= 17174
+		,message 	:= '17174.  Pulse time in positive direction not allowed The value for the pulse width in the positive direction is not allowed (pulsed operation).')
+		//458 -----------------------------------
+		,(code		:= 17175
+		,message 	:= '17175.  Pulse time in negative direction not allowed The value for the pulse width in the negative direction is not allowed (pulsed operation).')
+		//459 -----------------------------------
+		,(code		:= 17176
+		,message 	:= '17176.  Creep distance in positive direction not allowed The value for the creep distance in the positive direction is not allowed.')
+		//460 -----------------------------------
+		,(code		:= 17177
+		,message 	:= '17177.  Creep distance in negative direction not allowed The value for the creep distance in the negative direction is not allowed.')
+		//461 -----------------------------------
+		,(code		:= 17178
+		,message 	:= '17178.  Braking distance in positive direction not allowed The value for the braking distance in the positive direction is not allowed.')
+		//462 -----------------------------------
+		,(code		:= 17179
+		,message 	:= '17179.  Braking distance in negative direction not allowed The value for the braking distance in the negative direction is not allowed.')
+		//463 -----------------------------------
+		,(code		:= 17180
+		,message 	:= '17180.  Braking time in positive direction not allowed The value for the braking time in the positive direction is not allowed.')
+		//464 -----------------------------------
+		,(code		:= 17181
+		,message 	:= '17181.  Braking time in negative direction not allowed The value for the braking time in the negative direction is not allowed.')
+		//465 -----------------------------------
+		,(code		:= 17182
+		,message 	:= '17182.  Switching time from high to low speed not allowed The value for the time to switch from high to low speed is not allowed.')
+		//466 -----------------------------------
+		,(code		:= 17183
+		,message 	:= '17183.  Creep distance for stop not allowed The value for the creep distance for an explicit stop is not allowed.')
+		//467 -----------------------------------
+		,(code		:= 17184
+		,message 	:= '17184.  Motion monitoring not allowed The value for the activation of the motion monitoring is not allowed.')
+		//468 -----------------------------------
+		,(code		:= 17185
+		,message 	:= '17185.  Position window monitoring not allowed The value for the activation of the position window monitoring is not allowed.')
+		//469 -----------------------------------
+		,(code		:= 17186
+		,message 	:= '17186.  Target window monitoring not allowed The value for the activation of target window monitoring is not allowed.')
+		//470 -----------------------------------
+		,(code		:= 17187
+		,message 	:= '17187.  Loop not allowed The value for the activation of loop movement is not allowed.')
+		//471 -----------------------------------
+		,(code		:= 17188
+		,message 	:= '17188.  Motion monitoring time not allowed The value for the motion monitoring time is not allowed.')
+		//472 -----------------------------------
+		,(code		:= 17189
+		,message 	:= '17189.  Target window range not allowed The value for the target window is not allowed.')
+		//473 -----------------------------------
+		,(code		:= 17190
+		,message 	:= '17190.  Position window range not allowed The value for the position window is not allowed.')
+		//474 -----------------------------------
+		,(code		:= 17191
+		,message 	:= '17191.  Position window monitoring time not allowed The value for the position window monitoring time is not allowed.')
+		//475 -----------------------------------
+		,(code		:= 17192
+		,message 	:= '17192.  Loop movement not allowed The value for the loop movement is not allowed.')
+		//476 -----------------------------------
+		,(code		:= 17193
+		,message 	:= '17193.  Axis cycle time not allowed The value for the axis cycle time is not allowed.')
+		//477 -----------------------------------
+		,(code		:= 17194
+		,message 	:= '17194.  Stepper motor operating mode not allowed The value for the stepper motor operating mode is not allowed.')
+		//478 -----------------------------------
+		,(code		:= 17195
+		,message 	:= '17195.  Displacement per stepper motor step not allowed The value for the displacement associated with one step of the stepper motor is not allowed (step scaling). Value range: [0.000001, 1000.0]                                     Unit: e.g. mm/STEP')
+		//479 -----------------------------------
+		,(code		:= 17196
+		,message 	:= '17196.  Minimum speed for stepper motor set value profile not allowed The value for the minimum speed of the stepper motor speed profile is not allowed.')
+		//480 -----------------------------------
+		,(code		:= 17197
+		,message 	:= '17197.  Stepper motor stages for one speed stage not allowed The value for the number of steps for each speed stage in the set value generation is not allowed.')
+		//481 -----------------------------------
+		,(code		:= 17198
+		,message 	:= '17198.  DWORD for the interpretation of the axis units not allowed The value that contains the flags for the interpretation of the position and velocity units is not allowed.')
+		//482 -----------------------------------
+		,(code		:= 17199
+		,message 	:= '17199.  Maximum velocity not allowed The value for the maximum permitted velocity is not allowed.')
+		//483 -----------------------------------
+		,(code		:= 17200
+		,message 	:= '17200.  Motion monitoring window not allowed The value for the motion monitoring window is not allowed. V')
+		//484 -----------------------------------
+		,(code		:= 17201
+		,message 	:= '17201.  PEH time monitoring not allowed The value for the activation of the PEH time monitoring is not allowed (PEH: positioning end and halt).')
+		//485 -----------------------------------
+		,(code		:= 17202
+		,message 	:= '17202.  PEH monitoring time not allowed The value for the PEH monitoring time (timeout) is not allowed (PEH: positioning end and halt). Default value: 5 s')
+		//486 -----------------------------------
+		,(code		:= 17203
+		,message 	:= '17203.  AXISERR_RANGE_DELAYBREAKRELEASE')
+		//487 -----------------------------------
+		,(code		:= 17204
+		,message 	:= '17204.  ?AXISERR_RANGE_DATAPERSISTENCE?')
+		//488 -----------------------------------
+		,(code		:= 17210
+		,message 	:= '17210.  ?AXISERR_RANGE_POSDIFF_FADING_ACCELERATION?')
+		//489 -----------------------------------
+		,(code		:= 17211
+		,message 	:= '17211.  Fast Axis Stop Signal Type not allowed The value for the Signal Type of the Fast Axis Stop is not allowed [0...5].')
+		//490 -----------------------------------
+		,(code		:= 17216
+		,message 	:= '17216.  Axis initialisation Axis has not been initialised. Although the axis has been created, the rest of the initialisation has not been performed (1. Initialisation of axis I/O, 2. Initialisation of axis, 3. Reset axis).')
+		//491 -----------------------------------
+		,(code		:= 17217
+		,message 	:= '17217.  Group address Axis does not have a group, or the group address has not been initialised (group contains the set value generation).')
+		//492 -----------------------------------
+		,(code		:= 17218
+		,message 	:= '17218.  Encoder address The axis does not have an encoder, or the encoder address has not been initialised.')
+		//493 -----------------------------------
+		,(code		:= 17219
+		,message 	:= '17219.  Controller address The axis does not have a controller, or the controller address has not been initialised.')
+		//494 -----------------------------------
+		,(code		:= 17220
+		,message 	:= '17220.  Drive address The axis does not have a drive, or the drive address has not been initialised.')
+		//495 -----------------------------------
+		,(code		:= 17221
+		,message 	:= '17221.  Axis interface PLC to NC address Axis does not have an axis interface from the PLC to the NC, or the axis interface address has not been initialised.')
+		//496 -----------------------------------
+		,(code		:= 17222
+		,message 	:= '17222.  Axis interface NC to PLC address Axis does not have an axis interface from the NC to the PLC, or the axis interface address has not been initialised.')
+		//497 -----------------------------------
+		,(code		:= 17223
+		,message 	:= '17223.  Size of axis interface NC to PLC is not allowed (INTERNAL ERROR) The size of the axis interface from NC to PLC is not allowed.')
+		//498 -----------------------------------
+		,(code		:= 17224
+		,message 	:= '17224.  Size of axis interface PLC to NC is not allowed (INTERNAL ERROR) The size of the axis interface from PLC to NC is not allowed.')
+		//499 -----------------------------------
+		,(code		:= 17238
+		,message 	:= '17238.  Controller enable Controller enable for the axis is not present (see axis interface SPS®NC). This enable is required, for instance, for an axis positioning task.')
+		//500 -----------------------------------
+		,(code		:= 17239
+		,message 	:= '17239.  Feed enable minus Feed enable for movement in the negative direction is not present (see axis interface SPS®NC). This enable is required, for instance, for an axis positioning task in the negative direction.')
+		//501 -----------------------------------
+		,(code		:= 17240
+		,message 	:= '17240.  Feed enable plus Feed enable for movement in the positive direction is not present (see axis interface SPS®NC). This enable is required, for instance, for an axis positioning task in the positive direction.')
+		//502 -----------------------------------
+		,(code		:= 17241
+		,message 	:= '17241.  Set velocity not allowed The set velocity requested for a positioning task is not allowed. This can happen if the velocity is less than or equal to zero, larger than the maximum permitted axis velocity, or, in the case of servo-drives, is larger than the reference velocity of the axis (see axis and drive parameters).')
+		//503 -----------------------------------
+		,(code		:= 17242
+		,message 	:= '17242.  Movement smaller than one encoder increment (INTERNAL ERROR) The movement required of an axis is, in relation to a positioning task, smaller than one encoder increment (see scaling factor). This information is, however, handled internally in such a way that the positioning is considered to have been completed without an error message being returned.')
+		//504 -----------------------------------
+		,(code		:= 17243
+		,message 	:= '17243.  Set acceleration monitoring (INTERNAL ERROR) The set acceleration has exceeded the maximum permitted acceleration or deceleration parameters of the axis.')
+		//505 -----------------------------------
+		,(code		:= 17244
+		,message 	:= '17244.  PEH time monitoring The PEH time monitoring has detected that, after the PEH monitoring time that follows a positioning has elapsed, the target position window has not been reached. The following points must be checked: Is the PEH monitoring time, in the sense of timeout monitoring, set to a sufficiently large value (e.g. 1-5s)? The PEH monitoring time must be chosen to be significantly larger than the target position monitoring time. Have the criteria for the target position monitoring (range window and time) been set too strictly?')
+		//506 -----------------------------------
+		,(code		:= 17245
+		,message 	:= '17245.  Encoder existence monitoring / movement monitoring During the active positioning the actual encoder value has changed continuously for a default check time from NC cycle to NC cycle less than the default minimum movement limit.')
+		//507 -----------------------------------
+		,(code		:= 17246
+		,message 	:= '17246.  ?Looping distance less than breaking distance? The absolute value of the looping distance is less or equal than the positive or negative breaking distance. This is not allowed.')
+		//508 -----------------------------------
+		,(code		:= 17249
+		,message 	:= '17249.  ?Time range exceeded (future)? The calculated position lies too far in the future (e.g. when converting a position value in a DC time stamp).')
+		//509 -----------------------------------
+		,(code		:= 17250
+		,message 	:= '17250.  ?Time range exceeded (past)? The calculated position lies too far in the past (e.g. when converting a position value in a DC time stamp).')
+		//510 -----------------------------------
+		,(code		:= 17251
+		,message 	:= '17251.  ?Position cannot be determined? The requested position cannot be determined.')
+		//511 -----------------------------------
+		,(code		:= 17312
+		,message 	:= '17312.  Axis consequential error Consequential error resulting from another causative error related to another axis. Axis consequential errors can occur in relation to master/slave couplings or with multiple axis interpolating DXD groups.')
+		//512 -----------------------------------
+		,(code		:= 17408
+		,message 	:= '17408.  Encoder ID not allowed The value for the encoder ID is not allowed, e.g. because it has already been assigned, is less than or equal to zero, or is bigger than 255.')
+		//513 -----------------------------------
+		,(code		:= 17409
+		,message 	:= '17409.  Encoder type not allowed The value for the encoder type is unacceptable because it is not defined. Type 1: Simulation (incremental) Type 2: M3000 (24 bit absolute) Type 3: M31x0 (24 bit incremental) Type 4: KL5101 (16 bit incremental) Type 5: KL5001 (24 bit absolute SSI) Type 6: KL5051 (16 bit BISSI)')
+		//514 -----------------------------------
+		,(code		:= 17410
+		,message 	:= '17410.  Encoder mode The value for the encoder (operating) mode is not allowed. Mode 1: Determination of the actual position Mode 2: Determination of the actual position and the actual velocity (filter)')
+		//515 -----------------------------------
+		,(code		:= 17411
+		,message 	:= '17411.  Encoder counting direction inverted? The flag for the encoder counting direction is not allowed. Flag 0: Positive encoder counting direction Flag 1: Negative encoder counting direction')
+		//516 -----------------------------------
+		,(code		:= 17412
+		,message 	:= '17412.  Referencing status The flag for the referencing status is not allowed. Flag 0: Axis has not been referenced Flag 1: Axis has been referenced')
+		//517 -----------------------------------
+		,(code		:= 17413
+		,message 	:= '17413.  Encoder increments for each physical encoder rotation The value for the number of encoder increments for each physical rotation of the encoder is not allowed. This value is used by the software for the calculation of encoder overruns and underruns.')
+		//518 -----------------------------------
+		,(code		:= 17414
+		,message 	:= '17414.  Scaling factor The value for the scaling factor is not allowed. This scaling factor provides the weighting for the conversion of an encoder increment (INC) to a physical unit such as millimeters or degrees.')
+		//519 -----------------------------------
+		,(code		:= 17415
+		,message 	:= '17415.  Position offset (zero point offset) The value for the position offset of the encoder is not allowed. This value is added to the calculated encoder position, and is interpreted in the physical units of the encoder.')
+		//520 -----------------------------------
+		,(code		:= 17416
+		,message 	:= '17416.  Modulo factor The value for the encoders modulo factor is not allowed.')
+		//521 -----------------------------------
+		,(code		:= 17417
+		,message 	:= '17417.  Position filter time The value for the actual position filter time is not allowed (P-T1 filter).')
+		//522 -----------------------------------
+		,(code		:= 17418
+		,message 	:= '17418.  Velocity filter time The value for the actual velocity filter time is not allowed (P-T1 filter).')
+		//523 -----------------------------------
+		,(code		:= 17419
+		,message 	:= '17419.  Acceleration filter time The value for the actual acceleration filter time is not allowed (P-T1 filter).')
+		//524 -----------------------------------
+		,(code		:= 17420
+		,message 	:= '17420.  Cycle time not allowed (INTERNAL ERROR) The value of the SAF cycle time for the calculation of actual values is not allowed (e.g. is less than or equal to zero).')
+		//525 -----------------------------------
+		,(code		:= 17421
+		,message 	:= '17421.  ENCERR_RANGE_UNITFLAGS')
+		//526 -----------------------------------
+		,(code		:= 17422
+		,message 	:= '17422.  Actual position correction / measurement system error correction The value for the activation of the actual position correction (measuring system error correction) is not allowed.')
+		//527 -----------------------------------
+		,(code		:= 17423
+		,message 	:= '17423.  Filter time actual position correction The value for the actual position correction filter time is not allowed (P-T1 filter).')
+		//528 -----------------------------------
+		,(code		:= 17424
+		,message 	:= '17424.  Search direction for referencing cam inverted The value of the search direction of the referencing cam in a referencing procedure is not allowed. Value 0: Positive direction Value 1: Negative direction')
+		//529 -----------------------------------
+		,(code		:= 17425
+		,message 	:= '17425.  Search direction for sync pulse (zero pulse) inverted The value of the search direction of the sync pulse (zero pulse) in a referencing procedure is not allowed. Value 0: Positive direction Value 1: Negative direction')
+		//530 -----------------------------------
+		,(code		:= 17426
+		,message 	:= '17426.  Reference position The value of the reference position in a referencing procedure is not allowed.')
+		//531 -----------------------------------
+		,(code		:= 17427
+		,message 	:= '17427.  Clearance monitoring between activation of the hardware latch and appearance of the sync pulse (NOT IMPLEMENTED) The flag for the clearance monitoring between activation of the hardware latch and occurrence of the sync/zero pulse (latch valid) is not allowed. Value 0: Passive Value 1: Active')
+		//532 -----------------------------------
+		,(code		:= 17428
+		,message 	:= '17428.  Minimum clearance between activation of the hardware latch and appearance of the sync pulse (NOT IMPLEMENTED) The value for the minimum clearance in increments between activation of the hardware latch and occurrence of the sync/zero pulse (latch valid) during a referencing procedure is not allowed.')
+		//533 -----------------------------------
+		,(code		:= 17429
+		,message 	:= '17429.  External sync pulse (NOT IMPLEMENTED) The value of the activation or deactivation of the external sync pulse in a referencing procedure is not allowed. Value 0: Passive Value 1: Active')
+		//534 -----------------------------------
+		,(code		:= 17430
+		,message 	:= '17430.  Scaling of the noise rate is not allowed The value of the scaling (weighting) of the synthetic noise rate is not allowed. This parameter exists only in the simulation encoder and serves to produce a realistic simulation.')
+		//535 -----------------------------------
+		,(code		:= 17431
+		,message 	:= '17431.  ?Tolerance window for modulo-start? The value for the tolerance window for the modulo-axis-start is invalid. The value must be greater or equal than zero and smaller than the half encoder modulo-period (e. g. in the interval [0.0,180.0) ).')
+		//536 -----------------------------------
+		,(code		:= 17432
+		,message 	:= '17432.  ?Encoder reference mode? The value for the encoder reference mode is not allowed, resp. is not supported for this encoder type.')
+		//537 -----------------------------------
+		,(code		:= 17433
+		,message 	:= '17433.  ?Encoder evaluation direction? The value for the encoder evaluation direction (log. counter direction) is not allowed.')
+		//538 -----------------------------------
+		,(code		:= 17434
+		,message 	:= '17434.  ?Encoder reference system? The value for the encoder reference system is invalid (0: incremental, 1: absolute, 2: absolute+modulo).')
+		//539 -----------------------------------
+		,(code		:= 17435
+		,message 	:= '17435.  ?Encoder position initialization mode? When starting the TC system the value for the encoder position initialization mode is invalid.')
+		//540 -----------------------------------
+		,(code		:= 17436
+		,message 	:= '17436.  ?Encoder sign interpretation (UNSIGNED- / SIGNED- data type)? The value for the encoder sign interpretation (data type) for the encoder the actual increment calculation (0: Default/not defined, 1: UNSIGNED, 2:/ SIGNED) is invalid.')
+		//541 -----------------------------------
+		,(code		:= 17440
+		,message 	:= '17440.  Software end location monitoring minimum not allowed The value for the activation of the software location monitoring minimum is not allowed.')
+		//542 -----------------------------------
+		,(code		:= 17441
+		,message 	:= '17441.  Software end location monitoring maximum not allowed The value for the activation of the software location monitoring maximum is not allowed.')
+		//543 -----------------------------------
+		,(code		:= 17442
+		,message 	:= '17442.  Actual value setting is outside the value range The set actual value function cannot be carried out, because the new actual position is outside the expected range of values.')
+		//544 -----------------------------------
+		,(code		:= 17443
+		,message 	:= '17443.  Software end location minimum not allowed The value for the software end location minimum is not allowed.')
+		//545 -----------------------------------
+		,(code		:= 17444
+		,message 	:= '17444.  Software end location maximum not allowed The value for the software end location maximum is not allowed.')
+		//546 -----------------------------------
+		,(code		:= 17445
+		,message 	:= '17445.  ?Filter mask for the raw data of the encoder is invalid? The value for the filter mask of the encoder raw data in increments is invalid.')
+		//547 -----------------------------------
+		,(code		:= 17446
+		,message 	:= '17446.  ?Reference mask for the raw data of the encoder is invalid? The value for the reference mask (increments per encoder turn, absolute resolution) for the raw data of the encoder is invalid. E.g. this value is used for axis reference sequence (calibration) with the reference mode Software Sync.')
+		//548 -----------------------------------
+		,(code		:= 17456
+		,message 	:= '17456.  Hardware latch activation (encoder) Activation of the encoder hardware latch was implicitly initiated by the referencing procedure. If this function has already been activated but a latch value has not yet become valid (latch valid), another call to the function is refused with this error.')
+		//549 -----------------------------------
+		,(code		:= 17457
+		,message 	:= '17457.  External hardware latch activation (encoder) The activation of the external hardware latch (only available on the KL5101) is initiated explicitly by an ADS command (called from the PLC program of the Visual Basic interface). If this function has already been activated, but the latch value has not yet been made valid by an external signal (external latch valid), another call to the function is refused with this error.')
+		//550 -----------------------------------
+		,(code		:= 17458
+		,message 	:= '17458.  External hardware latch activation (encoder) If a referencing procedure has previously been initiated and the hardware still signals a valid latch value (latch valid), this function must not be called. In practice, however, this error can almost never occur.')
+		//551 -----------------------------------
+		,(code		:= 17459
+		,message 	:= '17459.  External hardware latch activation (encoder) If this function has already been initiated and the hardware is still signaling that the external latch value is still valid (extern latch valid), a further activation should not be carried out and the commando will be declined with an error (the internal handshake communication between NC and IO device is still active). In that case the validity of the external hardware latch would immediately be signaled, although the old latch value would still be present.')
+		//552 -----------------------------------
+		,(code		:= 17460
+		,message 	:= '17460.  Encoder function not supported An encoder function has been activated that is currently not released for use, or which is not even implemented.')
+		//553 -----------------------------------
+		,(code		:= 17461
+		,message 	:= '17461.  ?Encoder function is already active? An encoder function can not been activated because this functionality is already active.')
+		//554 -----------------------------------
+		,(code		:= 17472
+		,message 	:= '17472.  Encoder initialization Encoder has not been initialized. Although the axis has been created, the rest of the initialization has not been performed (1. Initialization of axis I/O, 2. Initialization of axis, 3. Reset axis).')
+		//555 -----------------------------------
+		,(code		:= 17473
+		,message 	:= '17473.  Axis address The encoder does not have an axis, or the axis address has not been initialized.')
+		//556 -----------------------------------
+		,(code		:= 17474
+		,message 	:= '17474.  I/O input structure address The drive does not have a valid I/O input address in the process image.')
+		//557 -----------------------------------
+		,(code		:= 17475
+		,message 	:= '17475.  I/O output structure address The encoder does not have a valid I/O output address in the process image.')
+		//558 -----------------------------------
+		,(code		:= 17488
+		,message 	:= '17488.  Encoder counter underflow monitoring The encoders incremental counter has underflowed.')
+		//559 -----------------------------------
+		,(code		:= 17489
+		,message 	:= '17489.  Encoder counter overflow monitoring The encoders incremental counter has overflowed.')
+		//560 -----------------------------------
+		,(code		:= 17504
+		,message 	:= '17504.  Software end location minimum (axis start) With active monitoring of the software end location for a minimum, a start has been made from a position that lies below the software end location minimum.')
+		//561 -----------------------------------
+		,(code		:= 17505
+		,message 	:= '17505.  Software end location maximum (axis start) With active monitoring of the software end location for a maximum, a start has been made from a position that lies above the software end location maximum.')
+		//562 -----------------------------------
+		,(code		:= 17506
+		,message 	:= '17506.  Software end location minimum (positioning process) With active monitoring of the software end location for a minimum, the actual position has fallen below the software end location minimum. In the case of servo axes (continuously driven axes) this limit is expanded by the magnitude of the parameterized following error window (position).')
+		//563 -----------------------------------
+		,(code		:= 17507
+		,message 	:= '17507.  Software end location maximum (positioning process) With active monitoring of the software end location for a maximum, the actual position has exceeded the software end location maximum. In the case of servo axes (continuously driven axes) this limit is expanded by the magnitude of the parameterized following error window (position).')
+		//564 -----------------------------------
+		,(code		:= 17508
+		,message 	:= '17508.  ?Encoder hardware error? The drive resp. the encoder system reports a hardware error of the encoder. An optimal error code is displayed in the message of the event log.')
+		//565 -----------------------------------
+		,(code		:= 17509
+		,message 	:= '17509.  ?Position initialization error at system start? At the first initialization of the set position was this for all initialization trials (without over-/under-flow, with underflow and overflow ) out of the final position minimum and maximum.')
+		//566 -----------------------------------
+		,(code		:= 17520
+		,message 	:= '17520.  SSI transformation fault or not finished The SSI transformation of the FOX 50 module was faulty for some NC-cycles or did not finished respectively.')
+		//567 -----------------------------------
+		,(code		:= 17570
+		,message 	:= '17570.  ENCERR_ADDR_CONTROLLER')
+		//568 -----------------------------------
+		,(code		:= 17571
+		,message 	:= '17571.  ENCERR_INVALID_CONTROLLERTYPE')
+		//569 -----------------------------------
+		,(code		:= 17664
+		,message 	:= '17664.  Controller ID not allowed The value for the controller ID is not allowed, e.g. because it has already been assigned, is less than or equal to zero, or is greater than 255.')
+		//570 -----------------------------------
+		,(code		:= 17665
+		,message 	:= '17665.  Controller type not allowed The value for the controller type is unacceptable because it is not defined. Type 1: P-controller (position) . . . Type 7: High/low speed controller Type 8: Stepper motor controller Type 9: Sercos controller')
+		//571 -----------------------------------
+		,(code		:= 17666
+		,message 	:= '17666.  Controller operating mode not allowed The value for the controller operating mode is not allowed.')
+		//572 -----------------------------------
+		,(code		:= 17667
+		,message 	:= '17667.  Weighting of the velocity pre-control not allowed The value for the percentage weighting of the velocity pre-control is not allowed. The parameter is pre-set to 1.0 (100%) as standard.')
+		//573 -----------------------------------
+		,(code		:= 17668
+		,message 	:= '17668.  Following error monitoring (position) not allowed The value for the activation of the following error monitoring is not allowed.')
+		//574 -----------------------------------
+		,(code		:= 17669
+		,message 	:= '17669.  Following error (velocity) not allowed The value for the activation of the following error monitoring (velocity) is not allowed.')
+		//575 -----------------------------------
+		,(code		:= 17670
+		,message 	:= '17670.  Following error window (position) not allowed The value for the following error window (maximum allowable following error) is not allowed.')
+		//576 -----------------------------------
+		,(code		:= 17671
+		,message 	:= '17671.  Following error filter time (position) not allowed The value for the following error filter time (position) is not allowed.')
+		//577 -----------------------------------
+		,(code		:= 17672
+		,message 	:= '17672.  Following error window (velocity) not allowed The value for the following error window (velocity) is not allowed.')
+		//578 -----------------------------------
+		,(code		:= 17673
+		,message 	:= '17673.  Following error filter time (velocity) not allowed The value for the following error filter time (velocity) is not allowed.')
+		//579 -----------------------------------
+		,(code		:= 17680
+		,message 	:= '17680.  Proportional gain Kv or Kp (position controller) not allowed The value for the proportional gain (Kv factor or Kp factor) is not allowed.')
+		//580 -----------------------------------
+		,(code		:= 17681
+		,message 	:= '17681.  Integral-action time Tn (position controller) not allowed The value for the integral-action time is not allowed (I proportion of the PID T1 controller).')
+		//581 -----------------------------------
+		,(code		:= 17682
+		,message 	:= '17682.  Derivative action time Tv (position controller) not allowed The value for the derivative action time is not allowed (D proportion of the PID T1 controller).')
+		//582 -----------------------------------
+		,(code		:= 17683
+		,message 	:= '17683.  Damping time Td (position controller) not allowed The value for the damping time is not allowed (D proportion of the PID T1 controller). Suggested value: 0.1 * Tv')
+		//583 -----------------------------------
+		,(code		:= 17684
+		,message 	:= '17684.  Activation of the automatic offset compensation not allowed Activation of the automatic offset compensation is only possible for certain types of controller (with no I component).')
+		//584 -----------------------------------
+		,(code		:= 17685
+		,message 	:= '17685.  Additional proportional gain Kv or Kp (position controller) not allowed The value for the second term of the proportional gain (Kv factor or Kp factor) is not allowed.')
+		//585 -----------------------------------
+		,(code		:= 17686
+		,message 	:= '17686.  Reference velocity for additional proportional gain Kv or Kp (positioncontroller) not allowed The value for the reference velocity percentage data entry, to which the additional proportional gain is applied, is not allowed. The standard setting for the parameter is 0.5 (50%).')
+		//586 -----------------------------------
+		,(code		:= 17687
+		,message 	:= '17687.  Proportional gain Pa (acceleration proportion) not allowed The value for the proportional gain (Pa factor) is not allowed.')
+		//587 -----------------------------------
+		,(code		:= 17688
+		,message 	:= '17688.  Proportional gain Kv (velocity controller) not allowed The value for the proportional gain (Kv factor) is not allowed.')
+		//588 -----------------------------------
+		,(code		:= 17689
+		,message 	:= '17689.  ?Reset time Tn (velocity controller) not allowed? The value for the integral-action time is not allowed (I proportion of the PID T1 controller).')
+		//589 -----------------------------------
+		,(code		:= 17690
+		,message 	:= '17690.  CONTROLERR_RANGE_ACCJUMPLIMITINGMODE')
+		//590 -----------------------------------
+		,(code		:= 17691
+		,message 	:= '17691.  CONTROLERR_RANGE_ACCJUMPVALUE')
+		//591 -----------------------------------
+		,(code		:= 17692
+		,message 	:= '17692.  CONTROLERR_RANGE_FILTERTIME')
+		//592 -----------------------------------
+		,(code		:= 17693
+		,message 	:= '17693.  ?Dead zone not allowed? The value for the dead zone from the position error or the velocity error (system deviation) is not allowed (only for complex controller with velocity or torque interface).')
+		//593 -----------------------------------
+		,(code		:= 17696
+		,message 	:= '17696.  ?Rate time Tv (velocity controller) not allowed? The value for the derivative action time is not allowed (D proportion of the PID T1 controller).')
+		//594 -----------------------------------
+		,(code		:= 17697
+		,message 	:= '17697.  Damping time Td (velocity controller) not allowed The value for the damping time is not allowed (D proportion of the PID T1 controller). Suggested value: 0.1 * Tv')
+		//595 -----------------------------------
+		,(code		:= 17698
+		,message 	:= '17698.  CONTROLERR_RANGE_IOUTPUTLIMIT')
+		//596 -----------------------------------
+		,(code		:= 17699
+		,message 	:= '17699.  CONTROLERR_RANGE_DOUTPUTLIMIT')
+		//597 -----------------------------------
+		,(code		:= 17700
+		,message 	:= '17700.  CONTROLERR_RANGE_POSIDISABLEWHENMOVING')
+		//598 -----------------------------------
+		,(code		:= 17728
+		,message 	:= '17728.  Controller initialisation Controller has not been initialised. Although the controller has been created, the rest of the initialisation has not been performed (1. Initialisation of controller, 2. Reset controller).')
+		//599 -----------------------------------
+		,(code		:= 17729
+		,message 	:= '17729.  Axis address Controller does not know its axis, or the axis address has not been initialised.')
+		//600 -----------------------------------
+		,(code		:= 17730
+		,message 	:= '17730.  Drive address Controller does not know its drive, or the drive address has not been initialised.')
+		//601 -----------------------------------
+		,(code		:= 17744
+		,message 	:= '17744.  Following error monitoring (position) With active following error monitoring (position) a following error exceedance has occurred, whose magnitude is greater than the following error window, and whose duration is longer than the parameterised following error filter time.')
+		//602 -----------------------------------
+		,(code		:= 17745
+		,message 	:= '17745.  Following error monitoring (velocity) With active following error monitoring (velocity) a velocity following error exceedance has occurred, whose magnitude is greater than the following error window, and whose duration is longer than the parameterised following error filter time.')
+		//603 -----------------------------------
+		,(code		:= 17824
+		,message 	:= '17824.  CONTROLERR_RANGE_AREA_ASIDE')
+		//604 -----------------------------------
+		,(code		:= 17825
+		,message 	:= '17825.  CONTROLERR_RANGE_AREA_BSIDE')
+		//605 -----------------------------------
+		,(code		:= 17826
+		,message 	:= '17826.  CONTROLERR_RANGE_QNENN')
+		//606 -----------------------------------
+		,(code		:= 17827
+		,message 	:= '17827.  CONTROLERR_RANGE_PNENN')
+		//607 -----------------------------------
+		,(code		:= 17828
+		,message 	:= '17828.  CONTROLERR_RANGE_AXISIDPRESP0')
+		//608 -----------------------------------
+		,(code		:= 17920
+		,message 	:= '17920.  Drive ID not allowed The value for the drive ID is not allowed, e.g. because it has already been assigned, is less than or equal to zero, or is greater than 255.')
+		//609 -----------------------------------
+		,(code		:= 17921
+		,message 	:= '17921.  Drive type not allowed The value for the drive type is unacceptable because it is not defined.')
+		//610 -----------------------------------
+		,(code		:= 17922
+		,message 	:= '17922.  Drive operating mode not allowed The value for the drive operating mode is not allowed. Modus 1:       Standard')
+		//611 -----------------------------------
+		,(code		:= 17923
+		,message 	:= '17923.  Motor polarity inverted? The flag for the motor polarity is not allowed. Flag 0: Positive motor polarity Flag 1: Negative motor polarity')
+		//612 -----------------------------------
+		,(code		:= 17924
+		,message 	:= '17924.  Drift compensation/velocity offset (DAC offset) The value for the drift compensation (DAC offset) is not allowed.')
+		//613 -----------------------------------
+		,(code		:= 17925
+		,message 	:= '17925.  Reference velocity (velocity pre-control) The value for the reference velocity (velocity pre-control) is not allowed.')
+		//614 -----------------------------------
+		,(code		:= 17926
+		,message 	:= '17926.  Reference output in percent The value for the reference output in percent is not allowed. The value 1.0 (100 %) usually corresponds to a voltage of 10.0 V.')
+		//615 -----------------------------------
+		,(code		:= 17927
+		,message 	:= '17927.  Quadrant compensation factor The value for the quadrant compensation factor is not allowed.')
+		//616 -----------------------------------
+		,(code		:= 17928
+		,message 	:= '17928.  Velocity reference point in percent The value for the velocity reference point in percent is not allowed. The value 1.0 corresponds to 100 percent.')
+		//617 -----------------------------------
+		,(code		:= 17929
+		,message 	:= '17929.  Output reference point in percent The value for the output reference point in percent is not allowed. The value 1.0 corresponds to 100 percent.')
+		//618 -----------------------------------
+		,(code		:= 17930
+		,message 	:= '17930.  Minimum or maximum output limit The values for the minimum and/or maximum output limit is not allowed. This will happen if the range of values is exceeded, the maximum limit is smaller than the minimum limit, or the distance between the minimum and maximum limits is zero. The minimum limit is initially set to 1.0 (-100 percent) and the maximum limit to 1.0 (100 percent).')
+		//619 -----------------------------------
+		,(code		:= 17931
+		,message 	:= '17931.  DRIVEERR_RANGE_MAXINCREMENT')
+		//620 -----------------------------------
+		,(code		:= 17932
+		,message 	:= '17932.  DRIVEERR_RANGE_ DRIVECONTROLDWORD')
+		//621 -----------------------------------
+		,(code		:= 17933
+		,message 	:= '17933.  DRIVEERR_RANGE_ RESETCYCLECOUNTER')
+		//622 -----------------------------------
+		,(code		:= 17935
+		,message 	:= '17935.  ?Drive torque output scaling is not allowed? The value for the drive torque output scaling (rotary motor) or the force output scaling (linear motor) is not allowed.')
+		//623 -----------------------------------
+		,(code		:= 17936
+		,message 	:= '17936.  ?Drive velocity output scaling is not allowed? The value for the drive velocity output scaling is not allowed.')
+		//624 -----------------------------------
+		,(code		:= 17937
+		,message 	:= '17937.  Profi Drive DSC Proportional gain  Kpc (position controller) not allowed The value for the profi drive DSC proportional gain (Kpc factor) is not allowed.')
+		//625 -----------------------------------
+		,(code		:= 17938
+		,message 	:= '17938.  ?Table-ID is invalid? The value for the table-ID is invalid.')
+		//626 -----------------------------------
+		,(code		:= 17939
+		,message 	:= '17939.  ?Table interpolationtype is invalid? The value for the table interpolation-type is invalid.')
+		//627 -----------------------------------
+		,(code		:= 17940
+		,message 	:= '17940.  ?Outputoffset in percent is invalid? The value for the output offset in percent (+/- 1.0) is invalid.')
+		//628 -----------------------------------
+		,(code		:= 17941
+		,message 	:= '17941.  ?Profi Drive DSC scaling factor for calculating Xerr (position controller) is not allowed? The value as profi drive DSC scaling factor for calculating Xerr is invalid.')
+		//629 -----------------------------------
+		,(code		:= 17942
+		,message 	:= '17942.  ?Drive acceleration output scaling is not allowed? The value for the drive acceleration/deceleration output scaling is not allowed.')
+		//630 -----------------------------------
+		,(code		:= 17943
+		,message 	:= '17943.  ?Drive position output scaling is not allowed? The value for the drive position output scaling is not allowed.')
+		//631 -----------------------------------
+		,(code		:= 17948
+		,message 	:= '17948.  ?Drive filter typ for reference position variable is not allowed? The value for the drive filter type of the reference position output filter is not allowed.')
+		//632 -----------------------------------
+		,(code		:= 17949
+		,message 	:= '17949.  ?Drive filter time for reference position variable is not allowed? The value for the drive filter time of the reference position output filter is not allowed.')
+		//633 -----------------------------------
+		,(code		:= 17950
+		,message 	:= '17950.  ?Drive filter order for reference position variable is not allowed? The value for the drive filter order (P-Tn) of the reference position output filter is not allowed.')
+		//634 -----------------------------------
+		,(code		:= 17952
+		,message 	:= '17952.  Bit mask for stepper motor cycle not allowed A value in the various stepper motor masks for the cycle concerned is not allowed.')
+		//635 -----------------------------------
+		,(code		:= 17953
+		,message 	:= '17953.  Bit mask for stepper motor holding current not allowed The value for the stepper motor holding mask is not allowed.')
+		//636 -----------------------------------
+		,(code		:= 17968
+		,message 	:= '17968.  ?Overtemperature? The drive resp. terminal detects an overtemperature alarm.')
+		//637 -----------------------------------
+		,(code		:= 17969
+		,message 	:= '17969.  ?Undervoltage? The drive resp. terminal detects an undervoltage (supply voltage to low).')
+		//638 -----------------------------------
+		,(code		:= 17970
+		,message 	:= '17970.  ?Wire breakage in phase A? The drive resp. terminal detects a wire breakage in phase A.')
+		//639 -----------------------------------
+		,(code		:= 17971
+		,message 	:= '17971.  ?Wire breakage in phase B? The drive resp. terminal detects a wire breakage in phase B.')
+		//640 -----------------------------------
+		,(code		:= 17972
+		,message 	:= '17972.  ?Overcurrent in phase A? The drive resp. terminal detects an overcurrent in phase A.')
+		//641 -----------------------------------
+		,(code		:= 17973
+		,message 	:= '17973.  ?Overcurrent in Phase B? The drive resp. terminal detects an overcurrent in phase B.')
+		//642 -----------------------------------
+		,(code		:= 17974
+		,message 	:= '17974.  ?Torque overload (stall situation)? The drive resp. terminal detects a torque overload (stall situation).')
+		//643 -----------------------------------
+		,(code		:= 17984
+		,message 	:= '17984.  Drive initialisation Drive has not been initialised. Although the drive has been created, the rest of the initialisation has not been performed (1. Initialisation of drive I/O, 2. Initialisation of drive, 3. Reset drive).')
+		//644 -----------------------------------
+		,(code		:= 17985
+		,message 	:= '17985.  Axis address Drive does not know its axis, or the axis address has not been initialised.')
+		//645 -----------------------------------
+		,(code		:= 17986
+		,message 	:= '17986.  I/O input structure address The drive does not have a valid I/O input address in the process image.')
+		//646 -----------------------------------
+		,(code		:= 17987
+		,message 	:= '17987.  I/O output structure address The drive does not have a valid I/O output address in the process image.')
+		//647 -----------------------------------
+		,(code		:= 18000
+		,message 	:= '18000.  Drive not ready for operation The drive is not ready for operation. The following are possible causes: - the drive is in failure state (hardware fault) - the drive is in the starting-up stage (e.g. following an axis reset preceded by a hardware fault) - the drive has not been enabled Remark: The time required for booting a drive after a hardware fault can amount to several seconds.')
+		//648 -----------------------------------
+		,(code		:= 18001
+		,message 	:= '18001.  Error in cyclic communication with the drive (life counter)')
+		//649 -----------------------------------
+		,(code		:= 18002
+		,message 	:= '18002.  Not permitted to change the table ID while the axis is enabled')
+		//650 -----------------------------------
+		,(code		:= 18005
+		,message 	:= '18005.  Invalid IO data for more than n consecutive nc cycles')
+		//651 -----------------------------------
+		,(code		:= 18944
+		,message 	:= '18944.  Table ID not allowed The value for the table ID is not allowed, e.g. because it has already been assigned, is less than or equal to zero, or is greater than 255.')
+		//652 -----------------------------------
+		,(code		:= 18945
+		,message 	:= '18945.  Table type not allowed The value for the table type is unacceptable because it is not defined.')
+		//653 -----------------------------------
+		,(code		:= 18946
+		,message 	:= '18946.  Number of lines in the table not allowed The value of the number of lines in the table is not allowed, because, for example, it is smaller than two at linear interpolation and smaller than four at spline interpolation.')
+		//654 -----------------------------------
+		,(code		:= 18947
+		,message 	:= '18947.  Number of columns in the table is not allowed The value of the number of columns in the table is not allowed, because, for example, it is less than or equal to zero (depends upon the type of table or slave).')
+		//655 -----------------------------------
+		,(code		:= 18948
+		,message 	:= '18948.  Step size (position delta) not allowed The value for the step size between two lines (position delta) is not allowed, because, for example, it is less than or equal to zero.')
+		//656 -----------------------------------
+		,(code		:= 18949
+		,message 	:= '18949.  Period not allowed The value for the period is not allowed, because, for example, it is less than or equal to zero.')
+		//657 -----------------------------------
+		,(code		:= 18950
+		,message 	:= '18950.  Table is not monotonic The value for the step size is not allowed, because, for example, it is less than or equal to zero.')
+		//658 -----------------------------------
+		,(code		:= 18951
+		,message 	:= '18951.  ?Table sub type is not allowed? The value for the table sub type is not allowed or otherwise the table class (slave type) do not match up to the table main type.')
+		//659 -----------------------------------
+		,(code		:= 18952
+		,message 	:= '18952.  ?Table interpolation type is not allowed? The value for the table interpolation type is allowed.')
+		//660 -----------------------------------
+		,(code		:= 18953
+		,message 	:= '18953.  Incorrect table main type The table main type is unknown or otherwise the table class (slave type) do not match up to the table main type.')
+		//661 -----------------------------------
+		,(code		:= 18960
+		,message 	:= '18960.  Table initialisation Table has not been initialised. Although the table has been created, the rest of the initialisation has not been performed. For instance, the number of lines or columns may be less than or equal to zero.')
+		//662 -----------------------------------
+		,(code		:= 18961
+		,message 	:= '18961.  Not enough memory Table could not be created, since there is not enough memory.')
+		//663 -----------------------------------
+		,(code		:= 18962
+		,message 	:= '18962.  Function not executed, function not available The function has not been implemented, or cannot be executed, for the present type of table.')
+		//664 -----------------------------------
+		,(code		:= 18963
+		,message 	:= '18963.  Line index not allowed The start line index or the stop line index to be used for read or write access to the table is not allowed. For instance, the line index may be greater than the total number of lines in the table.')
+		//665 -----------------------------------
+		,(code		:= 18964
+		,message 	:= '18964.  Column index not allowed The start column index or the stop column index to be used for read or write access to the table in not allowed. For instance, the column index may be greater than the total number of columns in the table.')
+		//666 -----------------------------------
+		,(code		:= 18965
+		,message 	:= '18965.  Number of lines not allowed The number of lines to be read from or written to the table is not allowed. The number of lines must be an integer multiple of the number of elements in a line (n * number of columns).')
+		//667 -----------------------------------
+		,(code		:= 18966
+		,message 	:= '18966.  Number of columns not allowed The number of columns to be read from or written to the table is not allowed. The number of columns must be an integer multiple of the number of elements in a column (n * number of lines).')
+		//668 -----------------------------------
+		,(code		:= 18967
+		,message 	:= '18967.  Error in scaling or in range entry The entries in the table header are inconsistent, e.g. the validity range is empty. If the error is generated during the run time it is a run time error and stops the master/slave group.')
+		//669 -----------------------------------
+		,(code		:= 18968
+		,message 	:= '18968.  Multi table slave out of range The slave master position is outside the table values for the master. The error is a run-time error, and stops the master/slave group.')
+		//670 -----------------------------------
+		,(code		:= 18969
+		,message 	:= '18969.  Solo table underflow The slave master position is outside the table values for the master. The master value of the equidistant table, to be processed linearly, lies under the first table value. The error is a run-time error, and stops the master/slave group.')
+		//671 -----------------------------------
+		,(code		:= 18970
+		,message 	:= '18970.  Solo table overflow The slave master position is outside the table values for the master. The master value of the equidistant table, to be processed linearly, lies above the first table value. The error is a run-time error, and stops the master/slave group.')
+		//672 -----------------------------------
+		,(code		:= 18971
+		,message 	:= '18971.  Incorrect execution mode The cyclic execution mode can only be true or false.')
+		//673 -----------------------------------
+		,(code		:= 18972
+		,message 	:= '18972.  Impermissible parameter The Fifo parameter is not allowed.')
+		//674 -----------------------------------
+		,(code		:= 18973
+		,message 	:= '18973.  Fifo is empty The Fifo of the external generator is empty. This can signify end of track or a run time error.')
+		//675 -----------------------------------
+		,(code		:= 18974
+		,message 	:= '18974.  Fifo is full The Fifo of the external generator is full. It is the user?s task to continue to attempt to fill the Fifo with the rejected values.')
+		//676 -----------------------------------
+		,(code		:= 18975
+		,message 	:= '18975.  ?Point-Index of Motion Function invalid?  The point index of a Motion Function Point of a Function Table is invalid. First the point index has to be larger than zero and second it has to be numerical continuously for one column in the Montion Function Table (e.g. 1,2,3,... or 10,11,12,...).')
+		//677 -----------------------------------
+		,(code		:= 18976
+		,message 	:= '18976.  ?No diagonalisation of  matrix? The spline can not be calculated. The master positions are not correct.')
+		//678 -----------------------------------
+		,(code		:= 18977
+		,message 	:= '18977.  ?Number of spline points to less? The number of points of a cubic spline has to be greater than two.')
+		//679 -----------------------------------
+		,(code		:= 18978
+		,message 	:= '18978.  ?Fifo must not be overwritten? Fifo must not be overwritten since then the active line would be overwritten. It is the task of the user to secure that the active line is not modified.')
+		//680 -----------------------------------
+		,(code		:= 18979
+		,message 	:= '18979.  ?Insufficient number of Motion Function points? The number of valid Motion Function points is less than two. Either the entire number of points is to low or the point type of many points is set to Ignore Point.')
+		//681 -----------------------------------
+		,(code		:= 19200
+		,message 	:= '19200.  Axis has been stopped The axis has been stopped while the axis moves to target position. The axis could be stopped with a PLC Command via ADS, with the call of AXFNC or with the TwinCAT System Manager.')
+		//682 -----------------------------------
+		,(code		:= 19201
+		,message 	:= '19201.  Axis cannot be started The axis cannot be started, because:')
+		//683 -----------------------------------
+		,(code		:= 19202
+		,message 	:= '19202.  Control mode not allowed No Target Position Control and no Position Area Control.')
+		//684 -----------------------------------
+		,(code		:= 19203
+		,message 	:= '19203.  Axis is not moving Restart position and velocity is only allowed if axis is physically moving.')
+		//685 -----------------------------------
+		,(code		:= 19204
+		,message 	:= '19204.  Wrong mode for RestartPosAndVelo Wrong mode.')
+		//686 -----------------------------------
+		,(code		:= 19205
+		,message 	:= '19205.  Command not allowed')
+		//687 -----------------------------------
+		,(code		:= 19206
+		,message 	:= '19206.  Parameter not correct')
+		//688 -----------------------------------
+		,(code		:= 19207
+		,message 	:= '19207.  Timeout axis function block Exact position cannot be reached with active current limit, but is not far enough off to cause following error.')
+		//689 -----------------------------------
+		,(code		:= 19208
+		,message 	:= '19208.  Axis in protected mode Axis is in protected mode (i.e. coupled) and cannot be moved.')
+		//690 -----------------------------------
+		,(code		:= 19209
+		,message 	:= '19209.  Axis is not ready Axis is not ready and cannot be moved.')
+		//691 -----------------------------------
+		,(code		:= 19210
+		,message 	:= '19210.  Homing error The Homing of an axis could not be started or was not successful')
+		//692 -----------------------------------
+		,(code		:= 19211
+		,message 	:= '19211.  Invalid definition trigger input definition The definition of the trigger signal used with the function block MC_TouchProbe is invalid. The defined encoder ID, the trigger signal or the trigger signal edge are invalid.')
+		//693 -----------------------------------
+		,(code		:= 19212
+		,message 	:= '19212.  position latch has been deactivated The function block MC_TouchProbe encountered that a touch probe sequence has been deactivated after the block started this sequence. The reason for instance can be an axis reset.')
+		//694 -----------------------------------
+		,(code		:= 19213
+		,message 	:= '19213.  Timeout NC status feedback A function block has successfully executed a command but the NC does not pass the expected feedback in the axis status word.')
+		//695 -----------------------------------
+		,(code		:= 19214
+		,message 	:= '19214.  Supplement not installed - The function is available as supplement product but not installed on the system.')
+		//696 -----------------------------------
+		,(code		:= 19215
+		,message 	:= '19215.  Timeout Register Access - The access to a bus terminal register timed out.')
+		//697 -----------------------------------
+		,(code		:= 19216
+		,message 	:= '19216.  M-Function request missing This error occurs if a confirmation of an M-Function is made but the request bit is not set.')
+		//698 -----------------------------------
+		,(code		:= 19217
+		,message 	:= '19217.  Zero shift index is out of range The index of the zero shift is invalid')
+		//699 -----------------------------------
+		,(code		:= 19218
+		,message 	:= '19218.  R parameter index or size is invalid. This error occurs, if the R parameters are written or read and the index or size is out of range')
+		//700 -----------------------------------
+		,(code		:= 19219
+		,message 	:= '19219.  Index for tool description is invalid')
+		//701 -----------------------------------
+		,(code		:= 19220
+		,message 	:= '19220.  Version of cyclic channel interface does not match to the requested function and function block, resp. This error occurs, if an older TwinCAT Version is used and a new functionality from a newer TcNci.lib is called.')
+		//702 -----------------------------------
+		,(code		:= 19221
+		,message 	:= '19221.  Channel is not ready for requested function. The requested function can not be executed due to a wrong state of the channel. This error occurs for instance, if retrace is requested and the axes are not stopped with ItpEStop before.')
+		//703 -----------------------------------
+		,(code		:= 19222
+		,message 	:= '19222.  Requested function is not turned on. The requested function requires an explicit activation before it can be executed.')
+		//704 -----------------------------------
+		,(code		:= 19232
+		,message 	:= '19232.  Cannot append all axes. This error occurs, if you want to append an auxiliary axes to an interpolation group and the function fails. Probably a prior assignment of an auxiliary axes was skipped.')
+		//705 -----------------------------------
+		,(code		:= 19248
+		,message 	:= '19248.  Pointer invalid. The pointer to a data structure is invalid, e.g. NULL.')
+		//706 -----------------------------------
+		,(code		:= 19249
+		,message 	:= '19249.  Size of  memory invalid. The size parameter is invalid.')
+		//707 -----------------------------------
+		,(code		:= 19250
+		,message 	:= '19250.  Invalid cam table ID. The cam table ID is out of the range from 1 to 255.')
+		//708 -----------------------------------
+		,(code		:= 19251
+		,message 	:= '19251.  Invalid point ID. The point ID of a motion function point is lower than 1.')
+		//709 -----------------------------------
+		,(code		:= 19252
+		,message 	:= '19252.  Invalid number of points . The number of points to read or write is less than 1.')
+		//710 -----------------------------------
+		,(code		:= 19253
+		,message 	:= '19253.  Invalid MC table type. The type of a cam table does not match theMC_TableType definition.')
+		//711 -----------------------------------
+		,(code		:= 19254
+		,message 	:= '19254.  Invalid number of rows. The number of rows of a cam table is less than 1.')
+		//712 -----------------------------------
+		,(code		:= 19255
+		,message 	:= '19255.  Invalid number of columns. The number of columns of a cam table is invalid.')
+		//713 -----------------------------------
+		,(code		:= 19256
+		,message 	:= '19256.  Invalid Increment. The increment for an interpolation is invalid, e.g. <= 0.')
+		//714 -----------------------------------
+		,(code		:= 19264
+		,message 	:= '19264.  Unsupported Terminal Type.  The terminal in use is not supported by this function block.')
+		//715 -----------------------------------
+		,(code		:= 19265
+		,message 	:= '19265.  Register Read/Write Error.   This error implies to be a validation error.')
+		//716 -----------------------------------
+		,(code		:= 19266
+		,message 	:= '19266.  Axis is Enabled.  Axis is enabled and is not supposed to be enabled for this operation')
+		//717 -----------------------------------
+		,(code		:= 19267
+		,message 	:= '19267.  Size of compensation table wrong. The stated table size in bytes is not conform with the real size.')
+		//718 -----------------------------------
+		,(code		:= 19268
+		,message 	:= '19268.  The minimum/ maximum position of the compenstation table is not conform to the position in the table description (ST_CompensationDesc)')
+		//719 -----------------------------------
+		,(code		:= 19269
+		,message 	:= '19269.  Not implemented. The requested function is not implemented in this combination.')
+		//720 -----------------------------------
+		,(code		:= 19296
+		,message 	:= '19296.  Motion command not be activated. A motion command has been started and has been buffered and confirmed by the NC. Nevertheless the command did not become active.')
+		//721 -----------------------------------
+		,(code		:= 19297
+		,message 	:= '19297.  Motion command could not be monitored by the PLC. A motion command has been started and has been buffered and confirmed by the NC. The PLC has not been able to monitor the execution of this command and the execution status is unclear since the NC is already executing a more recent command. This error may com up with very short buffered motion commands which are executed during one PLC cycle.')
+		//722 -----------------------------------
+		,(code		:= 19298
+		,message 	:= '19298.  Buffered command finished with error. A buffered command finished with an error. The error number is not available because a new command is already in execution.')
+		//723 -----------------------------------
+		,(code		:= 19299
+		,message 	:= '19299.  Buffered command finished without state feedback. A buffered command finished without success or error feedback.')
+		//724 -----------------------------------
+		,(code		:= 19300
+		,message 	:= '19300.  BufferMode not supported. The BufferMode is not supported by the command.')
+		//725 -----------------------------------
+		,(code		:= 19301
+		,message 	:= '19301.  Command number is zero. The system administrated command number for buffered commands is zero.')
+		//726 -----------------------------------
+		,(code		:= 19302
+		,message 	:= '19302.  Function block was not called cyclically . The function block was not called cyclically and the PLC was therefore not able to monitor the motion command while the NC is already executing another command. The execution state is unclear.')
+		//727 -----------------------------------
+		,(code		:= 19313
+		,message 	:= '19313.  Invalid NCI Entry Type. FB_NciFeedTablePreparation is called with an unknown nEntryType')
+		//728 -----------------------------------
+		,(code		:= 19314
+		,message 	:= '19314.  NciFeedTable full. The table is full filled and therefore this entry is not accepted.')
+		//729 -----------------------------------
+		,(code		:= 19315
+		,message 	:= '19315.  internal error')
+		//730 -----------------------------------
+		,(code		:= 19316
+		,message 	:= '19316.  ST_NciTangentialFollowingDesc: tangential axis is not an auxiliary axis The entry ST_NciTangentialFollowingDesc contains an tangential axis that is no auxiliary axis.')
+		//731 -----------------------------------
+		,(code		:= 19317
+		,message 	:= '19317.  ST_NciTangentialFollowingDesc: nPathAxis1 and nPathAxis2, resp. are no path axes. So it is not possible to determine the plane.')
+		//732 -----------------------------------
+		,(code		:= 19318
+		,message 	:= '19318.  ST_NciTangentialFollwoingDesc: nPathAxis1 and nPathAxis2 are equal. So it is not possible to determine the plane.')
+		//733 -----------------------------------
+		,(code		:= 19319
+		,message 	:= '19319.  ST_NciGeoCirclePlane: circle is programmed in a wrong manner.')
+		//734 -----------------------------------
+		,(code		:= 19320
+		,message 	:= '19320.  Internal error in calculation of the tangential following')
+		//735 -----------------------------------
+		,(code		:= 19321
+		,message 	:= '19321.  Tangential following: With ST_NciTangentialFollowingDesc the monitoring of the deviation angle (E_TfErrorOnCrirical1) is activated and with the actual segment the deviation angle is too big.')
+		//736 -----------------------------------
+		,(code		:= 19322
+		,message 	:= '19322.  not implemented')
+		//737 -----------------------------------
+		,(code		:= 19323
+		,message 	:= '19323.  Tangential Following: The radius of the actual circle segment is too small')
+		//738 -----------------------------------
+		,(code		:= 19324
+		,message 	:= '19324.  FB_NciFeedTablePreparation:  pEntry is NULL')
+		//739 -----------------------------------
+		,(code		:= 19325
+		,message 	:= '19325.  FB_NciFeedTablePreparation: The specified nEntryType does not match the the structure type')
+		//740 -----------------------------------
+		,(code		:= 19326
+		,message 	:= '19326.  ST_NciMFuncFast and ST_NciMFuncHsk: The requested m-function is not in between 0..159')
+		//741 -----------------------------------
+		,(code		:= 19327
+		,message 	:= '19327.  ST_NciDynOvr: The requested value for the dynamic override is not in between 0.01 and 1.0')
+		//742 -----------------------------------
+		,(code		:= 19328
+		,message 	:= '19328.  ST_NciVertexSmoothing: invalid parameter. This error occurs with a negative vertex radius or an unknown vertex smoothing type.')
+		//743 -----------------------------------
+		,(code		:= 19329
+		,message 	:= '19329.  FB_NciFeedTablePrepartion: The requested velocity is not in a valid range')
+		//744 -----------------------------------
+		,(code		:= 19330
+		,message 	:= '19330.  ST_Nci*: invalid parameter')
+	]
+	;
+	{warning restore C0198}
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

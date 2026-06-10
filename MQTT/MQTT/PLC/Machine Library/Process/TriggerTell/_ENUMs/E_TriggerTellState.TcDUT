@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_TriggerTellState" Id="{acfb0f92-9b9d-4a84-9632-20b7bec482b3}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE E_TriggerTellState :
+(
+	Idle 			:= 0,
+	Attention 		:= 1,
+	Attention_OK 	:= 2,
+	Request_Start 	:= 3,
+	Request_ACK 	:= 4,
+	Working 		:= 5,
+	Response_Start 	:= 6,
+	Response_ACK 	:= 7,
+	Response_Done 	:= 8,
+	Completed 		:= 9
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

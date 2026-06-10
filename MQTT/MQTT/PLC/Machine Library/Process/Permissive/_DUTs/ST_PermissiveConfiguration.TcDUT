@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_PermissiveConfiguration" Id="{336dfc6c-6833-4898-b2b4-cd38c8ce1580}">
+    <Declaration><![CDATA[TYPE ST_PermissiveConfiguration :
+STRUCT
+	desc			: STRING; //Permissive description
+	label			: STRING; //Permissive label
+	condText 		: ARRAY[0..15] OF STRING; //Descriptions for each condition
+	suggAct			: ARRAY[0..15] OF STRING; //Suggested action for each condition 
+	{attribute 'displaymode':='binary'}
+	bypassable 		: INT := 0; //which permissives to ignore
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

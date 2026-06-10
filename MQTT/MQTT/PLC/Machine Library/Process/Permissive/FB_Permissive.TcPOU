@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Permissive" Id="{f95c27e0-7234-0cee-1464-8b2520df9896}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Permissive
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	bypActive	: BOOL; //request to bypass permissives that are bypassable
+
+	{attribute 'displaymode':='binary'}
+	perm		: INT := GVL_Lib_GeneralConstants.ALL_TRUE_INT; //input permissive status
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg			: ST_PermissiveConfiguration;
+END_VAR
+VAR_OUTPUT
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}//read only
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts			: ST_PermissiveStatus;
+END_VAR
+VAR
+	allOk		: BOOL; //all permissives are ok
+	nbOk		: BOOL; //non-bypassable permissives are ok
+
+	{attribute 'displaymode':='binary'}
+	wrkBypass	: INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[//Make all bypassable permissives good
+{warning disable C0195} //Stupid warning about ORing INTs
+wrkBypass := UINT_TO_INT(cfg.bypassable OR perm);
+{warning restore C0195}
+
+//Generate outputs
+sts.perm 		:= perm; //status of permissives is one to one with input
+allOk 			:= (sts.perm = GVL_Lib_GeneralConstants.ALL_TRUE_INT); //all perms ok if all bits true
+nbOk 			:= (wrkBypass = GVL_Lib_GeneralConstants.ALL_TRUE_INT); //all non-bypassable perms ok
+sts.bypActive 	:= sts.nbOk := bypActive; //bypass is enabled
+sts.ok 			:= SEL(sts.bypActive,allOk,nbOk); //if bypassing, set OK status to ignore bypassed permissives]]></ST>
+    </Implementation>
+    <Folder Name="Public" Id="{d9f55836-0856-4f5a-8a72-aec6a121248d}">
+      <Folder Name="Control" Id="{58aab76e-99b0-4bce-9610-2100f810a385}" />
+    </Folder>
+    <Method Name="DisableBypass" Id="{34823f01-1db1-414b-ba33-998a08bc37f7}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC DisableBypass //disable bypass of bypassable permissives]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bypActive := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableBypass" Id="{926b5453-08b1-4af9-be54-f541bfac7357}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC EnableBypass //enable bypass of bypassable permissives]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bypActive := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="GetPermText" Id="{22f08f94-c354-4361-9dfe-63d40c8ee66f}" FolderPath="Public\">
+      <Declaration><![CDATA[METHOD GetPermText : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{02478f2f-80c9-402e-99c4-1d942b31c2c8}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC Reset //reset permissives to default value (true)]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//If a perm is written false but never written to again, this will reset it to true
+perm := GVL_Lib_GeneralConstants.ALL_TRUE_INT;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Permissive">
+      <LineId Id="404" Count="3" />
+      <LineId Id="437" Count="0" />
+      <LineId Id="408" Count="4" />
+      <LineId Id="349" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Permissive.DisableBypass">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Permissive.EnableBypass">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Permissive.GetPermText">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Permissive.Reset">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

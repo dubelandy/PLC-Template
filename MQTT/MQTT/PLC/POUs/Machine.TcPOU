@@ -1,0 +1,631 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="Machine" Id="{fd7db330-af26-42b6-9300-14a45f22c7e8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK Machine EXTENDS FB_Module
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	// Machine Metrics
+	stProcessMetrics	: st_ProcessMetrics;
+	stStationConfig		: st_StationConfig;
+	stRecipe 			: st_Recipe;
+	//Test Bits
+	bAndy : INT := 0;
+	nEquipState: INT;
+	bStartMachineSequence: BOOL;
+	tWorkTImer : TON;
+	fbTransaction     : FB_Transaction;
+	//Running State
+	nRunningSeq		: INT := 0;
+	//
+	//fbTriggerTell : FB_TriggerTell;
+	//fbMachineTransaction : FB_Transaction;
+	// First-scan initialization & control flags
+    init            : BOOL := TRUE;
+    bWriteJsonFile  : BOOL; // Set this to TRUE in online view to manually trigger a write
+    
+    // Sample parameters to encode
+    sUID            : STRING := 'UID-98745-B';
+    fMass           : LREAL := 42.57; // mass in kg/g
+    
+    // JSON generation variables
+    fbJson          : FB_JsonSaxWriter;
+    sJsonResult     : STRING(255); // Buffer to hold the generated JSON string
+    
+    // File writing variables & state machine
+    fbFileOpen      : FB_FileOpen;
+    fbFileWrite     : FB_FileWrite;
+    fbFileClose     : FB_FileClose;
+    
+    nWriteState     : INT := 0;
+    hFile           : UINT; // File handle returned by OS
+	sFilePath       : STRING := 'C:\Users\Andy Dubel\Documents\PLC MQTT\JsonOutput.json'; // Path on target system  C:\Users\Andy Dubel\Documents\PLC MQTT
+
+//MQTT 
+// Control & Initialization Flags
+    //init                : BOOL := TRUE;
+    bPublishMqtt        : BOOL; // Manually trigger a message publish in Online View
+    
+    // Sample Data Payload
+    //sUID                : STRING := 'UID-98745-B';
+    //fMass               : LREAL := 42.57;
+    
+    // JSON generation variables
+    //fbJson              : FB_JsonSaxWriter;
+    //sJsonResult         : STRING(255);
+    
+    // MQTT Client and Configuration
+    fbMqttClient        : FB_IotMqttClient;
+    bMqttConnected      : BOOL;
+    
+    // Topic name (Tip: Add a unique string to the end so others don't overwrite you)
+    sTopic              : STRING := 'terminus/machinestate'; 
+    
+    // Publish helper variables
+    nPublishState       : INT := 0;
+    fbTimer             : TON; // Keeps the state machine from firing too wildly
+
+// Subscription Control
+    sSubTopic           : STRING := 'terminus/machinestate'; 
+    bSubscribed         : BOOL;
+    
+    // Message Storage Buffers
+    sReceivedTopic      : STRING(255);
+    sReceivedPayload    : STRING(255);
+    nPayloadSize        : UDINT;
+	
+	// NEW: Native Beckhoff Objects to handle incoming messages
+    fbMessageQueue      : FB_IotMqttMessageQueue;
+    fbMessage           : FB_IotMqttMessage;
+
+    // Helper to detect incoming message events
+    bNewMessageReceived : BOOL;	
+	wrongKeyDebug : STRING;
+	wrongKeyFound : BOOL;
+	
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+fbtransaction();
+
+
+]]></ST>
+    </Implementation>
+    <Folder Name="DUTs" Id="{af8692f1-0557-46ed-b60b-7e4a61ea098f}" />
+    <Folder Name="Standard" Id="{db522995-2eaa-4048-b57c-d3ffb12d6607}" />
+    <Folder Name="States" Id="{1805c1bf-2191-0f0c-3869-0a87542e3b4f}" />
+    <Method Name="DisableSimulation" Id="{8c117325-301b-434f-8d57-ba766433ab9f}" FolderPath="Standard\">
+      <Declaration><![CDATA[METHOD DisableSimulation : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableSimulation" Id="{01e43c0f-7d5f-4736-80e1-1ff4c2936fa8}" FolderPath="Standard\">
+      <Declaration><![CDATA[METHOD EnableSimulation : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Init" Id="{c7e06db0-f56c-4216-8a10-e8fddaae9fbc}" FolderPath="Standard\">
+      <Declaration><![CDATA[METHOD PROTECTED Init : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MapFaults" Id="{9c4c74ff-02b1-4c23-9fe3-2dfe2f52aec9}" FolderPath="Standard\">
+      <Declaration><![CDATA[METHOD PROTECTED MapFaults : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MapInputs" Id="{29794a14-6b3e-40ae-8b78-2753f49ce70a}" FolderPath="Standard\">
+      <Declaration><![CDATA[METHOD PROTECTED MapInputs : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MapOutputs" Id="{ffe09c64-02fe-4398-b1e0-fb3147e7ca86}" FolderPath="Standard\">
+      <Declaration><![CDATA[METHOD PROTECTED MapOutputs : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MapParameters" Id="{1359ade2-c133-4923-8889-64171e208a0f}" FolderPath="Standard\">
+      <Declaration><![CDATA[METHOD PROTECTED MapParameters : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fbtransaction.stProcessMetrics.fAverageAcceleration := stProcessMetrics.fAverageAcceleration;
+fbtransaction.stProcessMetrics.fMaxRecordedSpeed := stProcessMetrics.fMaxRecordedSpeed;
+fbtransaction.stProcessMetrics.fTotalCycleDuration := stProcessMetrics.fTotalCycleDuration;
+fbtransaction.stProcessMetrics.UID := stProcessMetrics.UID;
+
+fbtransaction.stStationConfig.stationID := stStationConfig.stationID;
+
+stRecipe.fTargetAcceleration :=  fbtransaction.stRecipe.fTargetAcceleration;
+stRecipe.fTargetSpeed :=  fbtransaction.stRecipe.fTargetSpeed;;
+stRecipe.fTargetTime :=  fbtransaction.stRecipe.fTargetTime;
+stRecipe.UID :=  fbtransaction.stRecipe.UID;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MapSafety" Id="{6b39e2fc-5685-47b7-be0e-456665b82d0e}" FolderPath="Standard\">
+      <Declaration><![CDATA[METHOD PROTECTED MapSafety : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="METH" Id="{ad8fd2e2-a787-0b7d-31a7-80d54e09e926}" FolderPath="States\">
+      <Declaration><![CDATA[METHOD METH : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MQTT" Id="{e4ec4825-cc61-46f7-9461-f4f88ea9f04b}">
+      <Declaration><![CDATA[METHOD PUBLIC MQTT : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// ==========================================
+// 1. FIRST SCAN TRIGGER / MANUAL TRIGGER
+// ==========================================
+IF init THEN
+    bWriteJsonFile := TRUE; // Automatically trigger a file write on startup
+    init := FALSE;          // Turn off first scan flag
+END_IF
+
+// ==========================================
+// 2. BUILD THE JSON STRING
+// ==========================================
+IF bWriteJsonFile AND nWriteState = 0 THEN
+    
+    fbJson.ResetDocument();
+    
+    fbJson.StartObject();
+        fbJson.AddKey('UID');
+        fbJson.AddString(sUID);
+        
+        fbJson.AddKey('Mass');
+        fbJson.AddLReal(fMass);
+    fbJson.EndObject();
+    
+    // Copy the generated JSON out of the writer into our string buffer
+    fbJson.CopyDocument(sJsonResult, SIZEOF(sJsonResult));
+    
+    // Jump to the file-writing state machine
+    nWriteState := 1; 
+    bWriteJsonFile := FALSE; 
+END_IF
+
+// ==========================================
+// 3. WRITE TO FILE STATE MACHINE
+// ==========================================
+CASE nWriteState OF
+    0: // Idle state
+        ;
+        
+    1: // Open the file (or create it if it doesn't exist)
+        fbFileOpen(
+            sNetId := '', // Empty string means local PLC
+            sPathName := sFilePath,
+            nMode := FOPEN_MODEWRITE OR FOPEN_MODETEXT, // Write mode / Text format
+            bExecute := TRUE);
+            
+        IF NOT fbFileOpen.bBusy THEN
+            IF NOT fbFileOpen.bError THEN
+                hFile := fbFileOpen.hFile; // Grab the file handle
+                nWriteState := 2;
+            ELSE
+                nWriteState := 99; // Error fallback
+            END_IF
+            fbFileOpen(bExecute := FALSE); // Reset FB block
+        END_IF
+        
+    2: // Write the JSON string buffer to the file
+        fbFileWrite(
+            sNetId := '',
+            hFile := hFile,
+            pWriteBuff := ADR(sJsonResult),
+            cbWriteLen := INT_TO_UDINT(LEN(sJsonResult)), // Exact length of string
+            bExecute := TRUE);
+            
+        IF NOT fbFileWrite.bBusy THEN
+            IF NOT fbFileWrite.bError THEN
+                nWriteState := 3;
+            ELSE
+                nWriteState := 99;
+            END_IF
+            fbFileWrite(bExecute := FALSE);
+        END_IF
+        
+    3: // Close the file handle safely
+        fbFileClose(
+            sNetId := '',
+            hFile := hFile,
+            bExecute := TRUE);
+            
+        IF NOT fbFileClose.bBusy THEN
+            nWriteState := 0; // Success! Return to Idle
+            fbFileClose(bExecute := FALSE);
+        END_IF
+        
+    99: // Error Handling State
+        // Add your error/logging trap here if file I/O locks up
+        nWriteState := 0; 
+END_CASE
+
+// ==========================================
+// 1. MQTT BACKGROUND CONNECTION MANAGEMENT
+// ==========================================
+// This configuration must run cyclically so the client can handle keep-alives and handshakes.
+IF fbMqttClient.bConfigured = FALSE THEN
+    // Configure public HiveMQ broker settings
+    fbMqttClient.sHostName      := 'broker.hivemq.com';
+    fbMqttClient.nHostPort    := 1883; // Standard unencrypted MQTT port
+    //fbMqttClient.sClientId      := 'Beckhoff_PLC_Client_Unique99'; // Must be unique on the broker
+    //fbMqttClient.bConfigured    := TRUE
+	fbMqttClient.ipMessageQueue := fbMessageQueue;
+END_IF
+
+// Maintain background connection status
+fbMqttClient.Execute(bConnect := TRUE);
+bMqttConnected := fbMqttClient.bConnected;
+
+// ==========================================
+// 2. FIRST SCAN TRIGGER / MANUAL TRIGGER
+// ==========================================
+IF init THEN
+    // Wait briefly for network initialization before trying to publish
+    fbTimer(IN := TRUE, PT := T#3S);
+    IF fbTimer.Q THEN
+        bPublishMqtt := TRUE; 
+        init := FALSE; 
+        fbTimer(IN := FALSE); // Reset timer
+    END_IF
+END_IF
+
+// ==========================================
+// 3. GENERATE PAYLOAD AND PUBLISH STATE MACHINE
+// ==========================================
+
+CASE nPublishState OF
+    0: // Idle state - wait for a trigger
+        IF bPublishMqtt AND bMqttConnected THEN
+            bPublishMqtt := FALSE;
+            
+            // Build the JSON Payload string
+            fbJson.ResetDocument();
+            fbJson.StartObject();
+                fbJson.AddKey('UID');
+                fbJson.AddString(sUID);
+                fbJson.AddKey('Mass');
+                fbJson.AddLReal(fMass);
+            fbJson.EndObject();
+            fbJson.CopyDocument(sJsonResult, SIZEOF(sJsonResult));
+            
+            nPublishState := 1; // Move to publish step
+        END_IF
+        
+    1: // Fire the MQTT Publish command
+        // Note: The data pointer must be wrapped using standard PLC type conversion
+        IF fbMqttClient.Publish(
+            sTopic      := sTopic, 
+            pPayload    := ADR(sJsonResult), 
+            nPayloadSize:= INT_TO_UDINT(LEN(sJsonResult)), 
+            eQoS        := TcIotMqttQos.AtMostOnceDelivery,
+            bRetain     := FALSE, 
+            bQueue      := FALSE) 
+        THEN
+            // The Publish method returns TRUE as soon as the message is pushed to the transmission queue
+            nPublishState := 0; // Return to idle
+        END_IF
+        
+END_CASE
+
+//SUBSCRIBE
+
+// ==========================================
+// 1. MQTT BACKGROUND CONNECTION (Existing)
+// ==========================================
+fbMqttClient.Execute(bConnect := TRUE);
+bMqttConnected := fbMqttClient.bConnected;
+
+// ==========================================
+// 2. AUTOMATIC TOPIC SUBSCRIPTION (Corrected Enum)
+// ==========================================
+IF bMqttConnected AND NOT bSubscribed THEN
+    IF fbMqttClient.Subscribe(
+        sTopic  := sSubTopic, 
+        eQoS    := TcIotMqttQos.AtMostOnceDelivery) 
+    THEN
+        bSubscribed := TRUE; 
+    END_IF
+ELSIF NOT bMqttConnected THEN
+    bSubscribed := FALSE;
+END_IF
+
+// ==========================================
+// 3. LISTEN & DEQUEUE INCOMING MESSAGES
+// ==========================================
+// Check if any messages have piled up inside the queue
+IF fbMessageQueue.nQueuedMessages > 0 THEN
+    
+    // Pull the oldest message out of the FIFO queue
+    IF fbMessageQueue.Dequeue(fbMessage := fbMessage) THEN
+        
+        // Extract the topic string out of the message object
+        fbMessage.GetTopic(
+            pTopic      := ADR(sReceivedTopic), 
+            nTopicSize  := SIZEOF(sReceivedTopic));
+            sReceivedPayload := ''; //Andy
+			MEMSET(ADR(sReceivedPayload), 0, SIZEOF(sReceivedPayload)); //Andy
+        // Extract the payload string out of the message object
+        fbMessage.GetPayload(
+            pPayload    := ADR(sReceivedPayload), 
+            nPayloadSize:= SIZEOF(sReceivedPayload), 
+            bSetNullTermination := TRUE); // Keeps string terminators safe
+            
+        // ==========================================
+        // 4. PROCESS YOUR DATA
+        // ==========================================
+        IF sReceivedPayload = 'RESET' THEN
+            wrongKeyFound := FALSE;
+            wrongKeyDebug := '';
+        END_IF
+        
+    END_IF
+END_IF
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{50737336-6559-45b4-b6e6-12513c99c4d3}" FolderPath="Standard\">
+      <Declaration><![CDATA[METHOD Reset : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="RunningSeq" Id="{11e1eebd-b5b0-4c73-8890-400e3abdcc90}" FolderPath="Standard\">
+      <Declaration><![CDATA[METHOD PUBLIC RunningSeq : BOOL
+VAR_INPUT
+END_VAR
+
+VAR
+
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// ===================================================================================
+// MAIN EQUIPMENT STATE MACHINE
+// ===================================================================================
+CASE nEquipState OF
+
+    0: // IDLE
+        IF bStartMachineSequence THEN
+            bStartMachineSequence := FALSE;
+            nEquipState    := 10;
+        END_IF
+
+    10: // KICK OFF HANDSHAKE Lifecyle
+        // Verify the gateway block is clear and idling
+        IF fbtransaction.sts.State = E_TriggerTellState.Idle THEN
+            fbtransaction.bWorkDone    := FALSE;
+            fbtransaction.bRequest_ACK := FALSE;
+            
+            fbtransaction.ctrl.start   := TRUE; // Forces gateway to build and publish Attention JSON
+            nEquipState               := 15;
+        END_IF
+
+    15: // SET REUESt ACK
+		IF fbtransaction.sts.State = E_TriggerTellState.Request_Start THEN
+			IF FBTransaction.ctrl.sim THEN
+				stRecipe.fTargetAcceleration			:= 1.2;
+    			stRecipe.fTargetTime         			:= 5.5;
+    			stRecipe.fTargetAcceleration 			:= 0.4;
+				stRecipe.UID							:= '1234567';	
+				fbTransaction.bRequest_ACK :=TRUE;
+				nEquipState               := 20;
+			ELSE				
+				stRecipe.fTargetAcceleration			:= fbtransaction.stRecipe.fTargetAcceleration;
+    			stRecipe.fTargetTime         			:= fbtransaction.stRecipe.fTargetTime;
+    			stRecipe.fTargetSpeed 					:= fbtransaction.stRecipe.fTargetSpeed;
+				stRecipe.UID							:= fbtransaction.stRecipe.UID;	
+				fbTransaction.bRequest_ACK :=TRUE;
+				nEquipState               := 20;
+			END_IF
+		END_IF
+		
+	20: // WAIT FOR RECIPE DATA ARRIVAL OVER MQTT
+        // The extended block has autonomously caught, validated, and parsed the parameters
+        IF fbtransaction.sts.State = E_TriggerTellState.Working THEN
+            
+            // Map the freshly delivered values straight to physical motion profiles
+            //fbMoveAxis.fVelocity     := fbCaddyComms.stRecipe.fTargetSpeed;
+            //fbMoveAxis.fAcceleration := fbCaddyComms.stRecipe.fTargetAcceleration;
+            
+            // Fire physical machine controls
+            //fbMoveAxis.Execute       := TRUE;
+            nEquipState              := 30;
+        END_IF
+
+    30: // EXECUTING PHYSICAL CYCLES
+
+        tWorkTimer(IN :=TRUE, PT := T#60S);
+        IF tWorkTimer.Q THEN
+            tWorkTimer(IN := FALSE); // Reset the timer input so it's ready for the next use
+            nEquipState := 40;  // Advance to the next state
+        END_IF
+
+    40: // TRIGGER OUTBOUND RESULTS PACKAGING (TELL)
+        // Signal the communication engine that physical work is complete.
+        // It will pick up the metrics, format the final JSON, and post it over MQTT.
+        fbTransaction.bWorkDone := TRUE; 
+        nEquipState            := 50;
+
+    50: // WAIT FOR HANDSHAKE SYSTEM TO TEARDOWN AND SAFELY IDLE
+        IF fbTransaction.sts.State = E_TriggerTellState.Idle THEN
+            // Handshake lifecycle successfully completed. Whole system is safe.
+            nEquipState := 0; 
+        END_IF
+
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Started" Id="{e5811eb5-c6fd-0b01-2e71-3dcfc086e545}" FolderPath="States\">
+      <Declaration><![CDATA[METHOD PROTECTED Started : BOOL
+VAR_INPUT
+END_VAR
+
+VAR
+
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[RunningSeq();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Starting" Id="{d21a2f10-0b84-0637-03fc-13483eab7481}" FolderPath="States\">
+      <Declaration><![CDATA[METHOD PROTECTED Starting : BOOL
+VAR_INPUT
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bANdy := 0;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Stopping" Id="{e65a0d34-f801-400d-b0c5-d846f5212d57}" FolderPath="States\">
+      <Declaration><![CDATA[METHOD PROTECTED Stopping : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="Machine">
+      <LineId Id="9" Count="0" />
+      <LineId Id="510" Count="0" />
+      <LineId Id="596" Count="0" />
+      <LineId Id="512" Count="0" />
+      <LineId Id="377" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.DisableSimulation">
+      <LineId Id="3" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.EnableSimulation">
+      <LineId Id="3" Count="1" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.Init">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.MapFaults">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.MapInputs">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.MapOutputs">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.MapParameters">
+      <LineId Id="2" Count="0" />
+      <LineId Id="9" Count="2" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="17" Count="1" />
+    </LineIds>
+    <LineIds Name="Machine.MapSafety">
+      <LineId Id="7" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.METH">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.MQTT">
+      <LineId Id="6" Count="209" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.Reset">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.RunningSeq">
+      <LineId Id="96" Count="21" />
+      <LineId Id="161" Count="1" />
+      <LineId Id="190" Count="2" />
+      <LineId Id="189" Count="0" />
+      <LineId Id="195" Count="0" />
+      <LineId Id="165" Count="0" />
+      <LineId Id="198" Count="0" />
+      <LineId Id="201" Count="0" />
+      <LineId Id="199" Count="1" />
+      <LineId Id="187" Count="0" />
+      <LineId Id="197" Count="0" />
+      <LineId Id="196" Count="0" />
+      <LineId Id="186" Count="0" />
+      <LineId Id="163" Count="1" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="118" Count="12" />
+      <LineId Id="176" Count="0" />
+      <LineId Id="168" Count="0" />
+      <LineId Id="170" Count="0" />
+      <LineId Id="172" Count="0" />
+      <LineId Id="177" Count="0" />
+      <LineId Id="145" Count="13" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.Started">
+      <LineId Id="94" Count="0" />
+      <LineId Id="92" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.Starting">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Machine.Stopping">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,425 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Module" Id="{039a091e-1c72-4376-8b4a-6325f7b24738}" SpecialFunc="None">
+    <Declaration><![CDATA[{attribute 'reflection'}
+FUNCTION_BLOCK ABSTRACT FB_Module 
+
+VAR_INPUT
+	//Commands
+	pcmd 				: E_ModuleCommand;	//program commands
+	{attribute 'OPC.UA.DA' := '1'}
+	ocmd 				: E_ModuleCommand; 	//operator commands
+	cmdDryCycle			: BOOL;
+	cmdReset			: BOOL; 			//Start the resetting process for the device
+
+	//Input Status
+	inpChildFaulted		: BOOL; 			//any child of the equipment is faulted
+	inpBlockedCondition	: DINT; 			//reason equipment is blocked
+	inpStarvedCondition	: DINT; 			//reason equipment is starved
+END_VAR
+
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	sts					: ST_ModuleStatus;
+	
+	//Logging metrics
+	Uptime				: LREAL; //Uptime in seconds
+
+	//Permissives (read-only outside of scope)
+	PermStart			: FB_Permissive;
+	PermStartComplete	: FB_Permissive;
+	PermStopComplete	: FB_Permissive;
+
+	{attribute 'instance-path'}
+	{attribute 'no-init'}
+	instancePath		: STRING;	
+	
+	//childCtrl for devices and sequencers
+	childCtrl			: ST_ParentChildControl;
+END_VAR
+
+VAR	
+	//StateMachine Variables
+	currentCommand	: E_ModuleCommand := E_ModuleCommand.None;
+	lastCommand		: E_ModuleCommand := E_ModuleCommand.None;
+	last_pcmd		: E_ModuleCommand := E_ModuleCommand.None;	//troubleshooting
+    last_ocmd       : E_ModuleCommand := E_ModuleCommand.None;	//troubleshooting
+	
+	//Random
+	IntlkAuto				: FB_Permissive; 					//auto interlocks. losing these will automatically stop the module
+	{attribute 'displaymode':='binary'}
+	LastAutoInterlockState	: INT; 								//state of interlocks when last dropped
+	
+	//Request flags
+	_LocalControl			: BOOL;
+	//_LocalSuspend			: BOOL;
+	
+	uptimeTimer				: RTO;
+	
+	//One-shot triggers
+	NewStateOS			: BOOL;
+	rtDryCycle			: R_TRIG; 	//One-shot on entering dry cycle mode
+	ftAutoInterlock		: F_TRIG; 	//One-shot on loss of auto interlocks
+	rtReset				: R_TRIG; 	//Rising edge on reset request
+	rtStarting			: R_TRIG;
+	rtStopping			: R_TRIG;
+	
+	lastState		: E_ModuleState := E_ModuleState.Stopped;
+	returnState		: E_ModuleState := E_ModuleState.Stopped;
+	previousState	: E_ModuleState := E_ModuleState.Stopped;
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[Status();
+Commands();
+StateMachine();
+ModeControl();
+TransitionControl();
+]]></ST>
+    </Implementation>
+    <Folder Name="States" Id="{a9eea06a-2766-405f-b78a-d1799ce7fb01}" />
+    <Method Name="ClearCommands" Id="{14a1244e-0824-4cb6-9f7d-c35ef3cacbbb}">
+      <Declaration><![CDATA[METHOD PRIVATE ClearCommands : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[cmdReset 			:= FALSE;
+cmdDryCycle			:= FALSE;
+
+IF currentCommand <> E_ModuleCommand.None THEN
+	lastCommand := currentCommand;
+END_IF
+currentCommand := E_ModuleCommand.None;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Commands" Id="{c40af51c-3966-4168-be5c-eb3d3b7fad91}">
+      <Declaration><![CDATA[METHOD PROTECTED  Commands : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Process commands
+IF pcmd <> E_ModuleCommand.None THEN
+	StateCommands(pcmd);
+	last_pcmd := pcmd;
+	pcmd := E_ModuleCommand.None;
+END_IF
+IF ocmd <> E_ModuleCommand.None THEN
+	StateCommands(ocmd);
+	last_ocmd := ocmd;
+	ocmd := E_ModuleCommand.None;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ModeControl" Id="{93d45e28-9100-4eb1-ba82-8fc447f904e6}">
+      <Declaration><![CDATA[METHOD PROTECTED  ModeControl : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Evaluate mode flags
+sts.ModeFlags.Manual 	:= sts.Stopped;
+sts.ModeFlags.Automatic := (sts.Starting OR sts.Started OR sts.Stopping);
+IF cmdDryCycle THEN
+	sts.ModeFlags.DryCycle 	:= NOT sts.ModeFlags.DryCycle;
+	cmdDryCycle 			:= FALSE;
+END_IF
+sts.ModeFlags.LocalControl  := _LocalControl;
+
+//Determine mode
+IF sts.ModeFlags.DryCycle THEN
+	sts.Mode := E_ModuleMode.DryCycle;
+ELSIF sts.ModeFlags.LocalControl THEN
+	sts.Mode := E_ModuleMode.LocalControl;
+ELSIF sts.ModeFlags.Automatic THEN
+	sts.Mode := E_ModuleMode.Automatic;
+ELSIF sts.ModeFlags.Manual THEN
+	sts.Mode := E_ModuleMode.Manual;
+END_IF
+
+//sts.Suspended := _LocalSuspend;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{82b0da48-3286-45bc-bfed-270d343837c8}">
+      <Declaration><![CDATA[METHOD Reset : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Started" Id="{b39ac1ed-32e0-45e6-8db6-249d478dc773}" FolderPath="States\">
+      <Declaration><![CDATA[METHOD PROTECTED Started : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Permissives go here]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Starting" Id="{4621b25b-a11c-4fa4-a880-7a4cabb040ea}" FolderPath="States\">
+      <Declaration><![CDATA[METHOD PROTECTED Starting : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Permissives go here]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateCommands" Id="{592ce232-62d9-4226-b5d1-3032313ef6eb}">
+      <Declaration><![CDATA[METHOD StateCommands : BOOL
+VAR_INPUT
+	(*requested command*)
+	reqCommand	: E_ModuleCommand;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE reqCommand OF
+	E_ModuleCommand.Start:
+		IF NOT (sts.Started OR sts.Starting) THEN
+			currentCommand := E_ModuleCommand.Start;
+		END_IF
+	E_ModuleCommand.Stop:
+		IF NOT (sts.Stopped OR sts.Stopping) THEN
+			currentCommand := E_ModuleCommand.Stop;
+		END_IF
+    E_ModuleCommand.Reset:
+		cmdReset := TRUE;
+//  E_ModuleCommand.Suspend:
+//		_LocalSuspend := NOT _LocalSuspend;
+END_CASE
+
+//Return true if the command was a state command
+StateCommands := (currentCommand = reqCommand);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{9a379d39-b5fd-4220-a77f-66dffba23d33}">
+      <Declaration><![CDATA[METHOD PUBLIC  StateMachine : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	stsInvalidZoneState : BOOL; //invalid zone manager state
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Manage state transition requests
+CASE sts.State OF
+	E_ModuleState.Starting:
+		IF PermStartComplete.sts.OK THEN
+			sts.State := E_ModuleState.Started;
+		END_IF
+		IF currentCommand = E_ModuleCommand.Stop THEN
+			sts.State := E_ModuleState.Stopping;
+		END_IF
+	E_ModuleState.Started:
+		IF currentCommand = E_ModuleCommand.Stop THEN
+			sts.State := E_ModuleState.Stopping;
+		END_IF
+	E_ModuleState.Stopping:
+		IF PermStopComplete.sts.ok THEN
+			sts.State := E_ModuleState.Stopped;
+		END_IF
+	E_ModuleState.Stopped:
+		IF (currentCommand = E_ModuleCommand.Start) AND PermStart.sts.OK THEN
+			sts.State := E_ModuleState.Starting;
+		END_IF
+END_CASE
+
+IF NOT IntlkAuto.sts.OK AND NOT sts.Stopped THEN
+	sts.State := E_ModuleState.Stopping;
+END_IF
+
+//Update state flags
+sts.Started 	:= (sts.State = E_ModuleState.Started);
+sts.Starting 	:= (sts.State = E_ModuleState.Starting);
+sts.Stopped 	:= (sts.State = E_ModuleState.Stopped);
+sts.Stopping 	:= (sts.State = E_ModuleState.Stopping);
+	
+//State transition trigger ouputs
+NewStateOS := sts.State <> previousState;
+rtStarting(CLK:=sts.Starting);
+rtStopping(CLK:=sts.Stopping);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Status" Id="{19e929d0-a086-492b-937f-60a1acf673cb}">
+      <Declaration><![CDATA[METHOD PROTECTED  Status : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Interlock for automatic mode
+IntlkAuto();
+ftAutoInterlock(CLK:=IntlkAuto.sts.OK);
+IF ftAutoInterlock.Q AND sts.Started THEN //grab reason for exiting running
+	LastAutoInterlockState := IntlkAuto.sts.Perm;
+END_IF
+
+//Permissives for states and transitions
+PermStart();
+PermStartComplete();
+PermStopComplete();
+
+//Other status flags
+sts.ReadyToStart := sts.Stopped AND (PermStart.sts.OK AND IntlkAuto.sts.OK);
+sts.Faulted := inpChildFaulted;
+childCtrl.estop := sts.estop;
+
+//Save current state as previous state
+previousState := sts.State;
+
+//------------------------Metrics------------------------//
+IF sts.Stopped AND (uptimeTimer.ET > T#0S) THEN
+	uptimeTimer.Reset();
+END_IF
+uptimeTimer(IN:=(sts.Started),PT:=T#49D);
+Uptime := TIME_TO_LREAL(uptimeTimer.ET)/1000.0;	
+
+sts.BlockedCondition 	:= inpBlockedCondition;
+sts.StarvedCondition 	:= inpStarvedCondition;
+sts.Blocked 			:= (sts.BlockedCondition <> 0);
+sts.Starved 			:= (sts.StarvedCondition <> 0);
+inpStarvedCondition 	:= inpBlockedCondition := 0;
+//--------------------- End Metrics ---------------------//]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Stopped" Id="{654fbadb-4c4b-48d8-9aa2-8aa190ea9e2f}" FolderPath="States\">
+      <Declaration><![CDATA[METHOD PROTECTED Stopped : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Permissives go here]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Stopping" Id="{56665508-e7e0-40f1-a9f1-3d0771de9db9}" FolderPath="States\">
+      <Declaration><![CDATA[METHOD PROTECTED Stopping : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Permissives go here]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="TransitionControl" Id="{617b64cd-8dff-47f1-94e8-3ac3b419cf17}">
+      <Declaration><![CDATA[METHOD PROTECTED  TransitionControl : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Manage state transition requests
+CASE sts.State OF
+	E_ModuleState.Starting:
+		Starting();
+	E_ModuleState.Started:
+		Started();
+	E_ModuleState.Stopping:
+		Stopping();
+	E_ModuleState.Stopped:
+		Stopped();
+END_CASE
+
+//Reset logic. Keeps reset on for one whole scan even if manually toggled
+sts.Reset R= sts.Reset AND NOT rtReset.CLK;
+rtReset(CLK:=cmdReset);
+sts.Reset S= rtReset.Q;
+IF rtReset.Q THEN
+	Reset();
+END_IF
+
+ClearCommands();]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Module">
+      <LineId Id="11894" Count="3" />
+      <LineId Id="9874" Count="0" />
+      <LineId Id="11920" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.ClearCommands">
+      <LineId Id="30" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="23" Count="2" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="21" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.Commands">
+      <LineId Id="30" Count="1" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="33" Count="1" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="29" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.ModeControl">
+      <LineId Id="6" Count="2" />
+      <LineId Id="32" Count="2" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="35" Count="1" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="9" Count="1" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="12" Count="5" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.Reset">
+      <LineId Id="4" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.Started">
+      <LineId Id="4" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.Starting">
+      <LineId Id="4" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.StateCommands">
+      <LineId Id="65" Count="5" />
+      <LineId Id="109" Count="1" />
+      <LineId Id="73" Count="1" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="98" Count="2" />
+      <LineId Id="102" Count="1" />
+      <LineId Id="46" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.StateMachine">
+      <LineId Id="6" Count="5" />
+      <LineId Id="174" Count="1" />
+      <LineId Id="173" Count="0" />
+      <LineId Id="12" Count="2" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="169" Count="3" />
+      <LineId Id="130" Count="2" />
+      <LineId Id="129" Count="0" />
+      <LineId Id="49" Count="2" />
+      <LineId Id="55" Count="1" />
+      <LineId Id="63" Count="2" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="176" Count="1" />
+      <LineId Id="79" Count="2" />
+      <LineId Id="186" Count="0" />
+      <LineId Id="184" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.Status">
+      <LineId Id="8" Count="1" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="48" Count="2" />
+      <LineId Id="10" Count="4" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="61" Count="1" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="32" Count="12" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.Stopped">
+      <LineId Id="4" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.Stopping">
+      <LineId Id="23" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Module.TransitionControl">
+      <LineId Id="67" Count="19" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

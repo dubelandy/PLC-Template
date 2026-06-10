@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AnalogSetpoints" Id="{c3eec824-afcf-4e8e-9e3d-9a48cc48987c}">
+    <Declaration><![CDATA[TYPE ST_AnalogSetpoints :
+STRUCT
+	LowLow		: REAL;
+	Low			: REAL;
+	High		: REAL;
+	HighHigh	: REAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

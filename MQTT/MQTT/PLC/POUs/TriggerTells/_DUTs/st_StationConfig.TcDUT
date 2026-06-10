@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="st_StationConfig" Id="{179fbe94-7066-4da0-be0b-7806babcb180}">
+    <Declaration><![CDATA[(* The transaction response from PLC to sw. *)
+TYPE st_StationConfig :
+STRUCT
+	stationID    		 : STRING; //
+	UID					 : STRING; //
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

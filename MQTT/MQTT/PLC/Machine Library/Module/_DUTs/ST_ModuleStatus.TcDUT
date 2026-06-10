@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_ModuleStatus" Id="{2935c0c2-37cc-4863-89d9-cdc991548f26}">
+    <Declaration><![CDATA[TYPE ST_ModuleStatus :
+STRUCT
+	Faulted				: BOOL;
+	ChildFaulted		: BOOL;
+	FaultFlags			: DINT;
+	WarningAlert		: BOOL; //non-critical alerts
+	Reset				: BOOL;
+
+	//Module state variables
+	State				: E_ModuleState := E_ModuleState.Stopped;
+	Starting			: BOOL;
+	Started				: BOOL;
+	Stopping			: BOOL;
+	Stopped				: BOOL;
+	
+	ReadyToStart		: BOOL;
+	AutoStartRequest	: BOOL;
+	Suspended			: BOOL;
+	Blocked				: BOOL;
+	Starved				: BOOL;
+	BlockedCondition	: DINT;
+	StarvedCondition	: DINT;
+
+	//Module mode variables
+	Mode				: E_ModuleMode := E_ModuleMode.Manual; 
+	ModeFlags			: ST_ModuleModeFlags;
+	
+	estop				: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

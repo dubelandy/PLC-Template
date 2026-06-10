@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_Stacklight" Id="{50d132a0-8c38-42f5-bdb2-0f3fca50ee43}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA' := '1'}
+{attribute 'OPC.UA.DA.Access' := '1'}
+{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE ST_Stacklight :
+STRUCT
+	{attribute 'OPC.UA.DA' := '1'}
+	red		AT %Q*	: BOOL;
+	{attribute 'OPC.UA.DA' := '1'}
+	orange	AT %Q*	: BOOL;
+	{attribute 'OPC.UA.DA' := '1'}
+	green	AT %Q*	: BOOL;
+	{attribute 'OPC.UA.DA' := '1'}
+	blue	AT %Q*	: BOOL;
+	
+	tBlink	: TON;
+
+	pcmdRed		: BOOL;
+	pcmdOrange	: BOOL;
+	pcmdGreen	: BOOL;	
+	pcmdBlue	: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

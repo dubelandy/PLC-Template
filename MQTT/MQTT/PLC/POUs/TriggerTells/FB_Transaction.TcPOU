@@ -1,0 +1,219 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Transaction" Id="{bc25cad7-6aef-49ba-a1f3-81d2f33de73e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Transaction EXTENDS FB_TriggerTell
+VAR_INPUT
+	stProcessMetrics	: st_ProcessMetrics;
+	stStationConfig		: st_StationConfig;
+END_VAR
+VAR_OUTPUT
+	stRecipe 			: st_Recipe;
+END_VAR
+
+VAR
+// Local MQTT and JSON utilities required for this specific caddy transaction
+    fbMqttClient    	: FB_IotMqttClient;
+    fbJsonWriter    	: FB_JsonSaxWriter;
+    fbJsonParser    	: FB_JsonDomParser;
+    
+    sPayloadOut     	: STRING(255);
+    sPayloadIn      	: STRING(255);
+	nPayloadSize    	: UDINT;
+    bNewMessageRx   	: BOOL;
+    bSubscribed     	: BOOL;
+	bMqttConnected		: BOOL;
+	fbMessageQueue: 	I_IotMqttMessageQueue;
+    bPublishMqtt        : BOOL; // Manually trigger a message publish in Online View
+	
+	// The rising edge trigger for attention
+    rAttention  : R_TRIG;
+	rTrigger	: R_Trig;
+	rTell		: R_TRIG;
+
+
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+// ==========================================
+// 1. MQTT BACKGROUND CONNECTION MANAGEMENT
+// ==========================================
+// This configuration must run cyclically so the client can handle keep-alives and handshakes.
+IF fbMqttClient.bConfigured = FALSE THEN
+    // Configure public HiveMQ broker settings
+    fbMqttClient.sHostName      := 'broker.hivemq.com';
+    fbMqttClient.nHostPort    := 1883; // Standard unencrypted MQTT port
+	fbMqttClient.ipMessageQueue := fbMessageQueue;
+END_IF
+
+// Maintain background connection status
+fbMqttClient.Execute(bConnect := TRUE);
+bMqttConnected := fbMqttClient.bConnected;
+
+rAttention(CLK := stHandshake.attention);
+IF rAttention.Q THEN
+    OnAttentionEntry();
+END_IF
+
+rAttention(CLK := stHandshake.trigger);
+IF rTrigger.Q THEN
+	OnRequestParsing();
+END_IF
+
+rTell(CLK := stHandshake.tell);
+IF rTell.Q THEN
+    OnTellEntry();
+END_IF
+]]></ST>
+    </Implementation>
+    <Method Name="OnAttentionEntry" Id="{c126fb96-03a5-4ced-bed4-a1b19bafe23a}">
+      <Declaration><![CDATA[METHOD PRIVATE OnAttentionEntry : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// This method executes automatically when the base state transitions to Attention
+IF fbMqttClient.bConnected THEN
+    fbJsonWriter.ResetDocument();
+    fbJsonWriter.StartObject();
+    fbJsonWriter.AddKey('UID');
+    fbJsonWriter.AddString(stStationConfig.UID);
+    fbJsonWriter.EndObject();
+    fbJsonWriter.CopyDocument(sPayloadOut, SIZEOF(sPayloadOut));
+    
+    fbMqttClient.Publish(
+        sTopic      := 'terminus/machineID/attention', 
+		pPayload     := ADR(sPayloadOut),
+		nPayloadSize := LEN2(ADR(sPayloadOut)),
+        eQoS        := TcIotMqttQos.AtLeastOnceDelivery, 
+        bRetain     := FALSE, 
+        bQueue      := FALSE
+    );
+    
+    // Manage subscription to the inbound trigger topic
+    IF NOT bSubscribed THEN
+        bSubscribed := fbMqttClient.Subscribe(sTopic := 'factory/machineID/trigger', eQoS := TcIotMqttQos.AtLeastOnceDelivery);
+    END_IF
+    
+    OnAttentionEntry := TRUE; // Signal to base class that entry logic completed
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="OnRequestParsing" Id="{d3eeac86-5147-45c3-8b5c-50244048467a}">
+      <Declaration><![CDATA[METHOD PROTECTED OnRequestParsing : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// This method is called by the base class during the Request_Start state
+IF bNewMessageRx THEN
+    bNewMessageRx := FALSE;
+    fbJsonParser.ParseDocument(sPayloadIn);
+    
+    IF fbJsonParser.HasMember(fbJsonParser.GetDocumentRoot(), 'Speed') AND
+       fbJsonParser.HasMember(fbJsonParser.GetDocumentRoot(), 'Time') AND
+       fbJsonParser.HasMember(fbJsonParser.GetDocumentRoot(), 'Acceleration') AND
+	   fbJsonParser.HasMember(fbJsonParser.GetDocumentRoot(), 'UID')	 THEN
+       
+        stRecipe.fTargetSpeed        := fbJsonParser.GetDouble(fbJsonParser.FindMember(fbJsonParser.GetDocumentRoot(), 'Speed'));
+        stRecipe.fTargetTime         := fbJsonParser.GetDouble(fbJsonParser.FindMember(fbJsonParser.GetDocumentRoot(), 'Time'));
+        stRecipe.fTargetAcceleration := fbJsonParser.GetDouble(fbJsonParser.FindMember(fbJsonParser.GetDocumentRoot(), 'Acceleration'));
+		stRecipe.UID 				 := fbJsonParser.GetString(fbJsonParser.FindMember(fbJsonParser.GetDocumentRoot(), 'UID'));
+        
+        OnRequestParsing := TRUE; // Successfully parsed, signals library to set bRequest_ACK
+    ELSE
+        OnRequestParsing := FALSE; // Faults or resets base class sequence
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="OnTellEntry" Id="{ea557d3f-0c24-4926-bba5-6f4f68d89b6e}">
+      <Declaration><![CDATA[METHOD PROTECTED OnTellEntry : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// This method executes automatically when the base state transitions to Response_Start
+
+fbJsonWriter.ResetDocument();
+fbJsonWriter.StartObject();
+fbJsonWriter.AddKey('UID');
+fbJsonWriter.AddString(stStationConfig.UID);
+fbJsonWriter.AddKey('ExecutedSpeed');
+fbJsonWriter.AddLreal(stProcessMetrics.fMaxRecordedSpeed);
+fbJsonWriter.AddKey('TotalRunTime');
+fbJsonWriter.AddLreal(stProcessMetrics.fTotalCycleDuration);
+fbJsonWriter.AddKey('Executed Acceleration');
+fbJsonWriter.AddLreal(stProcessMetrics.fTotalCycleDuration);
+fbJsonWriter.AddKey('Status');
+fbJsonWriter.AddString('SUCCESS');
+fbJsonWriter.EndObject();
+fbJsonWriter.CopyDocument(sPayloadOut, SIZEOF(sPayloadOut));
+
+IF fbMqttClient.bConnected THEN
+    fbMqttClient.Publish(
+        sTopic      := 'terminus/machineID/tell', 
+		pPayload     := ADR(sPayloadOut),
+		nPayloadSize := LEN2(ADR(sPayloadOut)),
+        eQoS        := TcIotMqttQos.AtLeastOnceDelivery, 
+        bRetain     := FALSE, 
+        bQueue      := FALSE
+    );
+END_IF
+
+// Cleanup network subscription state
+IF bSubscribed THEN
+    bSubscribed := NOT fbMqttClient.Unsubscribe(sTopic := 'terminus/machineID/trigger');
+END_IF
+
+OnTellEntry := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Transaction">
+      <LineId Id="9" Count="0" />
+      <LineId Id="86" Count="7" />
+      <LineId Id="96" Count="5" />
+      <LineId Id="123" Count="1" />
+      <LineId Id="127" Count="1" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="170" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="136" Count="2" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="19" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Transaction.OnAttentionEntry">
+      <LineId Id="6" Count="3" />
+      <LineId Id="12" Count="6" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="21" Count="10" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Transaction.OnRequestParsing">
+      <LineId Id="6" Count="0" />
+      <LineId Id="13" Count="6" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="20" Count="3" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="24" Count="4" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Transaction.OnTellEntry">
+      <LineId Id="32" Count="3" />
+      <LineId Id="68" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="36" Count="3" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="40" Count="7" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="49" Count="11" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

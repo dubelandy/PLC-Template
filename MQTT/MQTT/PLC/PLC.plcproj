@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <FileVersion>1.0.0.0</FileVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{af76fed0-7b27-4fed-8b3d-ab1a345d1fc8}</ProjectGuid>
+    <SubObjectsSortedByName>True</SubObjectsSortedByName>
+    <DownloadApplicationInfo>true</DownloadApplicationInfo>
+    <WriteProductVersion>true</WriteProductVersion>
+    <GenerateTpy>false</GenerateTpy>
+    <Name>PLC</Name>
+    <ProgramVersion>3.1.4024.0</ProgramVersion>
+    <Application>{0ffc3cff-5171-4159-94be-ea1740e9b232}</Application>
+    <TypeSystem>{c15cf1c5-a0f3-4fe1-8f31-bf29486d3677}</TypeSystem>
+    <Implicit_Task_Info>{d44f3573-654a-4316-8452-06a90baa2668}</Implicit_Task_Info>
+    <Implicit_KindOfTask>{f08cf928-db6a-4add-8a00-d38d21e8d646}</Implicit_KindOfTask>
+    <Implicit_Jitter_Distribution>{45eb1552-266d-4ebf-812e-8d890eeb3902}</Implicit_Jitter_Distribution>
+    <LibraryReferences>{21def075-a614-4add-a4b4-7b73eca8c12a}</LibraryReferences>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Machine Library\Module\FB_Module.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Module\_DUTs\ST_ModuleModeFlags.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Module\_DUTs\ST_ModuleStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Module\_ENUMs\E_ModuleCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Module\_ENUMs\E_ModuleMode.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Module\_ENUMs\E_ModuleState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Process\ParentChildControl\_DUTs\ST_ParentChildControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Process\Permissive\FB_Permissive.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Process\Permissive\_DUTs\ST_PermissiveConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Process\Permissive\_DUTs\ST_PermissiveStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Process\TriggerTell\FB_TriggerTell.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Process\TriggerTell\_DUTs\ST_TriggerTellConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Process\TriggerTell\_DUTs\ST_TriggerTellControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Process\TriggerTell\_DUTs\ST_TriggerTellHandshake.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Process\TriggerTell\_DUTs\ST_TriggerTellStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Process\TriggerTell\_ENUMs\E_TriggerTellState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\Utility\RTO.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\_General\_DUTs\Strings\T_DeviceNameString.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\_General\_DUTs\ST_AnalogSetpoints.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\_General\_DUTs\ST_Stacklight.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\_General\_DUTs\ST_TcError.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\_General\_Enums\E_SystemMode.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Machine Library\_General\_GVLs\GVL_Lib_GeneralConstants.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="Machine Library\_General\_GVLs\GVL_Lib_TcErrors.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="PlcTask.TcTTO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\MAIN.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Machine.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Subscribe.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\TriggerTells\FB_Transaction.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\TriggerTells\_DUTs\st_StationConfig.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\TriggerTells\_DUTs\st_Recipe.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\TriggerTells\_DUTs\st_ProcessMetrics.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="GVLs" />
+    <Folder Include="Machine Library" />
+    <Folder Include="Machine Library\Module" />
+    <Folder Include="Machine Library\Module\_DUTs" />
+    <Folder Include="Machine Library\Module\_ENUMs" />
+    <Folder Include="Machine Library\Utility" />
+    <Folder Include="Machine Library\Process" />
+    <Folder Include="Machine Library\Process\ParentChildControl" />
+    <Folder Include="Machine Library\Process\ParentChildControl\_DUTs" />
+    <Folder Include="Machine Library\Process\Permissive" />
+    <Folder Include="Machine Library\Process\Permissive\_DUTs" />
+    <Folder Include="Machine Library\Process\TriggerTell" />
+    <Folder Include="Machine Library\Process\TriggerTell\_DUTs" />
+    <Folder Include="Machine Library\Process\TriggerTell\_ENUMs" />
+    <Folder Include="Machine Library\_General" />
+    <Folder Include="Machine Library\_General\_DUTs" />
+    <Folder Include="Machine Library\_General\_DUTs\Strings" />
+    <Folder Include="Machine Library\_General\_Enums" />
+    <Folder Include="Machine Library\_General\_GVLs" />
+    <Folder Include="POUs\TriggerTells" />
+    <Folder Include="POUs\TriggerTells\_DUTs" />
+    <Folder Include="VISUs" />
+    <Folder Include="POUs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PlaceholderReference Include="Tc2_Standard">
+      <DefaultResolution>Tc2_Standard, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_Standard</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_System">
+      <DefaultResolution>Tc2_System, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_System</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_Utilities">
+      <DefaultResolution>Tc2_Utilities, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_Utilities</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc3_IotBase">
+      <DefaultResolution>Tc3_IotBase, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc3_IotBase</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc3_JsonXml">
+      <DefaultResolution>Tc3_JsonXml, * (Beckhoff Automation GmbH)</DefaultResolution>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc3_Module">
+      <DefaultResolution>Tc3_Module, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc3_Module</Namespace>
+    </PlaceholderReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PLC.tmc">
+      <SubType>Content</SubType>
+    </None>
+  </ItemGroup>
+  <ProjectExtensions>
+    <PlcProjectOptions>
+      <XmlArchive>
+        <Data>
+          <o xml:space="preserve" t="OptionKey">
+      <v n="Name">"&lt;ProjectRoot&gt;"</v>
+      <d n="SubKeys" t="Hashtable" ckt="String" cvt="OptionKey">
+        <v>{40450F57-0AA3-4216-96F3-5444ECB29763}</v>
+        <o>
+          <v n="Name">"{40450F57-0AA3-4216-96F3-5444ECB29763}"</v>
+          <d n="SubKeys" t="Hashtable" />
+          <d n="Values" t="Hashtable" ckt="String" cvt="String">
+            <v>ActiveVisuProfile</v>
+            <v>IR0whWr8bwfwBwAAiD2qpQAAAABVAgAA37x72QAAAAABAAAAAAAAAAEaUwB5AHMAdABlAG0ALgBTAHQAcgBpAG4AZwACTHsAZgA5ADUAYgBiADQAMgA2AC0ANQA1ADIANAAtADQAYgA0ADUALQA5ADQAMAAwAC0AZgBiADAAZgAyAGUANwA3AGUANQAxAGIAfQADCE4AYQBtAGUABDBUAHcAaQBuAEMAQQBUACAAMwAuADEAIABCAHUAaQBsAGQAIAA0ADAAMgA0AC4ANwAFFlAAcgBvAGYAaQBsAGUARABhAHQAYQAGTHsAMQA2AGUANQA1AGIANgAwAC0ANwAwADQAMwAtADQAYQA2ADMALQBiADYANQBiAC0ANgAxADQANwAxADMAOAA3ADgAZAA0ADIAfQAHEkwAaQBiAHIAYQByAGkAZQBzAAhMewAzAGIAZgBkADUANAA1ADkALQBiADAANwBmAC0ANABkADYAZQAtAGEAZQAxAGEALQBhADgAMwAzADUANgBhADUANQAxADQAMgB9AAlMewA5AGMAOQA1ADgAOQA2ADgALQAyAGMAOAA1AC0ANAAxAGIAYgAtADgAOAA3ADEALQA4ADkANQBmAGYAMQBmAGUAZABlADEAYQB9AAoOVgBlAHIAcwBpAG8AbgALBmkAbgB0AAwKVQBzAGEAZwBlAA0KVABpAHQAbABlAA4aVgBpAHMAdQBFAGwAZQBtAE0AZQB0AGUAcgAPDkMAbwBtAHAAYQBuAHkAEAxTAHkAcwB0AGUAbQARElYAaQBzAHUARQBsAGUAbQBzABIwVgBpAHMAdQBFAGwAZQBtAHMAUwBwAGUAYwBpAGEAbABDAG8AbgB0AHIAbwBsAHMAEyhWAGkAcwB1AEUAbABlAG0AcwBXAGkAbgBDAG8AbgB0AHIAbwBsAHMAFCRWAGkAcwB1AEUAbABlAG0AVABlAHgAdABFAGQAaQB0AG8AcgAVIlYAaQBzAHUATgBhAHQAaQB2AGUAQwBvAG4AdAByAG8AbAAWFHYAaQBzAHUAaQBuAHAAdQB0AHMAFwxzAHkAcwB0AGUAbQAYGFYAaQBzAHUARQBsAGUAbQBCAGEAcwBlABkmRABlAHYAUABsAGEAYwBlAGgAbwBsAGQAZQByAHMAVQBzAGUAZAAaCGIAbwBvAGwAGyJQAGwAdQBnAGkAbgBDAG8AbgBzAHQAcgBhAGkAbgB0AHMAHEx7ADQAMwBkADUAMgBiAGMAZQAtADkANAAyAGMALQA0ADQAZAA3AC0AOQBlADkANAAtADEAYgBmAGQAZgAzADEAMABlADYAMwBjAH0AHRxBAHQATABlAGEAcwB0AFYAZQByAHMAaQBvAG4AHhRQAGwAdQBnAGkAbgBHAHUAaQBkAB8WUwB5AHMAdABlAG0ALgBHAHUAaQBkACBIYQBmAGMAZAA1ADQANAA2AC0ANAA5ADEANAAtADQAZgBlADcALQBiAGIANwA4AC0AOQBiAGYAZgBlAGIANwAwAGYAZAAxADcAIRRVAHAAZABhAHQAZQBJAG4AZgBvACJMewBiADAAMwAzADYANgBhADgALQBiADUAYwAwAC0ANABiADkAYQAtAGEAMAAwAGUALQBlAGIAOAA2ADAAMQAxADEAMAA0AGMAMwB9ACMOVQBwAGQAYQB0AGUAcwAkTHsAMQA4ADYAOABmAGYAYwA5AC0AZQA0AGYAYwAtADQANQAzADIALQBhAGMAMAA2AC0AMQBlADMAOQBiAGIANQA1ADcAYgA2ADkAfQAlTHsAYQA1AGIAZAA0ADgAYwAzAC0AMABkADEANwAtADQAMQBiADUALQBiADEANgA0AC0ANQBmAGMANgBhAGQAMgBiADkANgBiADcAfQAmFk8AYgBqAGUAYwB0AHMAVAB5AHAAZQAnVFUAcABkAGEAdABlAEwAYQBuAGcAdQBhAGcAZQBNAG8AZABlAGwARgBvAHIAQwBvAG4AdgBlAHIAdABpAGIAbABlAEwAaQBiAHIAYQByAGkAZQBzACgQTABpAGIAVABpAHQAbABlACkUTABpAGIAQwBvAG0AcABhAG4AeQAqHlUAcABkAGEAdABlAFAAcgBvAHYAaQBkAGUAcgBzACs4UwB5AHMAdABlAG0ALgBDAG8AbABsAGUAYwB0AGkAbwBuAHMALgBIAGEAcwBoAHQAYQBiAGwAZQAsEnYAaQBzAHUAZQBsAGUAbQBzAC1INgBjAGIAMQBjAGQAZQAxAC0AZAA1AGQAYwAtADQAYQAzAGIALQA5ADAANQA0AC0AMgAxAGYAYQA3ADUANgBhADMAZgBhADQALihJAG4AdABlAHIAZgBhAGMAZQBWAGUAcgBzAGkAbwBuAEkAbgBmAG8AL0x7AGMANgAxADEAZQA0ADAAMAAtADcAZgBiADkALQA0AGMAMwA1AC0AYgA5AGEAYwAtADQAZQAzADEANABiADUAOQA5ADYANAAzAH0AMBhNAGEAagBvAHIAVgBlAHIAcwBpAG8AbgAxGE0AaQBuAG8AcgBWAGUAcgBzAGkAbwBuADIMTABlAGcAYQBjAHkAMzBMAGEAbgBnAHUAYQBnAGUATQBvAGQAZQBsAFYAZQByAHMAaQBvAG4ASQBuAGYAbwA0MEwAbwBhAGQATABpAGIAcgBhAHIAaQBlAHMASQBuAHQAbwBQAHIAbwBqAGUAYwB0ADUaQwBvAG0AcABhAHQAaQBiAGkAbABpAHQAeQDQAAIaA9ADAS0E0AUGGgfQBwgaAUUHCQjQAAkaBEUKCwQDAAAABQAAAA0AAAAAAAAA0AwLrQIAAADQDQEtDtAPAS0Q0AAJGgRFCgsEAwAAAAUAAAANAAAAKAAAANAMC60BAAAA0A0BLRHQDwEtENAACRoERQoLBAMAAAAFAAAADQAAAAAAAADQDAutAgAAANANAS0S0A8BLRDQAAkaBEUKCwQDAAAABQAAAA0AAAAUAAAA0AwLrQIAAADQDQEtE9APAS0Q0AAJGgRFCgsEAwAAAAUAAAANAAAAAAAAANAMC60CAAAA0A0BLRTQDwEtENAACRoERQoLBAMAAAAFAAAADQAAAAAAAADQDAutAgAAANANAS0V0A8BLRDQAAkaBEUKCwQDAAAABQAAAA0AAAAAAAAA0AwLrQIAAADQDQEtFtAPAS0X0AAJGgRFCgsEAwAAAAUAAAANAAAAKAAAANAMC60EAAAA0A0BLRjQDwEtENAZGq0BRRscAdAAHBoCRR0LBAMAAAAFAAAADQAAAAAAAADQHh8tINAhIhoCRSMkAtAAJRoFRQoLBAMAAAADAAAAAAAAAAoAAADQJgutAAAAANADAS0n0CgBLRHQKQEtENAAJRoFRQoLBAMAAAADAAAAAAAAAAoAAADQJgutAQAAANADAS0n0CgBLRHQKQEtEJoqKwFFAAEC0AABLSzQAAEtF9AAHy0t0C4vGgPQMAutAQAAANAxC60XAAAA0DIarQDQMy8aA9AwC60CAAAA0DELrQMAAADQMhqtANA0Gq0A0DUarQA=</v>
+          </d>
+        </o>
+        <v>{192FAD59-8248-4824-A8DE-9177C94C195A}</v>
+        <o>
+          <v n="Name">"{192FAD59-8248-4824-A8DE-9177C94C195A}"</v>
+          <d n="SubKeys" t="Hashtable" />
+          <d n="Values" t="Hashtable" />
+        </o>
+      </d>
+      <d n="Values" t="Hashtable" />
+    </o>
+        </Data>
+        <TypeList>
+          <Type n="Hashtable">System.Collections.Hashtable</Type>
+          <Type n="OptionKey">{54dd0eac-a6d8-46f2-8c27-2f43c7e49861}</Type>
+          <Type n="String">System.String</Type>
+        </TypeList>
+      </XmlArchive>
+    </PlcProjectOptions>
+  </ProjectExtensions>
+</Project>

@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="st_ProcessMetrics" Id="{4a7077be-2295-4220-ad1d-d43067512835}">
+    <Declaration><![CDATA[(* The transaction response from PLC to sw. *)
+TYPE st_ProcessMetrics :
+STRUCT
+	fMaxRecordedSpeed    : LREAL; //
+	fTotalCycleDuration  : DINT; //
+	fAverageAcceleration : LREAL; //
+	UID					 : STRING; //
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

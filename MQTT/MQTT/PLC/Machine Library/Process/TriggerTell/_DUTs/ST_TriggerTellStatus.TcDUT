@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_TriggerTellStatus" Id="{811bc9ab-471f-49d0-bcc2-69eca2622cc7}">
+    <Declaration><![CDATA[TYPE ST_TriggerTellStatus :
+STRUCT
+	bBusy : BOOL;
+	state : E_TriggerTellState;
+	
+	sim	  : BOOL;
+
+	// State flags	
+	Idle 			: BOOL;
+	Attention 		: BOOL;
+	Request_Start 	: BOOL;
+	Attention_OK 	: BOOL;
+	Request_ACK 	: BOOL;
+	Working 		: BOOL;
+	Response_Start  : BOOL;
+	Response_ACK 	: BOOL;
+	Response_Done 	: BOOL;
+	Completed 		: BOOL;
+	
+	// Error flags
+	// how do we want to handle timeouts where we don't receive a software response?? Just hang?
+	bError			: BOOL;
+	errorID			: STRING;
+	errCanceled		: BOOL; 
+	errTimeout		: BOOL; // Just for dashboarding purposes
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

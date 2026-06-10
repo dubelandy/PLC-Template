@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_TriggerTellHandshake" Id="{924ad511-54d5-40f0-ba08-45c32389ee56}">
+    <Declaration><![CDATA[TYPE ST_TriggerTellHandshake :
+STRUCT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'} // read only
+	attention 	: BOOL;
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	trigger		: BOOL;
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'} // read only
+	trigger_ack : BOOL;
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'} // read only
+	tell		: BOOL;
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	tell_ack	: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

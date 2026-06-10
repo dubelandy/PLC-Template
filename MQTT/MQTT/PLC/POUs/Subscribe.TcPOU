@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="Subscribe" Id="{fa5122c8-6bf4-4dbb-b2d6-663d503f36b5}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM Subscribe
+VAR
+	// ===== Config =====
+    sHostName       : STRING(255) := 'test.mosquitto.org'; // broker
+    nHostPort       : UINT := 1883;
+    sTopic          : STRING(255) := 'heirloom';
+
+    // ===== MQTT client =====
+    fbClient        : FB_IotMqttClient;
+    fbQueue         : FB_IotMqttMessageQueue;
+    fbMsg           : FB_IotMqttMessage;
+    bParamsSet      : BOOL := FALSE;
+    bSubscribed     : BOOL := FALSE;
+
+    // ===== Received data =====
+    {attribute 'TcEncoding' := 'UTF-8'}
+    sTopicRcv       : STRING(255);
+    {attribute 'TcEncoding' := 'UTF-8'}
+    sPayloadRcv     : STRING(255);
+
+    // ===== Status/debug =====
+    bConnected      : BOOL;
+    eLastError      : HRESULT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// ----- Setup (once) -----
+IF NOT bParamsSet THEN
+    bParamsSet := TRUE;
+    fbClient.sHostName := sHostName;
+    fbClient.nHostPort := nHostPort;
+    fbClient.ipMessageQueue := fbQueue;   // route messages into queue
+END_IF
+
+// ----- Keep client alive -----
+fbClient.Execute(TRUE);
+bConnected := fbClient.bConnected;
+
+// ----- Subscribe once after connect -----
+IF bConnected AND NOT bSubscribed THEN
+    bSubscribed := fbClient.Subscribe(
+        sTopic := sTopic,
+        eQoS   := TcIotMqttQos.AtMostOnceDelivery
+    );
+END_IF
+
+// ----- Drain the receive queue -----
+IF fbQueue.nQueuedMessages > 0 THEN
+    IF fbQueue.Dequeue(fbMessage := fbMsg) THEN
+        fbMsg.GetTopic(ADR(sTopicRcv), SIZEOF(sTopicRcv));
+        fbMsg.GetPayload(
+            ADR(sPayloadRcv),
+            SIZEOF(sPayloadRcv),
+            FALSE
+        );
+        // 👉 Now sTopicRcv and sPayloadRcv contain the received message
+        // You can parse sPayloadRcv (e.g. JSON decode) or act on it.
+    END_IF
+END_IF
+
+// ----- Track last error -----
+eLastError := fbClient.hrErrorCode;]]></ST>
+    </Implementation>
+    <LineIds Name="Subscribe">
+      <LineId Id="30" Count="34" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

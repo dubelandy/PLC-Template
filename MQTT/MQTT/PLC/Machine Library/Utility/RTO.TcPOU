@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="RTO" Id="{7bd5f544-ace3-0fd8-1320-69915a65ae31}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK RTO //retentive timer because Beckhoff does not have one?
+VAR_INPUT
+	IN 			: BOOL; //The enable bit contains rung-condition-in when the instruction was last executed.
+	PT			: TIME; //The preset value specifies the value (1 millisecond units) which the accumulated value must reach before the instruction indicates it is done.
+END_VAR
+VAR_OUTPUT
+	Q			: BOOL; //The done bit when set indicates the timing operation is complete (or paused).
+	ET			: TIME; //The accumulated value specifies the number of milliseconds that have elapsed since the RTO instruction was enabled.
+END_VAR
+VAR
+	timer		: TON; //temporary timer to add to accumulated count
+	lastTime	: TIME; //last time saved
+	ftEnable	: F_TRIG; //falling edge trigger for timer enable saves last time
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[timer(IN:=IN,PT:=T#49D);
+ftEnable(CLK:=timer.IN);
+
+IF timer.IN THEN
+	ET := timer.ET + lastTime;
+ELSIF ftEnable.Q THEN
+	lastTime := ET;
+END_IF
+
+Q := (ET >= PT);]]></ST>
+    </Implementation>
+    <Method Name="Reset" Id="{3f5dea4b-a3f3-0435-0277-236af3651d5c}">
+      <Declaration><![CDATA[METHOD Reset : BOOL //reset accumulated time
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[timer(IN:=FALSE);
+lastTime := ET := T#0S;
+Q := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="RunTime" Id="{684ccddd-a239-08f1-35f3-e85e00ef0787}">
+      <Declaration><![CDATA[PROPERTY PUBLIC RunTime : TIME]]></Declaration>
+      <Get Name="Get" Id="{e667eab7-fa97-097c-0ab0-1a005319e6fc}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[RunTime := ET;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{cbe5e1cb-1e05-045b-0593-c5cd308bd1c6}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[lastTime := RunTime;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="Start" Id="{092e38dd-a6b1-00d4-29fe-25b6748e3bc2}">
+      <Declaration><![CDATA[METHOD Start : BOOL //start/resume the timer
+VAR_INPUT
+	EN : BOOL; //enable the start
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IN S= EN;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Stop" Id="{7e87d64c-5401-04ca-2316-b5b2ae00f5b0}">
+      <Declaration><![CDATA[METHOD Stop : BOOL //stop the timer
+VAR_INPUT
+	EN : BOOL; //enable the stop
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IN R= EN;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="RTO">
+      <LineId Id="133" Count="8" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="RTO.Reset">
+      <LineId Id="16" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="15" Count="0" />
+    </LineIds>
+    <LineIds Name="RTO.RunTime.Get">
+      <LineId Id="2" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="RTO.RunTime.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="RTO.Start">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="RTO.Stop">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

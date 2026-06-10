@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_ModuleCommand" Id="{9a408d0f-df86-45d7-bf1f-ce868d59272f}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_ModuleCommand :
+(
+	Reset		:= -1,
+	None		:= 0,
+	Start 		:= 1,
+	Stop		:= 2
+) DINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>
