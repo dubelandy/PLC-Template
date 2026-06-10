@@ -55,7 +55,7 @@ IF rAttention.Q THEN
     OnAttentionEntry();
 END_IF
 
-rAttention(CLK := stHandshake.trigger);
+rTrigger(CLK := stHandshake.trigger);
 IF rTrigger.Q THEN
 	OnRequestParsing();
 END_IF
