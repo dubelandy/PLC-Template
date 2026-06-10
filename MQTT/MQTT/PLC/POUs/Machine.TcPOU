@@ -488,13 +488,16 @@ CASE nEquipState OF
 
         tWorkTimer(IN :=TRUE, PT := T#60S);
         IF tWorkTimer.Q THEN
-            tWorkTimer(IN := FALSE); // Reset the timer input so it's ready for the next use
             nEquipState := 40;  // Advance to the next state
         END_IF
 
     40: // TRIGGER OUTBOUND RESULTS PACKAGING (TELL)
         // Signal the communication engine that physical work is complete.
         // It will pick up the metrics, format the final JSON, and post it over MQTT.
+		fbTransaction.stProcessMetrics.fAverageAcceleration := 1.2;
+		fbTransaction.stProcessMetrics.fMaxRecordedSpeed := 99;
+		fbTransaction.stProcessMetrics.fTotalCycleDuration := TIME_TO_DINT(tWorkTimer.ET)/1000;
+		tWorkTimer(IN := FALSE); // Reset the timer input so it's ready for the next use
         fbTransaction.bWorkDone := TRUE; 
         nEquipState            := 50;
 
@@ -611,9 +614,10 @@ END_VAR
       <LineId Id="176" Count="0" />
       <LineId Id="168" Count="0" />
       <LineId Id="170" Count="0" />
-      <LineId Id="172" Count="0" />
       <LineId Id="177" Count="0" />
-      <LineId Id="145" Count="13" />
+      <LineId Id="145" Count="4" />
+      <LineId Id="208" Count="3" />
+      <LineId Id="150" Count="8" />
       <LineId Id="5" Count="0" />
     </LineIds>
     <LineIds Name="Machine.Started">

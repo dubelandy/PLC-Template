@@ -144,7 +144,7 @@ fbJsonWriter.AddLreal(stProcessMetrics.fMaxRecordedSpeed);
 fbJsonWriter.AddKey('TotalRunTime');
 fbJsonWriter.AddLreal(stProcessMetrics.fTotalCycleDuration);
 fbJsonWriter.AddKey('Executed Acceleration');
-fbJsonWriter.AddLreal(stProcessMetrics.fTotalCycleDuration);
+fbJsonWriter.AddLreal(stProcessMetrics.fAverageAcceleration);
 fbJsonWriter.AddKey('Status');
 fbJsonWriter.AddString('SUCCESS');
 fbJsonWriter.EndObject();
