@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisControl" Id="{6537008e-7143-47ba-b569-496cbeffdb8c}">
+    <Declaration><![CDATA[TYPE ST_AxisControl EXTENDS ST_DeviceControl:
+STRUCT
+	//HMI control of parameters are directly bound to motionParam tags in ignition
+	loadPosition		: BOOL;					// Command trigger to load position into hmiPosition
+	savePosition		: BOOL;					// Command trigger to save hmiPosition to position list
+	positionToEdit		: ST_AxisPosition;		// Position values to write or delete		
+	resetDoneBits		: BOOL;					// Clear done bits. Only needed if cfg.latchDoneBits is true			 
+	coupleFollower		: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

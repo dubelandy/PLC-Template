@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_VFDCommand" Id="{5dcd8c9d-d9f1-492a-ae9b-2dbfd14b663a}">
+    <Declaration><![CDATA[TYPE ST_VFDCommand :
+STRUCT
+	// default values based on CiA402 Profile 	
+	Enable		: WORD := 6; 	
+	JogFwd 		: WORD := 15;	
+	JogRev		: WORD := 2063;	
+	QuickStop	: WORD := 2;
+	Reset		: WORD := 128;	
+	Stop		: WORD := 4;  	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

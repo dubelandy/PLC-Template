@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisConfiguration" Id="{c5b36c04-0001-4df0-90c9-14a190fe2a7d}">
+    <Declaration><![CDATA[TYPE ST_AxisConfiguration :
+STRUCT
+	motorId					: STRING(15);
+	
+	isBeckhoffServo			: BOOL := FALSE; 	// Use TC2_MC2_DRIVE.FB_SoEReset when resetting servos. Only needed for beckhoff servos.
+	latchDoneBits			: BOOL := FALSE; 	// Latch done bits until ResetDoneBits() is called
+	
+	fwdIntlk				: ST_PermissiveConfiguration;
+	fwdPerm					: ST_PermissiveConfiguration;
+	revIntlk				: ST_PermissiveConfiguration;
+	revPerm					: ST_PermissiveConfiguration;
+	
+	powerOverride			: LREAL := 100;
+	homingMode				: MC_HomingMode;
+	gearRatio				: LREAL := 1;
+	followerLag				: LREAL := 5;
+	tEnableAxisDelay		: TIME := T#1S;
+	
+	opTimeout				: TIME := T#300S; 	// How long operator override will stay on without commands
+	opTimeoutEnable			: BOOL := TRUE;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -18,6 +18,136 @@
     <LibraryReferences>{21def075-a614-4add-a4b4-7b73eca8c12a}</LibraryReferences>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Devices\Actuator\FB_Actuator2State.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_DUTs\ST_Actuator2StateConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_DUTs\ST_Actuator2StateFault.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_DUTs\ST_Actuator2StateFunctions.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_DUTs\ST_Actuator2StateStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_ENUMs\E_ActuatorCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_ENUMs\E_ActuatorState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\AnalogActuator\FB_ActuatorAnalog.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\AnalogActuator\_DUTs\ST_ActuatorAnalogConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Device\FB_Device.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Device\FB_ExampleDevice.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Device\_DUTs\ST_DeviceControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Device\_DUTs\ST_DeviceStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Device\_DUTs\ST_ExampleDeviceStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\FB_Axis.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisFault.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisFunctions.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisMotionControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisMotionControlFaultId.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisMotionParameters.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisPosition.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_HeirloomAxisStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_ENUMs\E_AxisCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_ENUMs\E_AxisFunctionParam.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_ENUMs\E_AxisState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_GVLs\GVL_Lib_ServoConstants.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="Devices\Motor\I_SpeedController.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\FB_VFD.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_CiA402ControlWord.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_CiA402StatusWord.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_VFDCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_VFDConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_VFDError.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_VFDFunctions.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_VFDStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_ENUMs\E_FunctionalProfile.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_ENUMs\E_VFDCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_ENUMs\E_VFDFunctionParam.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_ENUMs\E_VFDState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\_DUTs\ST_SpeedControllerStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\_ENUMs\E_MotorMotionParam.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Machine Library\Module\FB_Module.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -129,6 +259,26 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Devices" />
+    <Folder Include="Devices\Actuator" />
+    <Folder Include="Devices\Actuator\_DUTs" />
+    <Folder Include="Devices\Actuator\_ENUMs" />
+    <Folder Include="Devices\AnalogActuator" />
+    <Folder Include="Devices\AnalogActuator\_DUTs" />
+    <Folder Include="Devices\AnalogActuator\_ENUMs" />
+    <Folder Include="Devices\Device" />
+    <Folder Include="Devices\Device\_DUTs" />
+    <Folder Include="Devices\Device\_ENUMs" />
+    <Folder Include="Devices\Motor" />
+    <Folder Include="Devices\Motor\Axis" />
+    <Folder Include="Devices\Motor\Axis\_DUTs" />
+    <Folder Include="Devices\Motor\Axis\_ENUMs" />
+    <Folder Include="Devices\Motor\Axis\_GVLs" />
+    <Folder Include="Devices\Motor\VFD" />
+    <Folder Include="Devices\Motor\VFD\_DUTs" />
+    <Folder Include="Devices\Motor\VFD\_ENUMs" />
+    <Folder Include="Devices\Motor\_DUTs" />
+    <Folder Include="Devices\Motor\_ENUMs" />
     <Folder Include="GVLs" />
     <Folder Include="Machine Library" />
     <Folder Include="Machine Library\Module" />

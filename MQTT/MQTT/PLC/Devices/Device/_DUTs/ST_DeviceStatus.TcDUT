@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_DeviceStatus" Id="{ea382793-1d2d-4364-aeac-2387aa63316d}">
+    <Declaration><![CDATA[TYPE ST_DeviceStatus :
+STRUCT
+	// This struct should be extended by specific device FBs
+	parentConfigured : BOOL;		// Device is configured to be controlled by parent
+	mode			 : E_SystemMode := E_SystemMode.Manual; 
+	modeAuto		 : BOOL; 	
+	modeManual		 : BOOL;		
+	
+	manualOvrde		 : BOOL;		// Operator manual override active
+	bypass			 : BOOL; 		// Interlocks/permissives are bypassed
+	sim				 : BOOL;		// in simulation mode
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

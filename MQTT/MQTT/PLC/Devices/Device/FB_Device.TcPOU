@@ -1,0 +1,179 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Device" Id="{3365eada-ff13-41a7-bfcc-aef33150f2ed}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Device
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ctrl : ST_DeviceControl;
+	parentCtrl : ST_ParentChildControl;
+END_VAR
+VAR_OUTPUT
+	{attribute 'instance-path'}
+	{attribute 'no-init'}
+	instancePath		: T_MaxString;
+END_VAR
+VAR
+	bInit : BOOL := TRUE;
+
+	parentConfigured : BOOL;
+	
+	{attribute 'hide'} 
+	opActivity 		 : BOOL; 
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'} // read only
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	manualOvrdeTimer : TON;
+	{attribute 'hide'} 
+	lastMode		 : E_SystemMode := E_SystemMode.Manual;
+	{attribute 'hide'} 
+	rtModeChange	 : BOOL; 
+	{attribute 'hide'} 
+	rtBypass		 : R_TRIG;
+	{attribute 'hide'} 
+	ftBypass	  	 : F_TRIG;
+	{attribute 'hide'} 
+	rtSim			 : R_TRIG;
+	{attribute 'hide'} 
+	ftSim			 : F_TRIG;
+	
+	//------ Configuration ------//
+	// Hidden because the cfg variable in the extending 
+	// FB will act as a passthrough to these.
+	{attribute 'hide'} 
+	opTimeout : TIME;
+	{attribute 'hide'} 
+	opTimeoutEnable : BOOL;
+	
+	//---------- Status ---------//
+	// Hidden because the sts variable in the extending 
+	// FB will pass these back out to the user.
+	{attribute 'hide'} 
+	mode : E_SystemMode := E_SystemMode.Manual;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bInit THEN
+	Init();
+	bInit := FALSE;
+END_IF
+
+parentConfigured := parentCtrl.instancePath <> '';
+
+manualOvrdeTimer(IN := ctrl.manualOvrde AND NOT opActivity, PT := opTimeout);
+IF manualOvrdeTimer.Q AND opTimeoutEnable THEN
+	ctrl.manualOvrde := FALSE;
+END_IF
+
+// Determine device mode
+CASE mode OF
+	E_SystemMode.Off:
+		// Enter/leave this state based on the status of a physical switch
+		// that is co-located with the device. Ignore implementation for now.
+	E_SystemMode.Auto:
+		IF ctrl.manualOvrde	OR (parentConfigured AND parentCtrl.mode <> E_SystemMode.Auto) THEN
+			mode := E_SystemMode.Manual;
+		END_IF
+	E_SystemMode.Manual:									
+		IF NOT ctrl.manualOvrde AND (NOT parentConfigured OR parentCtrl.mode = E_SystemMode.Auto) THEN
+			mode := E_SystemMode.Auto;
+		END_IF
+	ELSE
+		mode := E_SystemMode.Off;
+END_CASE
+rtModeChange := mode <> lastMode;
+lastMode := mode;
+
+// Triggers
+rtBypass(CLK := ctrl.bypass);
+ftBypass(CLK := ctrl.bypass);
+rtSim(CLK := ctrl.sim);
+ftSim(CLK := ctrl.sim);]]></ST>
+    </Implementation>
+    <Folder Name="Control" Id="{8079e94b-57e8-4684-98c3-75435637ba16}" />
+    <Method Name="DisableBypass" Id="{83d963cb-2f77-466b-89e6-ced59503c491}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD PUBLIC DisableBypass]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.bypass := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DisableManualOverride" Id="{2dd37739-9e89-4d33-b18c-1335f68b673e}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD PUBLIC DisableManualOverride]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.manualOvrde := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DisableSimulation" Id="{5920d782-0e41-4241-af6c-3fd227461b68}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD PUBLIC DisableSimulation]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.sim := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableBypass" Id="{2da2c4de-ec2e-4df7-b307-e4d0020cc2bb}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD PUBLIC EnableBypass]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.bypass := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableManualOverride" Id="{8eb69e79-c413-4ede-8059-31e4f2dcf6a9}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD PUBLIC EnableManualOverride]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.manualOvrde := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableSimulation" Id="{6edd7fae-1a72-4baf-add9-141f62e72d55}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD PUBLIC EnableSimulation]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.sim := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Init" Id="{c8498a5a-bddd-4405-bf14-0201ed8de335}">
+      <Declaration><![CDATA[METHOD PROTECTED Init : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Insert code here that must be completed before function block runs.
+// Set output conditionally based on this code
+Init := TRUE; ]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{b7f79351-370a-47c8-8ba9-cb76c2204640}" FolderPath="Control\">
+      <Declaration><![CDATA[METHOD PUBLIC Reset]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.reset := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Device">
+      <LineId Id="139" Count="2" />
+      <LineId Id="137" Count="1" />
+      <LineId Id="55" Count="10" />
+      <LineId Id="191" Count="0" />
+      <LineId Id="66" Count="17" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Device.DisableBypass">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Device.DisableManualOverride">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Device.DisableSimulation">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Device.EnableBypass">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Device.EnableManualOverride">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Device.EnableSimulation">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Device.Init">
+      <LineId Id="6" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Device.Reset">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

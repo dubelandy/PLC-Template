@@ -1,0 +1,2284 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Axis" Id="{74345266-d6f1-45a5-8ba4-0b49c78e2456}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Axis EXTENDS FB_Device IMPLEMENTS I_SpeedController
+VAR_INPUT
+	localEnable		: BOOL; // Enable signal from local Estops, etc. If parent control is configured for enable with no local enable, this can be latched true
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg				: ST_AxisConfiguration; 
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ctrlAxis		: ST_AxisControl;
+	
+	{attribute 'OPC.UA.DA' := '1'} 
+	ocmd			: E_AxisCommand;
+	
+	func			: ST_AxisFunctions;
+	
+	(* Interlocks/Permissives
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	fwdIntlk		: FB_Permissive;	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	fwdPerm			: FB_Permissive; 
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	revIntlk		: FB_Permissive; 
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	revPerm			: FB_Permissive; 
+	
+	(* External inputs
+	----------------------------------------------------------------------------------------------------*)
+	inpHomeProx AT %I* : BOOL; 				// Link this to home sensor in MapInputs method of Parent
+	driveDiagnosticNumber AT %I* : UDINT;	// Link to AX5000 S-0-0390 Diagnostic number
+	inpFault		   : BOOL;
+	inpFaultText	   : T_MaxString;
+END_VAR
+
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	motionParam	: ST_AxisMotionParameters;
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts			: ST_AxisStatus; 
+
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}	
+	fault		: ST_AxisFault;
+END_VAR
+
+VAR PERSISTENT
+	offset			: LREAL; // Offset for zero position
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	positionList	: ARRAY[0..GVL_Lib_ServoConstants.MAX_POSITIONS] OF ST_AxisPosition;
+END_VAR
+
+VAR
+	axis					: AXIS_REF; 			 // Linked to Motion Axis Object	
+	mc						: ST_AxisMotionControl;  // Motion Commands and Parameters
+	saveData				: FB_WritePersistentData;
+	savePositionListData	: BOOL;	
+	resetErrorAndDrive		: BOOL;	
+	safeDisable				: BOOL;					 // Disable drive after a safe command, must reset errors to resume operation	
+	homingInProgress		: BOOL;					 // Internal bit to set complete flag after homing offset is stored
+	mcGearIn				: MC_GearIn;
+	mcGearOut				: MC_GearOut;
+	
+	(* State
+	----------------------------------------------------------------------------------------------------*)
+	lastGoodState			: E_AxisState;
+	nextState				: E_AxisState;
+	lastFaultId				: UDINT;
+	
+	(* Servo Commands
+	----------------------------------------------------------------------------------------------------*)
+	cmdReceived				: E_AxisCommand;	
+	cmdReceivedLast			: E_AxisCommand;	
+	pcmd					: E_AxisCommand;	
+	pcmdLast				: E_AxisCommand;	
+	ocmdLast				: E_AxisCommand;
+	storedRelMovePosition	: LREAL;	
+	
+	(* Speed history/triggers
+	----------------------------------------------------------------------------------------------------*)
+	jogSpeedLast			: LREAL; 	
+	jogSpeedChanged			: BOOL; 	// Jog speed has changed
+	ftJogSpeedChanged		: F_TRIG;
+	moveSpeedLast			: LREAL;
+	moveSpeedChanged		: BOOL;		// Move speed has changed
+	ftMoveSpeedChanged		: F_TRIG;
+	ftRelMove				: F_TRIG;
+	rtAbsMoveADone			: R_TRIG;
+	rtAbsMoveBDone			: R_TRIG;
+	rtModMoveADone			: R_TRIG;
+	rtModMoveBDone			: R_TRIG;
+
+	(* General
+	----------------------------------------------------------------------------------------------------*)	
+	enableAxisDelay			: TON;
+	mcPowerTimeout			: TON;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+Hmi();
+StatusIn();
+ProcessCommands();
+Device();
+StateMachine();
+MotionControl();
+HandleFaults();
+StatusOut();
+Functions();
+SetPositionIds();
+]]></ST>
+    </Implementation>
+    <Folder Name="Protected" Id="{19fe0ac5-519c-4cf9-9fee-d537cf521bda}">
+      <Folder Name="Commands" Id="{8617afc4-5364-4bbf-a811-312114518621}" />
+      <Folder Name="Logic" Id="{15365a68-b884-4f19-a014-fb338803af7d}" />
+    </Folder>
+    <Folder Name="Public" Id="{6595ad5e-96e9-44b2-98ef-b36522130c09}">
+      <Folder Name="Commands" Id="{551af2bb-f896-4954-b0ec-281227420464}" />
+      <Folder Name="Control" Id="{34cdcaf3-9c91-4541-81b5-9a73368a2a90}">
+        <Folder Name="Positions" Id="{e86188a7-85b7-4932-b393-2387f4302d69}" />
+      </Folder>
+    </Folder>
+    <Method Name="AbsMove" Id="{42042fc5-56d3-485b-a362-2b32992e5cc7}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC AbsMove
+VAR_INPUT
+	absMovePosition		: LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SetMotionParam(param := E_MotorMotionParam.AbsMovePosition, val := absMovePosition);
+pcmd := E_AxisCommand.AbsMove;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="AbsMoveToStoredPosition" Id="{a6d4401e-5647-488f-884c-517aacc0efd0}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC AbsMoveToStoredPosition : BOOL
+// Returns true if position is found in list and move started, false otherwise
+VAR_INPUT
+	id				: INT; 
+END_VAR
+VAR
+	i				: INT;
+	success			: BOOL := FALSE;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Loop through position list to check if the position ID exists and initiate move
+FOR i := 0 TO GVL_Lib_ServoConstants.MAX_POSITIONS DO
+	// If ID exists in position list
+	IF positionList[i].id = id THEN 
+		SetMotionParam(param := E_MotorMotionParam.AbsMovePositionId, val := id); // Store commanded position ID
+		AbsMove(positionList[i].position); 										  // Initiate absolute move
+		success := TRUE;
+		EXIT;
+	END_IF
+END_FOR
+
+AbsMoveToStoredPosition := success;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="AddFollower" Id="{306c9b0f-11a8-42fb-991b-bff797bce413}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC AddFollower
+// Must continuously call function
+// Execution of coupling or decoupling will be set by 
+// the ctrlAxis.coupleFollower bit
+VAR_IN_OUT
+	follower : AXIS_REF;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF __ISVALIDREF(follower) THEN
+	mcGearIn(Master := axis, Slave := follower, RatioNumerator := cfg.gearRatio, RatioDenominator := 1); 
+	mcGearOut(Slave := follower); 
+
+	IF axis.status.homed AND follower.status.homed AND ctrlAxis.coupleFollower
+	AND NOT mcGearIn.InGear AND NOT mcGearIn.Execute THEN
+		mcGearIn.Execute := TRUE; 
+	END_IF
+
+	IF mcGearIn.Execute AND follower.status.coupled THEN 
+		mcGearIn.Execute 		:= FALSE;
+		ctrlAxis.coupleFollower := TRUE;
+	END_IF
+
+	IF mcGearIn.Error THEN
+		mcGearIn.Execute := FALSE;
+	END_IF
+
+	IF NOT ctrlAxis.coupleFollower AND follower.Status.Coupled THEN 
+		mcGearOut.Execute := TRUE;
+	END_IF
+
+	IF mcGearOut.Done THEN 
+		mcGearOut.Execute := FALSE;
+	END_IF
+
+	fault.coupleError 		:= ctrlAxis.coupleFollower AND (NOT axis.Status.Homed OR NOT follower.Status.Homed);
+	fault.followerLagError 	:= ctrlAxis.coupleFollower AND axis.Status.Coupled AND follower.Status.Coupled AND
+						  	   ABS(axis.NcToPlc.PosDiff - follower.NcToPlc.PosDiff) > cfg.followerLag;			   
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DefinePosition" Id="{6978d4e4-68a4-4cdf-b913-3acb3852eed1}" FolderPath="Public\Control\Positions\">
+      <Declaration><![CDATA[METHOD PUBLIC DefinePosition : INT // Check for blank name before overwriting
+VAR_INPUT
+	id					: INT; // position id
+	position			: LREAL; // value of position (mm)
+	name				: STRING := ''; // position name
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF positionList[id].name = '' THEN
+	DefinePosition := SavePosition(id := id, position := position, name := name);
+ELSE
+	DefinePosition := 2; // Position has previously been defined. don't overwrite
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DeletePosition" Id="{3e6f998e-0a79-48f4-8afd-3809b9592483}" FolderPath="Public\Control\Positions\">
+      <Declaration><![CDATA[METHOD PUBLIC DeletePosition : INT
+VAR_INPUT
+	id : INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF id >= 0 AND id <= GVL_Lib_ServoConstants.MAX_POSITIONS THEN
+	positionList[id].name := '';
+	positionList[id].position := 0.0;
+	DeletePosition := 1; //position deleted, code = 1
+ELSE
+	DeletePosition := -1; //id out of bounds, code = -1
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Device" Id="{c57fa322-cf7e-4eef-82b7-fb9698890b60}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD Device : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// to FB device
+opTimeout  			 := cfg.opTimeout;
+opTimeoutEnable 	 := cfg.opTimeoutEnable;
+opActivity 			 := ocmd <> E_AxisCommand.None;
+
+// from FB device
+sts.mode	   		 := mode;
+sts.modeAuto   		 := sts.mode = E_SystemMode.Auto;
+sts.modeManual 		 := sts.mode = E_SystemMode.Manual;
+sts.manualOvrde		 := ctrl.manualOvrde; 	
+sts.bypass 	   		 := ctrl.bypass;		
+sts.sim		   		 := ctrl.sim;			
+sts.parentConfigured := parentConfigured;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DisableCouple" Id="{9e5a1d61-bf93-41c1-96c3-d482bfec3d20}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD DisableCouple : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrlAxis.coupleFollower := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DisableLag" Id="{7054c8a6-580f-4903-a33b-93626b53ec8b}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC DisableLag]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_AxisCommand.DisableLag;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableCouple" Id="{11393df5-1b0e-4dbe-a7eb-0dbde03849a9}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD EnableCouple : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrlAxis.coupleFollower := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableLag" Id="{5793d898-f33f-4c30-93b9-df95cfed9a99}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC EnableLag]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_AxisCommand.EnableLag;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Functions" Id="{9bba8fd3-f3a5-44d4-8a1a-eb8cfc0bdc65}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED Functions
+VAR
+	i 				: INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(* Default function FB calls
+----------------------------------------------------------------------------------------------------*)
+func.AbsMove(				 	hmiTextStatic := CONCAT(cfg.motorId, ' absolute move'));
+func.AbsMoveToStoredPosition(	hmiTextStatic := CONCAT(cfg.motorId, ' absolute move to stored position'));
+func.RelMove(					hmiTextStatic := CONCAT(cfg.motorId, ' relative move'));
+func.ModMove(				 	hmiTextStatic := CONCAT(cfg.motorId, ' modulus move'));
+func.LatchJogFwd(			 	hmiTextStatic := CONCAT(cfg.motorId, ' latch jog forward'));
+func.LatchJogRev(				hmiTextStatic := CONCAT(cfg.motorId, ' latch jog reverse'));
+func.Home(						hmiTextStatic := CONCAT(cfg.motorId, ' home'));
+func.Stop(						hmiTextStatic := CONCAT(cfg.motorId, ' stop'));
+func.Couple(					hmiTextStatic := CONCAT(cfg.motorId, ' coupling follower'));
+func.Decouple(					hmiTextStatic := CONCAT(cfg.motorId, ' decoupling follower'));
+func.ResetDoneBits(				hmiTextStatic := CONCAT(cfg.motorId, ' reset done bits'));
+
+(* Default functions
+----------------------------------------------------------------------------------------------------*)
+
+IF func.AbsMove.entry THEN
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		CASE func.AbsMove.arrParam[i].typeEnum OF
+			E_AxisFunctionParam.AbsMovePosition:
+				SetMotionParam(param	:= E_MotorMotionParam.AbsMovePosition,
+							   val		:= func.AbsMove.arrParam[i].value);
+			E_AxisFunctionParam.MoveSpeed:
+				SetMotionParam(param	:= E_MotorMotionParam.MoveSpeed,
+							   val		:= func.AbsMove.arrParam[i].value);
+		END_CASE
+	END_FOR
+END_IF
+IF func.AbsMove.running THEN
+	// Check for speed change mid move
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		IF func.AbsMove.arrParam[i].typeEnum = E_AxisFunctionParam.MoveSpeed THEN
+			SetMotionParam(param	:= E_MotorMotionParam.MoveSpeed,
+						   val		:= func.AbsMove.arrParam[i].value);
+		END_IF
+	END_FOR
+	// Wait for complete conditions
+	func.AbsMove.permComplete.perm.0 S= sts.absMoveComplete;
+	
+	// Call Action
+	IF NOT func.AbsMove.complete AND NOT fault.active
+	AND sts.state <> E_AxisState.AbsMove_A AND sts.state <> E_AxisState.AbsMove_B THEN
+		// Passing in this motion parameter has the effect of reassigning its own 
+		// value to itself. It's done because this input is required for the method
+		AbsMove(motionParam.absMovePosition);
+	END_IF
+	
+	func.AbsMove.inpError := fault.active;
+END_IF
+
+
+IF func.AbsMoveToStoredPosition.entry THEN
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		CASE func.AbsMoveToStoredPosition.arrParam[i].typeEnum OF
+			E_AxisFunctionParam.AbsMovePositionId:
+				SetMotionParam(param	:= E_MotorMotionParam.AbsMovePositionId,
+							   val		:= func.AbsMoveToStoredPosition.arrParam[i].value);
+			E_AxisFunctionParam.MoveSpeed:
+				SetMotionParam(param	:= E_MotorMotionParam.MoveSpeed,
+							   val		:= func.AbsMoveToStoredPosition.arrParam[i].value);
+		END_CASE
+	END_FOR
+END_IF
+IF func.AbsMoveToStoredPosition.running THEN
+	// Check for speed change mid move
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		IF func.AbsMoveToStoredPosition.arrParam[i].typeEnum = E_AxisFunctionParam.MoveSpeed THEN
+			SetMotionParam(param	:= E_MotorMotionParam.MoveSpeed,
+						   val		:= func.AbsMoveToStoredPosition.arrParam[i].value);
+		END_IF
+	END_FOR
+	// Wait for complete conditions
+	func.AbsMoveToStoredPosition.permComplete.perm.0 S= sts.absMoveComplete;	
+	
+	// Call Action
+	IF NOT func.AbsMoveToStoredPosition.complete AND NOT fault.active
+	AND sts.state <> E_AxisState.AbsMove_A AND sts.state <> E_AxisState.AbsMove_B THEN
+		AbsMoveToStoredPosition(motionParam.absMovePositionId);
+	END_IF
+	
+	func.AbsMoveToStoredPosition.inpError := fault.active;
+END_IF
+
+
+IF func.RelMove.entry THEN
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		CASE func.RelMove.arrParam[i].typeEnum OF
+			E_AxisFunctionParam.RelMoveDistance:
+				SetMotionParam(param	:= E_MotorMotionParam.RelMoveDistance,
+							   val		:= func.RelMove.arrParam[i].value);
+			E_AxisFunctionParam.MoveSpeed:
+				SetMotionParam(param	:= E_MotorMotionParam.MoveSpeed,
+							   val		:= func.RelMove.arrParam[i].value);
+		END_CASE
+	END_FOR
+END_IF
+IF func.RelMove.running THEN
+	// Check for speed change mid move
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		IF func.RelMove.arrParam[i].typeEnum = E_AxisFunctionParam.MoveSpeed THEN
+			SetMotionParam(param	:= E_MotorMotionParam.MoveSpeed,
+						   val		:= func.RelMove.arrParam[i].value);
+		END_IF
+	END_FOR
+	// Wait for complete conditions
+	func.RelMove.permComplete.perm.0 S= sts.RelMoveComplete;
+	
+	// Call Action
+	IF NOT func.RelMove.complete AND NOT fault.active
+	AND sts.state <> E_AxisState.RelMove_A AND sts.state <> E_AxisState.RelMove_B THEN
+		RelMove(motionParam.relMoveDistance);
+	END_IF
+	
+	func.RelMove.inpError := fault.active;
+END_IF
+
+
+IF func.ModMove.entry THEN
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		CASE func.ModMove.arrParam[i].typeEnum OF
+			E_AxisFunctionParam.ModMovePosition:
+				SetMotionParam(param	:= E_MotorMotionParam.ModMovePosition,
+							   val		:= func.ModMove.arrParam[i].value);
+			E_AxisFunctionParam.MoveSpeed:
+				SetMotionParam(param	:= E_MotorMotionParam.MoveSpeed,
+							   val		:= func.ModMove.arrParam[i].value);
+		END_CASE
+	END_FOR
+	END_IF
+IF func.ModMove.running THEN
+	// Check for speed change mid move
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		IF func.ModMove.arrParam[i].typeEnum = E_AxisFunctionParam.MoveSpeed THEN
+			SetMotionParam(param	:= E_MotorMotionParam.MoveSpeed,
+						   val		:= func.ModMove.arrParam[i].value);
+		END_IF
+	END_FOR
+	// Wait for complete conditions
+	func.ModMove.permComplete.perm.0 S= sts.ModMoveComplete;
+	
+	// Call Action
+	IF NOT func.ModMove.complete AND NOT fault.active
+	AND sts.state <> E_AxisState.ModMove_A AND sts.state <> E_AxisState.ModMove_B THEN
+		ModMove(motionParam.modMovePosition);
+	END_IF
+
+	func.ModMove.inpError := fault.active;
+END_IF
+
+
+IF func.LatchJogFwd.entry THEN
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		CASE func.LatchJogFwd.arrParam[i].typeEnum OF
+			E_AxisFunctionParam.JogSpeed: 
+				SetMotionParam(param	:= E_MotorMotionParam.JogSpeed,
+							   val		:= func.LatchJogFwd.arrParam[i].value);
+		END_CASE
+	END_FOR
+END_IF
+IF func.LatchJogFwd.active THEN
+	// Check for speed change mid move
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		IF func.LatchJogFwd.arrParam[i].typeEnum = E_AxisFunctionParam.JogSpeed THEN
+			SetMotionParam(param	:= E_MotorMotionParam.JogSpeed,
+						   val		:= func.LatchJogFwd.arrParam[i].value);
+		END_IF
+	END_FOR	
+	// Call Action
+	IF NOT fault.active THEN
+		LatchJogFwd();
+	END_IF
+	
+	// Wait for complete conditions
+	func.LatchJogFwd.permComplete.perm.0 S= sts.jogFwdInProgress;
+	
+	func.LatchJogFwd.inpError := fault.active;
+END_IF
+
+
+IF func.LatchJogRev.entry THEN
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		CASE func.LatchJogRev.arrParam[i].typeEnum OF
+			E_AxisFunctionParam.JogSpeed:
+				SetMotionParam(param	:= E_MotorMotionParam.JogSpeed,
+							   val		:= func.LatchJogRev.arrParam[i].value);
+		END_CASE
+	END_FOR
+END_IF
+IF func.LatchJogRev.running THEN
+	// Check for speed change mid move
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		IF func.LatchJogRev.arrParam[i].typeEnum = E_AxisFunctionParam.JogSpeed THEN
+			SetMotionParam(param	:= E_MotorMotionParam.JogSpeed,
+						   val		:= func.LatchJogRev.arrParam[i].value);
+		END_IF
+	END_FOR	
+	// Call Action
+	IF NOT fault.active THEN
+		LatchJogRev();
+	END_IF
+	
+	// Wait for complete conditions
+	func.LatchJogRev.permComplete.perm.0 S= sts.jogRevInProgress;
+	
+	func.LatchJogRev.inpError := fault.active;
+END_IF
+
+
+
+IF func.Home.entry THEN
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		CASE func.Home.arrParam[i].typeEnum OF
+			E_AxisFunctionParam.HomePosition:
+				SetMotionParam(param	:= E_MotorMotionParam.HomePosition,
+							   val		:= func.Home.arrParam[i].value);
+		END_CASE
+	END_FOR
+END_IF
+IF func.Home.running THEN
+	// Wait for complete conditions
+	func.Home.permComplete.perm.0 S= sts.homingComplete OR ctrl.sim;
+	
+	// Call Action
+	IF NOT func.Home.complete AND NOT fault.active
+	AND sts.state <> E_AxisState.Homing THEN
+		Home();
+	END_IF
+	
+	func.Home.inpError := fault.active;
+END_IF
+
+IF func.Stop.running THEN
+	// Wait for complete conditions	
+	func.Stop.permComplete.perm.0 S= sts.stopComplete;
+	
+	// Call action
+	IF NOT func.Stop.complete AND NOT fault.active
+	AND sts.state <> E_AxisState.Halting THEN
+		Stop();
+	END_IF
+END_IF
+
+
+IF func.Couple.running THEN
+	ctrlAxis.coupleFollower := TRUE;
+	func.Couple.PermComplete.perm.0 := sts.coupled;
+END_IF
+
+
+IF func.Decouple.running THEN
+	ctrlAxis.coupleFollower := FALSE;
+	func.Decouple.PermComplete.perm.0 := NOT sts.coupled;
+END_IF
+
+
+IF func.ResetDoneBits.running THEN
+	ctrlAxis.resetDoneBits := TRUE;
+	func.ResetDoneBits.permComplete.perm.0 := TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="HandleFaults" Id="{105be416-fe06-44b8-9540-2579dc412c06}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED HandleFaults : BOOL
+VAR
+	i					: INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(* ----- Set Faults ----- *)
+// Axis Drive Device Error
+IF axis.Status.DriveDeviceError THEN
+	fault.driveDeviceError := TRUE;
+END_IF
+
+// Axis IO Data Invalid
+IF axis.Status.IoDataInvalid THEN
+	fault.ioDataInvalid := TRUE;
+END_IF
+
+// MC_Power Timeout
+mcPowerTimeout(IN := (sts.enable AND sts.state > E_AxisState.Power) AND NOT axis.Status.Operational AND NOT resetErrorAndDrive, PT := T#15S);
+IF mcPowerTimeout.Q THEN
+	fault.mcPowerTimeout := TRUE;
+END_IF
+
+// MC_Power Error
+IF mc.power.Error THEN
+	fault.mcPowerError := TRUE;
+END_IF
+
+// MC_MoveVelo Error
+IF mc.moveVelocityA.Error OR mc.moveVelocityB.Error THEN
+	fault.mcMoveVeloError := TRUE;
+END_IF
+
+// MC_MoveAbs Error
+IF mc.moveAbsoluteA.Error OR mc.moveAbsoluteB.Error THEN
+	fault.mcMoveAbsError := TRUE;
+END_IF
+
+// MC_MoveMod Error
+IF mc.moveModuloA.Error OR mc.moveModuloB.Error THEN
+	fault.mcMoveModError := TRUE;
+END_IF
+
+// MC_Halt Command Aborted
+IF mc.halt.CommandAborted THEN
+	fault.mcHaltCmdAborted := TRUE;
+END_IF
+
+// MC_Halt Error
+IF mc.halt.Error THEN
+	fault.mcHaltError := TRUE;
+END_IF
+
+// MC_SetPosition Error
+IF mc.setPosition.Error OR mc.readOffset.Error OR mc.writeOffset.Error THEN  //McSetPosition.Error OR
+	fault.mcSetPositionError := TRUE;
+END_IF
+
+// MC_EnableLag Error
+IF mc.enableLag.Error THEN
+	fault.mcEnableLagError := TRUE;
+END_IF
+
+// MC_DisableLag Error
+IF mc.disableLag.Error THEN
+	fault.mcDisableLagError := TRUE;
+END_IF
+
+// MC_Homing Error
+IF mc.homing.Error THEN
+	fault.mcHomeError := TRUE;
+END_IF
+
+// MC_Reset Error
+IF mc.reset.Error THEN
+	fault.mcResetError := TRUE;
+END_IF
+
+// FB_SoEReset Error
+IF mc.resetSoe.Error AND NOT sts.sim THEN
+	fault.mcResetSoeError := TRUE;
+END_IF
+
+// Other Errors
+// (See AddFollower method for more coupling-related errors)
+fault.mcGearError := mcGearIn.Error;
+fault.external    := inpFault;
+
+(* ----- Handle Reset ----- *)
+// The axis will be reset in the upcoming functions call. If that fails, the
+// flags will be set high again on the next loop.
+IF resetErrorAndDrive THEN
+	fault.driveNotOK				:= FALSE;
+	fault.driveStateNotOP			:= FALSE;
+	fault.driveDeviceError			:= FALSE;
+	fault.ioDataInvalid				:= FALSE;
+	fault.mcPowerTimeout			:= FALSE;
+	fault.mcPowerError				:= FALSE;
+	fault.mcMoveVeloError			:= FALSE;
+	fault.mcMoveAbsError			:= FALSE;
+	fault.mcMoveModError			:= FALSE;
+	fault.mcHaltCmdAborted			:= FALSE;
+	fault.mcHaltError				:= FALSE;
+	fault.mcSetPositionError		:= FALSE;
+	fault.mcResetError				:= FALSE;
+	fault.mcResetSoeError			:= FALSE;
+	fault.mcEnableLagError			:= FALSE;
+	fault.mcDisableLagError			:= FALSE;
+	fault.mcHomeError				:= FALSE;
+	fault.mcGearError				:= FALSE;
+	fault.fwdIntlkDisabled 			:= FALSE;
+	fault.revIntlkDisabled			:= FALSE;
+	fault.coupleError				:= FALSE;
+	fault.followerLagError			:= FALSE;
+	fault.external					:= FALSE;
+	fault.id						:= 0;
+	safeDisable						:= FALSE;
+	homingInProgress				:= FALSE;
+END_IF
+
+IF fault.active THEN
+  IF mc.faultId.power <> 0 THEN
+	fault.id := mc.faultId.power;
+  ELSIF mc.faultId.moveVelocityA <> 0 THEN
+	fault.id := mc.faultId.MoveVelocityA;
+  ELSIF mc.faultId.moveVelocityB <> 0 THEN
+	fault.id := mc.faultId.MoveVelocityB;
+  ELSIF mc.faultId.moveAbsoluteA <> 0 THEN
+	fault.id := mc.faultId.MoveAbsoluteA;
+  ELSIF mc.faultId.moveAbsoluteB <> 0 THEN
+	fault.id := mc.faultId.MoveAbsoluteB;
+  ELSIF mc.faultId.moveModuloA <> 0 THEN
+	fault.id := mc.faultId.MoveModuloA;
+  ELSIF mc.faultId.moveModuloB <> 0 THEN
+	fault.id := mc.faultId.MoveModuloB;
+  ELSIF mc.faultId.halt <> 0 THEN
+ 	fault.id := mc.faultId.Halt;
+  ELSIF mc.faultId.setPosition <> 0 THEN
+	fault.id := mc.faultId.SetPosition;
+  ELSIF mc.faultId.readOffset <> 0 THEN
+	fault.id := mc.faultId.ReadOffset;
+  ELSIF mc.faultId.writeOffset <> 0 THEN
+	fault.id := mc.faultId.WriteOffset;
+  ELSIF mc.faultId.enableLag <> 0 THEN
+	fault.id := mc.faultId.EnableLag;
+  ELSIF mc.faultId.disableLag <> 0 THEN
+	fault.id := mc.faultId.DisableLag;
+  ELSIF mc.faultId.homing <> 0 THEN
+	fault.id := mc.faultId.Homing;
+  ELSIF mc.faultId.reset <> 0 THEN
+	fault.id := mc.faultId.Reset;
+  ELSIF mc.faultId.resetSoeAds <> 0 AND NOT sts.sim THEN 
+	fault.id := mc.faultId.resetSoeAds;
+  ELSIF mc.faultId.resetSoeSercos <> 0 THEN
+	fault.id := mc.faultId.resetSoeSercos;
+  END_IF
+  ELSE fault.id := 0; 
+END_IF 
+
+// Write message of error on change
+IF fault.id = 0 THEN
+	fault.ncText := GVL_Lib_TcErrors.List[0].message;
+ELSIF lastFaultId <> fault.id THEN
+	FOR i := 0 TO GVL_Lib_TcErrors.MAX_INDEX DO
+		IF GVL_Lib_TcErrors.List[i].code = fault.id THEN
+			fault.ncText := GVL_Lib_TcErrors.List[i].message;
+			EXIT;
+		END_IF
+	END_FOR
+END_IF
+
+IF safeDisable THEN // FIXME: Remove once this is configured in our UDT
+	IF NOT fwdIntlk.sts.OK AND sts.movingFwd THEN
+		fault.inText := CONCAT('Disabled: interlocks lost during motion. fwdIntlk: ', WORD_TO_BINSTR(fwdIntlk.sts.perm, 16));
+		fault.fwdIntlkDisabled := TRUE;
+	ELSIF NOT revIntlk.sts.OK AND sts.movingRev THEN
+		fault.inText := CONCAT('Disabled: interlocks lost during motion. revIntlk: ', WORD_TO_BINSTR(revIntlk.sts.perm, 16));
+		fault.revIntlkDisabled := TRUE;
+	ELSE
+		fault.inText := 'Disabled: external Safe command received.';
+	END_IF
+ELSIF fault.external THEN
+	fault.inText := inpFaultText;
+ELSIF fault.mcGearError THEN // FIXME: Remove once this is configured in our UDT
+	fault.inText := 'Follower could not be coupled. (Coupling will fail if either axis is moving or faulted for a different reason).';
+ELSIF fault.coupleError THEN
+	fault.inText := 'Follower could not be coupled. At least one motor was never homed.';
+ELSIF fault.followerLagError THEN
+	fault.inText := 'Follower lag exceeded the configured threshold';
+ELSE
+	fault.inText := '';
+END_IF
+
+(* ----- Aggregate Faults ----- *)
+fault.active := fault.driveNotOK 				OR fault.driveStateNotOP 
+				  OR fault.driveDeviceError 	OR fault.ioDataInvalid
+				  OR fault.mcPowerTimeout 		OR fault.mcPowerError
+				  OR fault.mcMoveVeloError  	OR fault.mcMoveAbsError
+				  OR fault.mcMoveModError 		OR fault.mcHomeError
+				  OR fault.mcDisableLagError 	OR fault.mcEnableLagError 
+				  OR fault.mcHaltCmdAborted 	OR fault.mcHaltError
+				  OR fault.mcResetError			OR fault.mcResetSoeError
+				  OR fault.mcSetPositionError 	OR safeDisable
+				  OR fault.fwdIntlkDisabled		OR fault.revIntlkDisabled
+				  OR fault.mcGearError			OR fault.coupleError
+				  OR fault.followerLagError		OR fault.external;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Hmi" Id="{ba7a9fc9-241c-4efa-921f-d4f8b2c17a8a}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED Hmi
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF ctrlAxis.loadPosition THEN
+	ctrlAxis.loadPosition := FALSE;
+	LoadPosition(
+		id := ctrlAxis.positionToEdit.id,
+		position => ctrlAxis.positionToEdit.position,
+		name => ctrlAxis.positionToEdit.name
+	);
+END_IF
+
+IF ctrlAxis.savePosition THEN
+	ctrlAxis.savePosition := FALSE;
+	SavePosition(
+		id := ctrlAxis.positionToEdit.id,
+		position := ctrlAxis.positionToEdit.position,
+		name := ctrlAxis.positionToEdit.name
+	);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Home" Id="{755e17f8-7977-4d3a-a823-de85122ec764}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC Home]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_AxisCommand.Home;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="JogFwd" Id="{029f9bc4-84c8-4579-99e4-1a86833ffdb2}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC JogFwd]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_AxisCommand.JogFwd;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="JogRev" Id="{30acdd20-a771-4fa8-852f-7fdcce9a959d}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC JogRev ]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_AxisCommand.JogRev;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="LatchJogFwd" Id="{f939658d-f0ae-4d1e-a083-1c26591c40fa}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC LatchJogFwd ]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_AxisCommand.LatchJogFwd;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="LatchJogRev" Id="{81964445-351e-4a96-94ef-e76078131207}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC LatchJogRev ]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_AxisCommand.LatchJogRev;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="LoadPosition" Id="{e396483e-069b-4c06-a0ec-fd3575073509}" FolderPath="Public\Control\Positions\">
+      <Declaration><![CDATA[METHOD PUBLIC LoadPosition : INT
+VAR_INPUT
+	id : INT;
+END_VAR
+VAR_OUTPUT
+	position : LREAL;
+	name : STRING;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF id >= 0 AND id <= GVL_Lib_ServoConstants.MAX_POSITIONS THEN
+	name := positionList[id].name;
+	position := positionList[id].position;
+	LoadPosition := 1; //position found, code = 1
+ELSE
+	LoadPosition := -1; //id out of bounds, code = -1
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ModMove" Id="{6b1fac92-8420-4509-9072-f3dfb8d517e5}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC ModMove
+VAR_INPUT
+	modMovePosition		: LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SetMotionParam(param := E_MotorMotionParam.ModMovePosition, val := modMovePosition);
+pcmd := E_AxisCommand.ModMove;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MotionControl" Id="{0bc6ccd8-e936-4da8-b0d2-974e90fe4d04}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED MotionControl
+VAR
+	absMovePos	 : LREAL;
+	haltDecel 	 : LREAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Enable the Axis
+mc.power(
+	Axis				:=	axis, 
+	Enable				:=	sts.enable AND sts.state >= E_AxisState.Power,
+	Enable_Positive		:=	fwdIntlk.sts.OK, 
+	Enable_Negative		:=	revIntlk.sts.OK,
+	Override			:=	cfg.powerOverride, 	// 1-100%, 100% typ
+	BufferMode			:=	mc.bufferMode, 	 	// MC_Aborting -> Immediate disable; MC_Buffered -> Wait for motion commands to finish before disable
+	Status				=>, 
+	Busy				=>, 
+	Active				=>, 
+	Error				=>, 
+	ErrorID				=>	mc.faultId.power);
+
+// Move Velocity (A)
+mc.moveVelocityA(
+	Axis			:=	axis, 
+	Execute			:=	(sts.state = E_AxisState.JogFwd_A) 		OR (sts.state = E_AxisState.JogRev_A)
+					OR	(sts.state = E_AxisState.LatchJogFwd_A)	OR (sts.state = E_AxisState.LatchJogRev_A), 
+	Velocity		:=	motionParam.jogSpeed, 
+	Acceleration	:=	motionParam.jogAccel, 
+	Deceleration	:=	motionParam.jogDecel, 
+	Jerk			:=	motionParam.jerk, 
+	Direction		:=	mc.moveDirection, 
+	BufferMode		:=	mc.bufferMode, 
+	Options			:=	(* Use default values *), 
+	InVelocity		=>, 
+	Busy			=>, 
+	Active			=>, 
+	CommandAborted	=>, 
+	Error			=>,  
+	ErrorID			=>	mc.faultId.moveVelocityA);
+
+// Move Velocity (B)
+mc.moveVelocityB(
+	Axis			:=	axis, 
+	Execute			:=	(sts.state = E_AxisState.JogFwd_B) 		OR (sts.state = E_AxisState.JogRev_B)
+					OR	(sts.state = E_AxisState.LatchJogFwd_B) 	OR (sts.state = E_AxisState.LatchJogRev_B), 
+	Velocity		:=	motionParam.jogSpeed,    
+	Acceleration	:=	motionParam.jogAccel,    
+	Deceleration	:=	motionParam.jogDecel,    
+	Jerk			:=	motionParam.jerk,    
+	Direction		:=	mc.moveDirection, 
+	BufferMode		:=	mc.bufferMode,   
+	Options			:=	(* Use default values *), 
+	InVelocity		=>, 
+	Busy			=>, 
+	Active			=>, 
+	CommandAborted	=>, 
+	Error			=>, 
+	ErrorID			=>	mc.faultId.moveVelocityB);
+
+// Calculate Move Position (Absolute or Relative)
+IF sts.state = E_AxisState.AbsMove_A OR sts.state = E_AxisState.AbsMove_B THEN
+	absMovePos := motionParam.absMovePosition;
+ELSIF sts.state = E_AxisState.RelMove_A OR sts.state = E_AxisState.RelMove_B THEN
+	absMovePos := storedRelMovePosition;
+END_IF
+
+// Move Absolute (A)
+mc.moveAbsoluteA(
+	Axis			:=	axis,
+	Execute			:=	sts.state = E_AxisState.AbsMove_A OR sts.state = E_AxisState.RelMove_A,
+	Position		:=	absMovePos,
+	Velocity		:=	motionParam.moveSpeed,
+	Acceleration	:=	motionParam.moveAccel,
+	Deceleration	:=	motionParam.moveDecel,
+	Jerk			:=	motionParam.jerk,
+	BufferMode		:=	mc.bufferMode,
+	Options			:=	(* Use default values *),
+	Done			=>,
+	Busy			=>,
+	Active			=>,
+	CommandAborted	=>,
+	Error			=>, 
+	ErrorID			=> mc.faultId.moveAbsoluteA);
+
+// Move Absolute (B)
+mc.moveAbsoluteB(
+	Axis			:=	axis,
+	Execute			:=	sts.state = E_AxisState.AbsMove_B OR sts.state = E_AxisState.RelMove_B,
+	Position		:=	absMovePos,
+	Velocity		:=	motionParam.moveSpeed,
+	Acceleration	:=	motionParam.moveAccel,
+	Deceleration	:=	motionParam.moveDecel,
+	Jerk			:=	motionParam.jerk,
+	BufferMode		:=	mc.bufferMode,
+	Options			:=	(* Use default values *),
+	Done			=>,
+	Busy			=>,
+	Active			=>,
+	CommandAborted	=>,
+	Error			=>, 
+	ErrorID			=> mc.faultId.moveAbsoluteB
+);
+
+// Move Modulo (A)
+mc.moveModuloA(
+	Axis			:= axis,
+	Execute			:= sts.state = E_AxisState.ModMove_A,
+	Position		:= motionParam.modMovePosition,
+	Velocity		:= motionParam.moveSpeed,
+	Acceleration	:= motionParam.moveAccel,
+	Deceleration	:= motionParam.moveDecel,
+	Jerk			:= motionParam.jerk,
+	Direction		:= MC_Positive_Direction,
+	BufferMode		:= mc.bufferMode,
+	Options			:=,
+	Done			=>,
+	Busy			=>,
+	Active			=>,
+	CommandAborted	=>,
+	Error			=>,
+	ErrorId			=> mc.faultId.moveModuloA,
+	);
+
+// Move Modulo (B)
+mc.moveModuloB(
+	Axis			:= axis,
+	Execute			:= sts.state = E_AxisState.ModMove_B,
+	Position		:= motionParam.modMovePosition,
+	Velocity		:= motionParam.moveSpeed,
+	Acceleration	:= motionParam.moveAccel,
+	Deceleration	:= motionParam.moveDecel,
+	Jerk			:= motionParam.jerk,
+	Direction		:= MC_Positive_Direction,
+	BufferMode		:= mc.bufferMode,
+	Options			:=,
+	Done			=>,      
+	Busy			=>,      
+	Active			=>,      
+	CommandAborted	=>,      
+	Error			=>,     
+	ErrorId			=> mc.faultId.moveModuloB
+	);
+	
+// Halt
+haltDecel := motionParam.haltDecel;
+IF haltDecel = 0 THEN
+	haltDecel := motionParam.moveDecel;
+END_IF
+mc.halt(
+	Axis			:= axis, 
+	Execute			:= sts.state = E_AxisState.Halting  OR sts.state = E_AxisState.Faulting, 
+	Deceleration	:= haltDecel, 
+	Jerk			:= motionParam.jerk, 
+	BufferMode		:= MC_Aborting, 
+	Options			:=	(* Use default values *), 
+	Done			=>, 
+	Busy			=>, 
+	Active			=>, 
+	CommandAborted	=>, 
+	Error			=>,  
+	ErrorID			=> mc.faultId.halt);
+	
+// Teach Position
+mc.setPosition(
+	Axis			:= axis,
+	Execute			:= sts.state = E_AxisState.TeachPositionTemp,
+	Position		:= motionParam.teachPosition,
+	Mode			:= FALSE,
+	Done			=>,
+	Busy			=>,
+	Error			=>, 
+	ErrorID			=> mc.faultId.setPosition);
+
+// Read offset
+mc.readOffset(
+	Enable 			:= sts.state = E_AxisState.TeachPosition_Read OR sts.state = E_AxisState.InitReadPosition,
+	ParameterNumber := AxisEncoderOffset,
+	Axis 			:= axis,
+	Value 			=>,
+	Busy			=>,
+	Error			=>, 
+	ErrorID			=>	mc.faultId.readOffset);
+
+// Write offset		
+mc.writeOffset(
+	Execute 		:= sts.state = E_AxisState.TeachPosition_Write OR sts.state = E_AxisState.InitSetPosition,
+	ParameterNumber := AxisEncoderOffset,
+	Value 			:= offset,
+	Axis 			:= axis,
+	Busy			=>,
+	Error			=>, 
+	ErrorID			=> mc.faultId.writeOffset);	
+	
+// Enable Lag
+mc.enableLag(	
+	Axis			:= axis,
+	Execute			:= sts.state = E_AxisState.EnableLag,
+	ParameterNumber := MC_AxisParameter.EnablePosLagMonitoring,
+	Value			:= TRUE,
+	Done			=>,
+	Error			=>,
+	ErrorID			=> mc.faultId.enableLag);
+	
+// Disable Lag
+mc.disableLag(	
+	Axis			:= axis,
+	Execute			:= sts.state = E_AxisState.DisableLag,
+	ParameterNumber := MC_AxisParameter.EnablePosLagMonitoring,
+	Value			:= FALSE,
+	Done			=>,
+	Error			=>,
+	ErrorID			=> mc.faultId.disableLag);
+	
+// Homing
+mc.homing(
+	Axis			:= axis,
+	Execute			:= sts.state = E_AxisState.Homing,
+	Position		:= motionParam.homePosition,
+	HomingMode		:= cfg.homingMode,
+	bCalibrationCam	:= inpHomeProx,
+	Done			=>,
+	Busy			=>,
+	Error			=>,
+	ErrorId			=> mc.faultId.homing);
+	
+// Fault Reset
+mc.reset(
+	Axis		:=	axis, 
+	Execute		:=	resetErrorAndDrive OR sts.state = E_AxisState.ResetDrive,
+	Done		=>, 
+	Busy		=>, 
+	Error		=>, 
+	ErrorID		=>  mc.faultId.reset);
+
+// Reset - Used for beckhoff servos.
+mc.resetSoe(
+	NetId		:=	'', 
+	Execute		:=	(resetErrorAndDrive OR sts.state = E_AxisState.ResetDrive) AND cfg.isBeckhoffServo AND NOT sts.sim,
+	Timeout		:=	T#10S,	// FbSoEReset can take up to 10 seconds 
+	Axis		:=	axis, 
+	Busy		=>, 
+	Error		=>, 
+	AdsErrId	=>	, 
+	SercosErrId	=>	);
+mc.faultId.resetSoeAds 		:= UINT_TO_UDINT(mc.resetSoe.AdsErrId);	
+mc.faultId.resetSoeSercos 	:= UINT_TO_UDINT(mc.resetSoe.SercosErrId);
+
+// Read Position
+// Used to convert relative move to absolution move
+mc.readPosition(
+	Enable 			:= TRUE,
+	Axis 			:= axis,
+	Valid 			=>,
+	Busy			=>,
+	Error			=>, 
+	ErrorID			=>	mc.faultId.readOffset,
+	Position		=> );
+
+saveData(
+	Port 		:= 851,
+	Start 		:= sts.state = E_AxisState.TeachPosition_SaveData OR savePositionListData,
+	Mode 		:= SPDM_VAR_BOOST);
+	
+savePositionListData := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ProcessCommands" Id="{07dc637a-4c33-4362-81a0-3d08ce54b573}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED ProcessCommands]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Check for new valid commands
+IF ctrl.reset THEN 
+	cmdReceived := E_AxisCommand.Reset;
+	ctrl.reset := FALSE;
+ELSIF sts.modeManual AND ocmd <> E_AxisCommand.None THEN
+	cmdReceived := ocmd;
+ELSIF sts.modeAuto AND pcmd <> E_AxisCommand.None THEN
+	cmdReceived := pcmd;
+END_IF
+
+// Save last commands
+IF pcmd <> E_AxisCommand.None THEN
+	pcmdLast := pcmd;
+END_IF
+IF ocmd <> E_AxisCommand.None THEN
+	ocmdLast := ocmd;
+END_IF
+IF cmdReceived <> E_AxisCommand.None THEN
+	cmdReceivedLast := cmdReceived;
+END_IF
+
+pcmd := E_AxisCommand.None;
+ocmd := E_AxisCommand.None;
+
+// Special command handling
+resetErrorAndDrive := cmdReceived = E_AxisCommand.Reset;
+IF cmdReceived = E_AxisCommand.Safe THEN
+	PrvSafe();
+END_IF
+IF cmdReceived = E_AxisCommand.RelMove AND storedRelMovePosition = 0 THEN
+	storedRelMovePosition := sts.position + motionParam.relMoveDistance;
+END_IF
+IF ftRelMove.Q THEN
+	storedRelMovePosition := 0;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvSafe" Id="{2cb69a4c-7a96-4601-8f12-d53d3a69b3a6}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvSafe]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[safeDisable := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ReadStatus" Id="{e93bdba6-37c3-4349-9862-d5f79a6967a9}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC ReadStatus : ST_SpeedControllerStatus
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ReadStatus.velocity 	:= sts.velocity;
+ReadStatus.torque 		:= sts.torque;
+ReadStatus.homed		:= sts.homed;
+ReadStatus.coupled 		:= sts.coupled;
+ReadStatus.moving 		:= sts.moving;
+ReadStatus.movingFwd 	:= sts.movingFwd;
+ReadStatus.movingRev 	:= sts.movingRev;
+ReadStatus.faulted 		:= fault.active;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="RelMove" Id="{b22754f7-56f1-4c10-a466-6a77e9974fa1}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC RelMove
+VAR_INPUT
+	relMoveDistance		: LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SetMotionParam(param := E_MotorMotionParam.RelMoveDistance, val := relMoveDistance);
+pcmd := E_AxisCommand.RelMove;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ResetDoneBits" Id="{bd92918a-b3a4-449b-8de7-86851c576e2c}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC ResetDoneBits]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrlAxis.resetDoneBits := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ResetDrive" Id="{24ac328e-e495-4146-b02f-d00e19c082ac}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC ResetDrive // Resets drive without resetting errors]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_AxisCommand.ResetDrive;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Safe" Id="{a0b6879b-de7c-493f-ac13-ce82b3e43e69}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC Safe]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Command safe regardless of mode
+pcmd := E_AxisCommand.Safe;
+ocmd := E_AxisCommand.Safe;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SavePosition" Id="{3f977fec-7eb6-4bcf-aa46-a53752f38660}" FolderPath="Public\Control\Positions\">
+      <Declaration><![CDATA[METHOD PUBLIC SavePosition : INT
+VAR_INPUT
+	id : INT;
+	position : LREAL;
+	name : STRING;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF id >= 0 AND id <= GVL_Lib_ServoConstants.MAX_POSITIONS THEN
+	positionList[id].name := name;
+	positionList[id].position := position;
+	SavePosition := 1; //position saved, code = 1
+ELSE
+	SavePosition := -1; //id out of bounds, code = -1
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetMotionParam" Id="{735b0638-894b-4c38-8cdc-0b54e238dd33}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC SetMotionParam 
+VAR_INPUT
+	param		: E_MotorMotionParam;
+	val			: LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE param OF
+	E_MotorMotionParam.JogSpeed:			motionParam.jogSpeed := val;
+	E_MotorMotionParam.JogAccel:			motionParam.jogAccel := val;
+	E_MotorMotionParam.JogDecel:			motionParam.jogDecel := val;
+	E_MotorMotionParam.RelMoveDistance:		motionParam.relMoveDistance := val;
+	E_MotorMotionParam.AbsMovePosition:		motionParam.absMovePosition := val;
+	E_MotorMotionParam.AbsMovePositionId:	motionParam.absMovePositionId := LREAL_TO_INT(val);
+	E_MotorMotionParam.ModMovePosition:		motionParam.modMovePosition := val;
+	E_MotorMotionParam.MoveSpeed:			motionParam.moveSpeed := val;
+	E_MotorMotionParam.MoveAccel:			motionParam.moveAccel := val;
+	E_MotorMotionParam.MoveDecel:			motionParam.moveDecel := val;
+	E_MotorMotionParam.Jerk:				motionParam.jerk := val;
+	E_MotorMotionParam.TeachPosition:		motionParam.teachPosition := val;
+	E_MotorMotionParam.HomePosition:		motionParam.homePosition := val;
+	E_MotorMotionParam.HaltDecel:			motionParam.haltDecel := val;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetPositionIds" Id="{5502f220-1407-4617-9c59-138c9f0add7c}" FolderPath="Public\Control\Positions\">
+      <Declaration><![CDATA[METHOD INTERNAL SetPositionIds
+VAR
+	i : INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[FOR i :=0 TO GVL_Lib_ServoConstants.MAX_POSITIONS DO
+	positionList[i].id := i;
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{3bd1d427-dc6c-408e-8459-84ca0748da9b}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine
+VAR
+	error: INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Reset complete bits
+IF NOT cfg.latchDoneBits OR (ctrlAxis.resetDoneBits OR resetErrorAndDrive) THEN
+	ctrlAxis.resetDoneBits 		:= FALSE;
+
+	sts.relMoveComplete			:= FALSE;
+	sts.absMoveComplete			:= FALSE;
+	sts.modMoveComplete			:= FALSE;
+	sts.teachPositionComplete	:= FALSE;
+	sts.enableLagComplete		:= FALSE;
+	sts.disableLagComplete		:= FALSE;
+	sts.homingComplete 			:= FALSE;
+	sts.resetComplete			:= FALSE;
+	sts.stopComplete 			:= FALSE;
+END_IF
+
+CASE sts.state OF
+		E_AxisState.Off:
+			IF sts.enable THEN
+				nextState := E_AxisState.InitReadPosition;
+			END_IF
+			
+		E_AxisState.InitReadPosition:
+			IF mc.readOffset.Valid THEN
+				// check if the offset is already correct
+ 				IF offset = mc.readOffset.Value THEN
+					nextState := E_AxisState.Power;
+				ELSE
+					nextState := E_AxisState.InitSetPosition;
+				END_IF
+			END_IF
+			
+		E_AxisState.InitSetPosition:
+			IF mc.writeOffset.Done THEN
+				nextState := E_AxisState.InitEnableDelay;
+			END_IF
+			
+		E_AxisState.InitEnableDelay:
+			IF enableAxisDelay.Q THEN
+				nextState := E_AxisState.Power;
+			END_IF
+		
+		E_AxisState.Power:
+			IF sts.enable AND axis.Status.Operational THEN
+				nextState := E_AxisState.Enabled;
+			END_IF
+
+		E_AxisState.Enabled:
+			IF sts.enable AND NOT sts.isFollower THEN				
+				IF cmdReceived = E_AxisCommand.JogFwd AND sts.readyFwd THEN
+					mc.MoveDirection := MC_Positive_Direction;
+					nextState := E_AxisState.JogFwd_A;
+				ELSIF cmdReceived = E_AxisCommand.JogRev AND sts.readyRev THEN
+					mc.MoveDirection := MC_Negative_Direction;
+					nextState := E_AxisState.JogRev_A;
+				ELSIF cmdReceived = E_AxisCommand.LatchJogFwd AND sts.readyFwd THEN
+					mc.MoveDirection := MC_Positive_Direction;
+					nextState := E_AxisState.LatchJogFwd_A;
+				ELSIF cmdReceived = E_AxisCommand.LatchJogRev AND sts.readyRev THEN
+					mc.MoveDirection := MC_Negative_Direction;
+					nextState := E_AxisState.LatchJogRev_A;
+				ELSIF cmdReceived = E_AxisCommand.RelMove AND sts.readyRelMove THEN
+					nextState := E_AxisState.RelMove_A;
+				ELSIF cmdReceived = E_AxisCommand.AbsMove AND sts.readyAbsMove THEN
+					nextState := E_AxisState.AbsMove_A;
+				ELSIF cmdReceived = E_AxisCommand.ModMove AND sts.readyModMove THEN
+					nextState := E_AxisState.ModMove_A;
+				ELSIF cmdReceived = E_AxisCommand.TeachPositionTemp THEN
+					nextState := E_AxisState.TeachPositionTemp;
+				ELSIF cmdReceived = E_AxisCommand.TeachPosition THEN
+					nextState := E_AxisState.TeachPosition_Read;
+				ELSIF cmdReceived = E_AxisCommand.EnableLag THEN
+					nextState := E_AxisState.EnableLag;
+				ELSIF cmdReceived = E_AxisCommand.DisableLag THEN
+					nextState := E_AxisState.DisableLag;
+				ELSIF cmdReceived = E_AxisCommand.Home AND sts.readyFwd AND sts.readyRev THEN
+					nextState := E_AxisState.Homing;
+				ELSIF cmdReceived = E_AxisCommand.ResetDrive THEN
+					nextState := E_AxisState.ResetDrive;
+				ELSIF cmdReceived = E_AxisCommand.Stop THEN
+					nextState := E_AxisState.Halting;
+				END_IF
+			END_IF
+	
+		E_AxisState.JogFwd_A:
+			IF cmdReceived <> E_AxisCommand.JogFwd OR mc.moveVelocityA.CommandAborted THEN
+				nextState := E_AxisState.Halting;
+			ELSIF ftJogSpeedChanged.Q  THEN
+				nextState := E_AxisState.JogFwd_B;
+			END_IF
+			
+		E_AxisState.JogFwd_B:
+			IF cmdReceived <> E_AxisCommand.JogFwd OR mc.moveVelocityB.CommandAborted THEN
+				nextState :=  E_AxisState.Halting;
+			ELSIF ftJogSpeedChanged.Q THEN
+				nextState := E_AxisState.JogFwd_A;
+			END_IF
+			
+		E_AxisState.JogRev_A:
+			IF cmdReceived <> E_AxisCommand.JogRev OR mc.moveVelocityA.CommandAborted THEN
+				nextState :=  E_AxisState.Halting;
+			ELSIF ftJogSpeedChanged.Q THEN
+				nextState := E_AxisState.JogRev_B;
+			END_IF
+			
+		E_AxisState.JogRev_B:
+			IF cmdReceived <> E_AxisCommand.JogRev OR mc.moveVelocityB.CommandAborted  THEN
+				nextState :=  E_AxisState.Halting;
+			ELSIF ftJogSpeedChanged.Q THEN
+				nextState := E_AxisState.JogRev_A;
+			END_IF	
+		
+		E_AxisState.LatchJogFwd_A:
+			IF cmdReceived = E_AxisCommand.Stop OR mc.moveVelocityA.CommandAborted THEN
+				nextState := E_AxisState.Halting;
+			ELSIF cmdReceived = E_AxisCommand.LatchJogRev THEN
+				IF sts.readyRev THEN
+					mc.moveDirection := MC_Negative_Direction;
+					nextState := E_AxisState.LatchJogRev_B;
+				ELSE
+					nextState := E_AxisState.Halting;
+				END_IF
+			ELSIF ftJogSpeedChanged.Q  THEN
+				nextState := E_AxisState.LatchJogFwd_B;
+			END_IF
+			
+		E_AxisState.LatchJogFwd_B:
+			IF cmdReceived = E_AxisCommand.Stop OR mc.moveVelocityB.CommandAborted THEN
+				nextState :=  E_AxisState.Halting;
+			ELSIF cmdReceived = E_AxisCommand.LatchJogRev THEN
+				IF sts.readyRev THEN
+					mc.moveDirection := MC_Negative_Direction;
+					nextState := E_AxisState.LatchJogRev_A;
+				ELSE
+					nextState := E_AxisState.Halting;
+				END_IF
+			ELSIF ftJogSpeedChanged.Q THEN
+				nextState := E_AxisState.LatchJogFwd_A;
+			END_IF
+			
+		E_AxisState.LatchJogRev_A:	
+			IF cmdReceived = E_AxisCommand.Stop OR mc.moveVelocityA.CommandAborted THEN
+				nextState :=  E_AxisState.Halting;
+			ELSIF cmdReceived = E_AxisCommand.LatchJogFwd THEN
+				IF sts.readyFwd THEN
+					mc.moveDirection := MC_Positive_Direction;
+					nextState := E_AxisState.LatchJogFwd_B;
+				ELSE
+					nextState := E_AxisState.Halting;
+				END_IF
+			ELSIF ftJogSpeedChanged.Q THEN
+				nextState := E_AxisState.LatchJogRev_B;
+			END_IF
+			
+		E_AxisState.LatchJogRev_B:
+			IF cmdReceived = E_AxisCommand.Stop OR mc.moveVelocityB.CommandAborted  THEN
+				nextState :=  E_AxisState.Halting;
+			ELSIF cmdReceived = E_AxisCommand.LatchJogFwd THEN
+				IF sts.readyFwd THEN
+					mc.moveDirection := MC_Positive_Direction;
+					nextState := E_AxisState.LatchJogFwd_A;
+				ELSE
+					nextState := E_AxisState.Halting;
+				END_IF
+			ELSIF ftJogSpeedChanged.Q THEN
+				nextState := E_AxisState.LatchJogRev_A;
+			END_IF
+		
+		E_AxisState.RelMove_A:
+			IF cmdReceived = E_AxisCommand.Stop THEN
+				nextState := E_AxisState.Halting;
+			ELSIF ftMoveSpeedChanged.Q THEN
+				nextState := E_AxisState.RelMove_B;
+			ELSIF rtAbsMoveADone.Q OR mc.MoveAbsoluteA.CommandAborted THEN
+				nextState := E_AxisState.Enabled;
+				sts.relMoveComplete := TRUE;
+			END_IF
+			
+		E_AxisState.RelMove_B:
+			IF cmdReceived = E_AxisCommand.Stop THEN
+				nextState := E_AxisState.Halting;
+			ELSIF ftMoveSpeedChanged.Q THEN
+				nextState := E_AxisState.RelMove_A;
+			ELSIF rtAbsMoveBDone.Q OR mc.MoveAbsoluteB.CommandAborted THEN
+				nextState := E_AxisState.Enabled;
+				sts.relMoveComplete := TRUE;
+			END_IF
+			
+		E_AxisState.AbsMove_A:
+			IF cmdReceived = E_AxisCommand.Stop THEN
+				nextState := E_AxisState.Halting;
+			ELSIF ftMoveSpeedChanged.Q THEN
+				nextState := E_AxisState.AbsMove_B;		
+			ELSIF rtAbsMoveADone.Q OR mc.MoveAbsoluteA.CommandAborted THEN
+				nextState := E_AxisState.Enabled;
+				sts.absMoveComplete   := TRUE;
+			END_IF
+			
+		E_AxisState.AbsMove_B:
+			IF cmdReceived = E_AxisCommand.Stop THEN
+				nextState := E_AxisState.Halting;
+			ELSIF ftMoveSpeedChanged.Q THEN
+				nextState := E_AxisState.AbsMove_A;
+			ELSIF rtAbsMoveBDone.Q OR mc.moveAbsoluteB.CommandAborted THEN
+				nextState := E_AxisState.Enabled;
+				sts.absMoveComplete   := TRUE;
+			END_IF
+			
+		E_AxisState.ModMove_A:	
+			IF cmdReceived = E_AxisCommand.Stop THEN
+				nextState := E_AxisState.Halting;
+			ELSIF ftMoveSpeedChanged.Q THEN
+				nextState := E_AxisState.ModMove_B;		
+			ELSIF rtModMoveADone.Q OR mc.moveModuloA.CommandAborted THEN
+				nextState := E_AxisState.Enabled;
+				sts.modMoveComplete := TRUE;
+			END_IF
+			
+		E_AxisState.ModMove_B:	
+			IF cmdReceived = E_AxisCommand.Stop THEN
+				nextState := E_AxisState.Halting;
+			ELSIF ftMoveSpeedChanged.Q THEN
+				nextState := E_AxisState.ModMove_A;		
+			ELSIF rtModMoveBDone.Q OR mc.moveModuloB.CommandAborted THEN
+				nextState := E_AxisState.Enabled;
+				sts.modMoveComplete := TRUE;
+			END_IF
+			
+		E_AxisState.Halting:
+			IF mc.halt.Done THEN
+				nextState := E_AxisState.Enabled;
+				sts.stopComplete := TRUE;
+			END_IF
+			
+		E_AxisState.TeachPositionTemp:  
+			IF mc.setPosition.Done THEN
+				nextState := E_AxisState.Enabled;
+				sts.teachPositionComplete := TRUE;
+			END_IF
+			
+		E_AxisState.TeachPosition_Read: 
+			// Read current offset of axis
+			IF mc.readOffset.Valid THEN
+				offset :=  mc.readOffset.Value + (motionParam.teachPosition - axis.NcToPlc.ActPosWithoutPosCorrection);
+				nextState := E_AxisState.TeachPosition_Write;
+			END_IF
+			
+		E_AxisState.TeachPosition_Write: 
+			// Write current offset of axis
+			IF mc.writeOffset.Done THEN
+				nextState := E_AxisState.TeachPosition_SaveData;
+			END_IF	
+			
+		E_AxisState.TeachPosition_SaveData: 
+			// Save persistent data to maintain offsets
+			IF NOT saveData.BUSY THEN
+				nextState := E_AxisState.TeachPosition_EnableDelay;
+			END_IF
+			
+		E_AxisState.TeachPosition_EnableDelay: 
+			// Delay while axis is disabled
+			IF enableAxisDelay.Q THEN
+				nextState := E_AxisState.Power;
+				sts.teachPositionComplete := TRUE;
+				IF homingInProgress THEN // Indicate homing complete if position was set after homing
+					sts.homingComplete := TRUE;
+					homingInProgress := FALSE;
+				END_IF
+			END_IF
+		
+		E_AxisState.EnableLag:
+			IF mc.enableLag.Done THEN
+				nextState := E_AxisState.Enabled;
+				sts.enableLagComplete	:= TRUE;
+			END_IF
+			
+		E_AxisState.DisableLag:	
+			IF mc.disableLag.Done THEN
+				nextState := E_AxisState.Enabled;
+				sts.disableLagComplete	:= TRUE;
+			END_IF
+			
+		E_AxisState.Homing:	
+			homingInProgress := TRUE;	
+			IF cmdReceived = E_AxisCommand.Stop THEN
+				nextState := E_AxisState.Halting;
+			ELSIF mc.homing.Done THEN
+				nextState := E_AxisState.TeachPosition_Read;
+				SetMotionParam(param := E_MotorMotionParam.TeachPosition, val := axis.NcToPlc.ActPos);
+			END_IF
+			
+		E_AxisState.ResetDrive: 
+			IF mc.reset.Done THEN
+				nextState := E_AxisState.Enabled;
+				sts.resetComplete := TRUE;
+			END_IF
+			
+		E_AxisState.Faulting:
+			IF mc.halt.Done OR mc.halt.Error OR mc.halt.CommandAborted THEN
+				nextState := E_AxisState.Faulted;
+			END_IF	
+			
+		E_AxisState.Faulted:
+			IF NOT fault.active THEN
+				nextState := E_AxisState.Off;
+			END_IF
+END_CASE
+
+// State Transitions from ANY State
+IF NOT fault.active AND NOT sts.enable 
+AND NOT (sts.state = E_AxisState.Faulting OR sts.state = E_AxisState.Faulted OR sts.state = E_AxisState.Off) THEN
+	nextState := E_AxisState.Faulting;
+ELSIF fault.active AND NOT (sts.state = E_AxisState.Faulting OR sts.state = E_AxisState.Faulted) THEN
+	nextState := E_AxisState.Faulting;
+END_IF
+
+sts.state 	:= nextState;
+cmdReceived := E_AxisCommand.None;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusIn" Id="{8eab91cb-6e01-46d1-adf2-ae25a3984f9e}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED StatusIn]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Axis
+axis.ReadStatus(); // Axis status not updated cyclically, must explicitly call
+sts.isFollower  := axis.Status.Coupled AND (axis.NcToPlc.CoupleState=3  OR axis.NcToPlc.CoupleState=2); // 1 - Main Motor; 2 - Follower of a Main and Main to a Follower; 3 - Follower only
+sts.position	:= axis.NcToPlc.ActPos;
+sts.velocity	:= axis.NcToPlc.ActVelo;
+sts.torque		:= axis.NcToPlc.ActTorque;
+sts.homed       := axis.Status.Homed;
+sts.coupled     := axis.NcToPlc.CoupleState<>0;
+sts.moving		:= axis.Status.Moving;
+sts.movingFwd	:= sts.moving AND sts.velocity > 0;
+sts.movingRev	:= sts.moving AND sts.velocity < 0;
+
+sts.enable := localEnable AND NOT safeDisable
+			  AND (NOT parentCtrl.estop OR NOT sts.parentConfigured);
+
+// Permissives and Interlocks
+fwdIntlk(	bypActive := sts.bypass, cfg := cfg.fwdIntlk);
+fwdPerm(	bypActive := sts.bypass, cfg := cfg.fwdPerm);
+revIntlk(	bypActive := sts.bypass, cfg := cfg.revIntlk);
+revPerm(	bypActive := sts.bypass, cfg := cfg.revPerm);
+
+sts.readyFwd 		:= fwdIntlk.sts.OK AND fwdPerm.sts.OK;
+sts.readyRev		:= revIntlk.sts.OK AND revPerm.sts.OK;
+sts.readyRelMove	:= sts.state=E_AxisState.Enabled AND
+					   ((sts.readyFwd AND (motionParam.relMoveDistance >= 0)) 
+					 OR (sts.readyRev AND (motionParam.relMoveDistance <= 0)));
+sts.readyAbsMove	:= sts.state=E_AxisState.Enabled AND
+					   ((sts.readyFwd AND (motionParam.absMovePosition >= sts.position)) 
+					 OR (sts.readyRev AND (motionParam.absMovePosition <= sts.position))); 
+sts.readyModMove	:= sts.state=E_AxisState.Enabled AND
+					   ((sts.readyFwd AND (motionParam.modMovePosition >= sts.position))  
+					 OR (sts.readyRev AND (motionParam.modMovePosition <= sts.position)));
+
+IF sts.moving AND ((NOT fwdIntlk.sts.OK AND sts.movingFwd) OR (NOT revIntlk.sts.OK AND sts.movingRev))
+THEN
+	PrvSafe();
+END_IF
+
+// Timers
+enableAxisDelay(IN := sts.state = E_AxisState.InitEnableDelay OR sts.state = E_AxisState.TeachPosition_EnableDelay, PT := cfg.tEnableAxisDelay);
+
+// Check for Speed Change
+jogSpeedChanged 			:= motionParam.jogSpeed <> jogSpeedLast;
+jogSpeedLast 				:= motionParam.jogSpeed;
+ftJogSpeedChanged(CLK		:= jogSpeedChanged);
+moveSpeedChanged 			:= motionParam.MoveSpeed <> moveSpeedLast;
+moveSpeedLast 				:= motionParam.MoveSpeed;
+ftMoveSpeedChanged(CLK		:= moveSpeedChanged);
+
+// Other triggers
+ftRelMove(CLK := sts.state = E_AxisState.RelMove_A OR sts.state = E_AxisState.RelMove_B);
+rtAbsMoveADone(CLK := mc.moveAbsoluteA.Done);
+rtAbsMoveBDone(CLK := mc.moveAbsoluteB.Done);
+rtModMoveADone(CLK := mc.moveModuloA.Done);
+rtModMoveBDone(CLK := mc.moveModuloB.Done);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusOut" Id="{63df2102-2ea4-4257-934e-3f5fd2a0894c}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED StatusOut]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Report Command Statuses
+sts.jogFwdInProgress 	:= (sts.state = E_AxisState.JogFwd_A 		OR sts.state = E_AxisState.JogFwd_B)
+						OR (sts.state = E_AxisState.LatchJogFwd_A 	OR sts.state = E_AxisState.LatchJogFwd_B);
+sts.jogRevInProgress 	:= (sts.state = E_AxisState.JogRev_A 		OR sts.state = E_AxisState.JogRev_B)
+						OR (sts.state = E_AxisState.LatchJogRev_A	OR sts.state = E_AxisState.LatchJogRev_B);
+sts.jogAtSpeed			:= mc.MoveVelocityA.InVelocity OR mc.MoveVelocityB.InVelocity;
+sts.relMoveInProgress 	:= (sts.state = E_AxisState.RelMove_A OR sts.state = E_AxisState.RelMove_B);
+sts.absMoveInProgress 	:= (sts.state = E_AxisState.AbsMove_A OR sts.state = E_AxisState.AbsMove_B);
+sts.modMoveInProgress 	:= (sts.state = E_AxisState.ModMove_A OR sts.state = E_AxisState.ModMove_B);
+
+// Other
+sts.driveDiagnosticNumber := driveDiagnosticNumber;
+ctrlAxis.resetDoneBits := FALSE;
+lastFaultId := fault.id;
+IF sts.state < E_AxisState.Faulting THEN
+	lastGoodState := sts.state;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Stop" Id="{7e754a9b-94b8-4719-9b10-9f136a1d6dcf}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC Stop]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_AxisCommand.Stop;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="TeachPosition" Id="{691c5ae2-e507-413f-98ba-e65c7c966668}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC TeachPosition
+VAR_INPUT
+	position 		: LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SetMotionParam(param := E_MotorMotionParam.TeachPosition, val := position);
+pcmd := E_AxisCommand.TeachPosition;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="TeachPositionTemp" Id="{f26129b8-a397-4db8-8e96-27cebcd66506}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC TeachPositionTemp
+VAR_INPUT
+	position		: LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SetMotionParam(param := E_MotorMotionParam.TeachPosition, val := position);
+pcmd := E_AxisCommand.TeachPositionTemp;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Axis">
+      <LineId Id="6626" Count="0" />
+      <LineId Id="6504" Count="0" />
+      <LineId Id="5969" Count="0" />
+      <LineId Id="4668" Count="0" />
+      <LineId Id="5949" Count="0" />
+      <LineId Id="6741" Count="0" />
+      <LineId Id="4669" Count="1" />
+      <LineId Id="4960" Count="1" />
+      <LineId Id="6288" Count="0" />
+      <LineId Id="6740" Count="0" />
+      <LineId Id="6087" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.AbsMove">
+      <LineId Id="12" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.AbsMoveToStoredPosition">
+      <LineId Id="8" Count="1" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="22" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.AddFollower">
+      <LineId Id="71" Count="0" />
+      <LineId Id="8" Count="1" />
+      <LineId Id="14" Count="7" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="29" Count="3" />
+      <LineId Id="45" Count="6" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="61" Count="1" />
+      <LineId Id="73" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.DefinePosition">
+      <LineId Id="139" Count="0" />
+      <LineId Id="132" Count="0" />
+      <LineId Id="140" Count="0" />
+      <LineId Id="143" Count="0" />
+      <LineId Id="142" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.DeletePosition">
+      <LineId Id="55" Count="5" />
+      <LineId Id="27" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.Device">
+      <LineId Id="6" Count="11" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.DisableCouple">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.DisableLag">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.EnableCouple">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.EnableLag">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.Functions">
+      <LineId Id="217" Count="1" />
+      <LineId Id="220" Count="3" />
+      <LineId Id="297" Count="1" />
+      <LineId Id="224" Count="0" />
+      <LineId Id="215" Count="0" />
+      <LineId Id="429" Count="1" />
+      <LineId Id="510" Count="0" />
+      <LineId Id="216" Count="0" />
+      <LineId Id="206" Count="0" />
+      <LineId Id="205" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="453" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="28" Count="1" />
+      <LineId Id="31" Count="2" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="41" Count="1" />
+      <LineId Id="471" Count="0" />
+      <LineId Id="466" Count="4" />
+      <LineId Id="465" Count="0" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="246" Count="0" />
+      <LineId Id="248" Count="2" />
+      <LineId Id="254" Count="1" />
+      <LineId Id="253" Count="0" />
+      <LineId Id="247" Count="0" />
+      <LineId Id="410" Count="1" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="448" Count="0" />
+      <LineId Id="183" Count="1" />
+      <LineId Id="186" Count="9" />
+      <LineId Id="201" Count="0" />
+      <LineId Id="239" Count="0" />
+      <LineId Id="478" Count="0" />
+      <LineId Id="473" Count="4" />
+      <LineId Id="472" Count="0" />
+      <LineId Id="241" Count="1" />
+      <LineId Id="240" Count="0" />
+      <LineId Id="237" Count="0" />
+      <LineId Id="231" Count="0" />
+      <LineId Id="245" Count="0" />
+      <LineId Id="232" Count="1" />
+      <LineId Id="412" Count="1" />
+      <LineId Id="181" Count="0" />
+      <LineId Id="446" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="61" Count="1" />
+      <LineId Id="64" Count="0" />
+      <LineId Id="66" Count="4" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="63" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="480" Count="5" />
+      <LineId Id="479" Count="0" />
+      <LineId Id="90" Count="1" />
+      <LineId Id="256" Count="0" />
+      <LineId Id="258" Count="2" />
+      <LineId Id="263" Count="0" />
+      <LineId Id="257" Count="0" />
+      <LineId Id="414" Count="0" />
+      <LineId Id="417" Count="0" />
+      <LineId Id="416" Count="0" />
+      <LineId Id="397" Count="0" />
+      <LineId Id="94" Count="1" />
+      <LineId Id="97" Count="9" />
+      <LineId Id="112" Count="1" />
+      <LineId Id="487" Count="5" />
+      <LineId Id="486" Count="0" />
+      <LineId Id="114" Count="1" />
+      <LineId Id="267" Count="0" />
+      <LineId Id="269" Count="2" />
+      <LineId Id="274" Count="0" />
+      <LineId Id="268" Count="0" />
+      <LineId Id="419" Count="0" />
+      <LineId Id="418" Count="0" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="300" Count="2" />
+      <LineId Id="304" Count="4" />
+      <LineId Id="312" Count="1" />
+      <LineId Id="402" Count="1" />
+      <LineId Id="494" Count="5" />
+      <LineId Id="493" Count="0" />
+      <LineId Id="404" Count="2" />
+      <LineId Id="314" Count="0" />
+      <LineId Id="319" Count="0" />
+      <LineId Id="316" Count="1" />
+      <LineId Id="420" Count="1" />
+      <LineId Id="299" Count="0" />
+      <LineId Id="399" Count="0" />
+      <LineId Id="325" Count="1" />
+      <LineId Id="328" Count="8" />
+      <LineId Id="501" Count="5" />
+      <LineId Id="500" Count="0" />
+      <LineId Id="337" Count="6" />
+      <LineId Id="422" Count="1" />
+      <LineId Id="323" Count="0" />
+      <LineId Id="400" Count="0" />
+      <LineId Id="123" Count="2" />
+      <LineId Id="127" Count="4" />
+      <LineId Id="135" Count="1" />
+      <LineId Id="142" Count="3" />
+      <LineId Id="277" Count="0" />
+      <LineId Id="279" Count="2" />
+      <LineId Id="284" Count="0" />
+      <LineId Id="278" Count="0" />
+      <LineId Id="424" Count="1" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="401" Count="0" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="407" Count="0" />
+      <LineId Id="164" Count="0" />
+      <LineId Id="409" Count="0" />
+      <LineId Id="290" Count="0" />
+      <LineId Id="286" Count="1" />
+      <LineId Id="289" Count="0" />
+      <LineId Id="288" Count="0" />
+      <LineId Id="146" Count="0" />
+      <LineId Id="432" Count="1" />
+      <LineId Id="431" Count="0" />
+      <LineId Id="436" Count="0" />
+      <LineId Id="434" Count="1" />
+      <LineId Id="449" Count="0" />
+      <LineId Id="439" Count="3" />
+      <LineId Id="437" Count="0" />
+      <LineId Id="512" Count="1" />
+      <LineId Id="511" Count="0" />
+      <LineId Id="514" Count="0" />
+      <LineId Id="516" Count="0" />
+      <LineId Id="515" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.HandleFaults">
+      <LineId Id="1686" Count="0" />
+      <LineId Id="1688" Count="18" />
+      <LineId Id="1919" Count="0" />
+      <LineId Id="1713" Count="4" />
+      <LineId Id="1735" Count="49" />
+      <LineId Id="1941" Count="0" />
+      <LineId Id="1931" Count="0" />
+      <LineId Id="1971" Count="0" />
+      <LineId Id="1970" Count="0" />
+      <LineId Id="1940" Count="0" />
+      <LineId Id="1862" Count="10" />
+      <LineId Id="1874" Count="0" />
+      <LineId Id="1877" Count="9" />
+      <LineId Id="1963" Count="0" />
+      <LineId Id="1937" Count="1" />
+      <LineId Id="1936" Count="0" />
+      <LineId Id="1964" Count="0" />
+      <LineId Id="1939" Count="0" />
+      <LineId Id="1887" Count="2" />
+      <LineId Id="1861" Count="0" />
+      <LineId Id="1786" Count="7" />
+      <LineId Id="1798" Count="28" />
+      <LineId Id="1915" Count="0" />
+      <LineId Id="1827" Count="0" />
+      <LineId Id="1962" Count="0" />
+      <LineId Id="1952" Count="9" />
+      <LineId Id="1951" Count="0" />
+      <LineId Id="1828" Count="1" />
+      <LineId Id="1893" Count="1" />
+      <LineId Id="1910" Count="0" />
+      <LineId Id="1897" Count="1" />
+      <LineId Id="1911" Count="0" />
+      <LineId Id="1902" Count="1" />
+      <LineId Id="1896" Count="0" />
+      <LineId Id="1942" Count="1" />
+      <LineId Id="1932" Count="1" />
+      <LineId Id="1840" Count="0" />
+      <LineId Id="1966" Count="2" />
+      <LineId Id="1965" Count="0" />
+      <LineId Id="1975" Count="1" />
+      <LineId Id="1841" Count="4" />
+      <LineId Id="1924" Count="0" />
+      <LineId Id="1849" Count="4" />
+      <LineId Id="1907" Count="0" />
+      <LineId Id="1969" Count="0" />
+      <LineId Id="1928" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.Hmi">
+      <LineId Id="90" Count="0" />
+      <LineId Id="107" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="104" Count="1" />
+      <LineId Id="102" Count="1" />
+      <LineId Id="93" Count="2" />
+      <LineId Id="106" Count="0" />
+      <LineId Id="96" Count="4" />
+      <LineId Id="70" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.Home">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.JogFwd">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.JogRev">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.LatchJogFwd">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.LatchJogRev">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.LoadPosition">
+      <LineId Id="34" Count="5" />
+      <LineId Id="46" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.ModMove">
+      <LineId Id="12" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.MotionControl">
+      <LineId Id="7" Count="17" />
+      <LineId Id="291" Count="0" />
+      <LineId Id="25" Count="17" />
+      <LineId Id="290" Count="0" />
+      <LineId Id="43" Count="12" />
+      <LineId Id="103" Count="1" />
+      <LineId Id="340" Count="0" />
+      <LineId Id="343" Count="0" />
+      <LineId Id="345" Count="1" />
+      <LineId Id="344" Count="0" />
+      <LineId Id="348" Count="0" />
+      <LineId Id="347" Count="0" />
+      <LineId Id="105" Count="15" />
+      <LineId Id="122" Count="18" />
+      <LineId Id="305" Count="0" />
+      <LineId Id="304" Count="0" />
+      <LineId Id="141" Count="17" />
+      <LineId Id="306" Count="0" />
+      <LineId Id="159" Count="19" />
+      <LineId Id="180" Count="0" />
+      <LineId Id="315" Count="0" />
+      <LineId Id="312" Count="2" />
+      <LineId Id="181" Count="63" />
+      <LineId Id="246" Count="5" />
+      <LineId Id="328" Count="0" />
+      <LineId Id="252" Count="24" />
+      <LineId Id="284" Count="1" />
+      <LineId Id="308" Count="0" />
+      <LineId Id="307" Count="0" />
+      <LineId Id="277" Count="0" />
+      <LineId Id="294" Count="0" />
+      <LineId Id="297" Count="0" />
+      <LineId Id="299" Count="3" />
+      <LineId Id="296" Count="0" />
+      <LineId Id="303" Count="0" />
+      <LineId Id="295" Count="0" />
+      <LineId Id="278" Count="2" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="292" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Axis.ProcessCommands">
+      <LineId Id="5" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="9" Count="1" />
+      <LineId Id="12" Count="1" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="20" Count="8" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="38" Count="1" />
+      <LineId Id="43" Count="1" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="47" Count="2" />
+      <LineId Id="51" Count="1" />
+      <LineId Id="50" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.PrvSafe">
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.ReadStatus">
+      <LineId Id="5" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="6" Count="1" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="11" Count="2" />
+    </LineIds>
+    <LineIds Name="FB_Axis.RelMove">
+      <LineId Id="19" Count="0" />
+      <LineId Id="17" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.ResetDoneBits">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.ResetDrive">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.Safe">
+      <LineId Id="10" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.SavePosition">
+      <LineId Id="26" Count="5" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.SetMotionParam">
+      <LineId Id="65" Count="4" />
+      <LineId Id="71" Count="1" />
+      <LineId Id="74" Count="6" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="82" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.SetPositionIds">
+      <LineId Id="5" Count="0" />
+      <LineId Id="10" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Axis.StateMachine">
+      <LineId Id="351" Count="1" />
+      <LineId Id="797" Count="1" />
+      <LineId Id="353" Count="9" />
+      <LineId Id="376" Count="2" />
+      <LineId Id="380" Count="14" />
+      <LineId Id="396" Count="4" />
+      <LineId Id="402" Count="4" />
+      <LineId Id="408" Count="5" />
+      <LineId Id="416" Count="0" />
+      <LineId Id="739" Count="0" />
+      <LineId Id="418" Count="0" />
+      <LineId Id="420" Count="0" />
+      <LineId Id="741" Count="0" />
+      <LineId Id="422" Count="0" />
+      <LineId Id="659" Count="0" />
+      <LineId Id="740" Count="0" />
+      <LineId Id="738" Count="0" />
+      <LineId Id="663" Count="0" />
+      <LineId Id="742" Count="0" />
+      <LineId Id="737" Count="0" />
+      <LineId Id="424" Count="1" />
+      <LineId Id="427" Count="1" />
+      <LineId Id="430" Count="1" />
+      <LineId Id="433" Count="1" />
+      <LineId Id="436" Count="1" />
+      <LineId Id="439" Count="1" />
+      <LineId Id="442" Count="1" />
+      <LineId Id="446" Count="1" />
+      <LineId Id="449" Count="1" />
+      <LineId Id="784" Count="1" />
+      <LineId Id="783" Count="0" />
+      <LineId Id="452" Count="2" />
+      <LineId Id="456" Count="1" />
+      <LineId Id="459" Count="4" />
+      <LineId Id="465" Count="1" />
+      <LineId Id="468" Count="4" />
+      <LineId Id="474" Count="1" />
+      <LineId Id="477" Count="4" />
+      <LineId Id="483" Count="1" />
+      <LineId Id="486" Count="3" />
+      <LineId Id="667" Count="0" />
+      <LineId Id="669" Count="1" />
+      <LineId Id="744" Count="2" />
+      <LineId Id="748" Count="2" />
+      <LineId Id="747" Count="0" />
+      <LineId Id="672" Count="4" />
+      <LineId Id="678" Count="1" />
+      <LineId Id="753" Count="5" />
+      <LineId Id="751" Count="0" />
+      <LineId Id="681" Count="4" />
+      <LineId Id="687" Count="1" />
+      <LineId Id="761" Count="5" />
+      <LineId Id="759" Count="0" />
+      <LineId Id="690" Count="4" />
+      <LineId Id="696" Count="1" />
+      <LineId Id="769" Count="5" />
+      <LineId Id="767" Count="0" />
+      <LineId Id="699" Count="1" />
+      <LineId Id="665" Count="1" />
+      <LineId Id="490" Count="0" />
+      <LineId Id="492" Count="3" />
+      <LineId Id="497" Count="5" />
+      <LineId Id="504" Count="3" />
+      <LineId Id="509" Count="5" />
+      <LineId Id="516" Count="3" />
+      <LineId Id="521" Count="5" />
+      <LineId Id="528" Count="3" />
+      <LineId Id="533" Count="5" />
+      <LineId Id="540" Count="3" />
+      <LineId Id="545" Count="5" />
+      <LineId Id="552" Count="3" />
+      <LineId Id="557" Count="3" />
+      <LineId Id="562" Count="1" />
+      <LineId Id="565" Count="5" />
+      <LineId Id="572" Count="5" />
+      <LineId Id="788" Count="0" />
+      <LineId Id="579" Count="3" />
+      <LineId Id="793" Count="0" />
+      <LineId Id="583" Count="0" />
+      <LineId Id="789" Count="0" />
+      <LineId Id="585" Count="4" />
+      <LineId Id="790" Count="0" />
+      <LineId Id="591" Count="1" />
+      <LineId Id="594" Count="2" />
+      <LineId Id="791" Count="0" />
+      <LineId Id="597" Count="2" />
+      <LineId Id="779" Count="1" />
+      <LineId Id="782" Count="0" />
+      <LineId Id="781" Count="0" />
+      <LineId Id="600" Count="2" />
+      <LineId Id="604" Count="5" />
+      <LineId Id="611" Count="7" />
+      <LineId Id="787" Count="0" />
+      <LineId Id="786" Count="0" />
+      <LineId Id="619" Count="0" />
+      <LineId Id="776" Count="0" />
+      <LineId Id="621" Count="0" />
+      <LineId Id="792" Count="0" />
+      <LineId Id="622" Count="0" />
+      <LineId Id="624" Count="5" />
+      <LineId Id="631" Count="3" />
+      <LineId Id="636" Count="0" />
+      <LineId Id="638" Count="5" />
+      <LineId Id="645" Count="0" />
+      <LineId Id="775" Count="0" />
+      <LineId Id="646" Count="0" />
+      <LineId Id="648" Count="2" />
+      <LineId Id="652" Count="1" />
+      <LineId Id="298" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.StatusIn">
+      <LineId Id="6" Count="2" />
+      <LineId Id="49" Count="2" />
+      <LineId Id="69" Count="1" />
+      <LineId Id="80" Count="1" />
+      <LineId Id="79" Count="0" />
+      <LineId Id="98" Count="1" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="36" Count="2" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="85" Count="2" />
+      <LineId Id="103" Count="0" />
+      <LineId Id="88" Count="1" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="90" Count="1" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="53" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="15" Count="4" />
+      <LineId Id="24" Count="1" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="101" Count="0" />
+      <LineId Id="100" Count="0" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="111" Count="0" />
+      <LineId Id="114" Count="0" />
+      <LineId Id="109" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.StatusOut">
+      <LineId Id="11" Count="1" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="48" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="34" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.Stop">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.TeachPosition">
+      <LineId Id="12" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.TeachPositionTemp">
+      <LineId Id="11" Count="0" />
+      <LineId Id="6" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

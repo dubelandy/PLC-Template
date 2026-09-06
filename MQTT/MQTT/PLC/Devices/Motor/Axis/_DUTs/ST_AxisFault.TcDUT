@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisFault" Id="{745fd92c-547d-4076-a4e1-0dc93839160f}">
+    <Declaration><![CDATA[TYPE ST_AxisFault :
+STRUCT
+	(* General error info
+	----------------------------------------------------------------------------------------------------*)
+	active					: BOOL; 
+	id						: UDINT; 
+	inText					: T_MaxString; // Set by inpFaultText
+	ncText					: T_MaxString; // Passed up via mc block errors
+	hwText					: T_MaxString; // Drive fault
+	
+	(* Axis Faults
+	----------------------------------------------------------------------------------------------------*)
+	driveNotOK				: BOOL;			
+	driveStateNotOP			: BOOL;             
+	driveDeviceError		: BOOL;			
+	ioDataInvalid			: BOOL;           
+	                                            
+	(* Motion Command Faults
+	----------------------------------------------------------------------------------------------------*)   
+	// Ignore velo, rel, and abs 'cmd aborted' errors since these also occur when speed changes are requested                 
+	mcPowerTimeout			: BOOL;			
+	mcPowerError			: BOOL;                  
+	mcMoveVeloError			: BOOL;                                
+	mcMoveAbsError			: BOOL;  
+	mcMoveModError			: BOOL;
+	mcEnableLagError		: BOOL;           
+	mcDisableLagError		: BOOL;           
+	mcHomeError				: BOOL;           
+	mcHaltCmdAborted		: BOOL; 
+	mcHaltError				: BOOL;           
+	mcSetPositionError		: BOOL;           
+	mcResetError			: BOOL;
+	mcResetSoeError			: BOOL;
+	mcGearError				: BOOL; 
+	
+	(* Programming Faults
+	----------------------------------------------------------------------------------------------------*)   
+	fwdIntlkDisabled		: BOOL;
+	revIntlkDisabled		: BOOL;
+	coupleError				: BOOL; // Set if the motors cannot couple due to not being homed
+	followerLagError		: BOOL; // Set if abs(main lag - follower lag) exceeds the configured amount
+	external				: BOOL; // Set by inpFaultCondition
+END_STRUCT                                     
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

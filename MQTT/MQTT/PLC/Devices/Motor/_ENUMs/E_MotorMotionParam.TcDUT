@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_MotorMotionParam" Id="{25cddada-c5c8-4c0f-a00e-3778f491c2ce}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA' := '1'}
+{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_MotorMotionParam : // Use with SetMotionParam();
+(
+	 None 				:= 0,
+	
+	(* Jog Parameters
+	----------------------------------------------------------------------------------------------------*)
+	JogSpeed			:= 1,
+	JogAccel			:= 2,
+	JogDecel			:= 3,
+	
+	(* Relative, absolute, and modulus move Parameters
+	----------------------------------------------------------------------------------------------------*)
+	RelMoveDistance		:= 10,
+	AbsMovePosition    	:= 20,
+	AbsMovePositionId	:= 21,
+	ModMovePosition    	:= 30,
+	MoveSpeed	    	:= 40,
+	MoveAccel		    := 41,
+	MoveDecel		    := 42,
+	
+	(* Other Motion Parameters
+	----------------------------------------------------------------------------------------------------*)
+	Jerk				:= 50,
+	TeachPosition	    := 60,
+	HomePosition       	:= 61,
+	HaltDecel			:= 70
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

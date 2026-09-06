@@ -6,7 +6,7 @@ VAR
 	// ===== Config =====
     sHostName       : STRING(255) := 'test.mosquitto.org'; // broker
     nHostPort       : UINT := 1883;
-    sTopic          : STRING(255) := 'heirloom';
+    sTopic          : STRING(255) := 'Tidal Solutions';
 
     // ===== MQTT client =====
     fbClient        : FB_IotMqttClient;

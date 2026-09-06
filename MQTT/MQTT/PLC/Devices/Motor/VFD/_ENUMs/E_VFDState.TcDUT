@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_VFDState" Id="{655015e3-e98a-46d4-9157-785f60c16213}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA' := '1'}
+{attribute 'OPC.UA.DA.Access' := '1'}
+{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_VFDState :
+(
+	Unknown	:= -1,
+	NotReady:= 0, 
+	Ready	:= 1,
+	Running	:= 2
+) DINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

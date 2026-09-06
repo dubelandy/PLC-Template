@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="GVL_Lib_ServoConstants" Id="{a86e878d-d0f5-455f-8563-96e1f5d36e97}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL CONSTANT
+	MAX_POSITIONS			: INT := 25; //max number of positions in position list
+	EMPTY_POSITION_ID		: INT := -1; //indicates this position list entry is empty 
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

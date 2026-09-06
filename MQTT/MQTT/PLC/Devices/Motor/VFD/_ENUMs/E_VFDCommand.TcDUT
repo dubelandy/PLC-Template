@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_VFDCommand" Id="{dbc4ba09-daa7-4d45-b673-ef165a18ef67}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA' := '1'}
+{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_VFDCommand :
+(
+	None		:= 0,
+	Stop		:= 1, 
+	Enable		:= 2, 
+	JogFwd 		:= 3,
+	JogRev		:= 4,
+	LatchJogFwd := 5,
+	LatchJogRev	:= 6,	
+	Reset		:= 7
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

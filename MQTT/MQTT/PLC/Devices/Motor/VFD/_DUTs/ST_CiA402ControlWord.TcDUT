@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_CiA402ControlWord" Id="{3c82e6c3-5835-4f01-94c2-ae8f67abd6f7}">
+    <Declaration><![CDATA[TYPE ST_CiA402ControlWord :
+STRUCT
+	SwitchOn  			: BIT;
+	EnableVoltage 		: BIT;
+	QuickStopDisengaged	: BIT; // 0 = quickstop active, 1 = quickstop inactive
+	EnableOp			: BIT;
+	Reserved4			: BIT;
+	Reserved5			: BIT;
+	Reserved6			: BIT;
+	FaultReset			: BIT;
+	Halt				: BIT;
+	Reserved9			: BIT;
+	Reserved10			: BIT;
+	Direction			: BIT; // 0 = fwd, 1 = rev
+	Assignable12		: BIT;
+	Assignable13		: BIT;
+	Assignable14		: BIT;
+	Assignable15		: BIT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

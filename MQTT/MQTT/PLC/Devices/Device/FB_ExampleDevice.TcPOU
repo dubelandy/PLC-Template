@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_ExampleDevice" Id="{73bed2c7-90fe-4096-ac4e-6659224a1bb2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ExampleDevice EXTENDS FB_Device
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	ocmd : E_ActuatorCommand;
+
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg : ST_Actuator2StateConfiguration;
+
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'} // read only
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	homePerm  : FB_Permissive;
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'} // read only
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	homeIntlk : FB_Permissive;
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'} // read only
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	workPerm  : FB_Permissive;
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'} // read only
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	workIntlk : FB_Permissive;
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'} // read only
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts : ST_ExampleDeviceStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[StatusIn();
+StatusOut();]]></ST>
+    </Implementation>
+    <Method Name="Device" Id="{36b84715-8236-4187-a359-62844eeedd20}">
+      <Declaration><![CDATA[METHOD Device
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// To FB device
+opTimeout  			 := cfg.opTimeout;
+opTimeoutEnable 	 := cfg.opTimeoutEnable;
+opActivity 			 := ocmd <> E_AxisCommand.None;
+
+// From FB device
+sts.mode	   		 := mode;
+sts.modeAuto   		 := sts.mode = E_SystemMode.Auto;
+sts.modeManual 		 := sts.mode = E_SystemMode.Manual;
+sts.manualOvrde		 := ctrl.manualOvrde; 	
+sts.bypass 	   		 := ctrl.bypass;		
+sts.sim		   		 := ctrl.sim;			
+sts.parentConfigured := parentConfigured;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_ExampleDevice">
+      <LineId Id="9" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_ExampleDevice.Device">
+      <LineId Id="6" Count="11" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

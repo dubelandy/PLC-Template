@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisPosition" Id="{a0595011-b3e4-4ed6-89a9-1cde42897849}">
+    <Declaration><![CDATA[TYPE ST_AxisPosition :
+STRUCT
+	id					: INT := GVL_Lib_ServoConstants.EMPTY_POSITION_ID;
+	position			: LREAL;  // Servo encoder value for position
+	name				: STRING; // Position friendly name
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

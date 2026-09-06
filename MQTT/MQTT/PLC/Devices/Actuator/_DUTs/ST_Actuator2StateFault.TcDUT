@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_Actuator2StateFault" Id="{77666db6-4ef6-47fb-bec5-0200be5bb69c}">
+    <Declaration><![CDATA[TYPE ST_Actuator2StateFault :
+STRUCT
+	(* General error info
+	----------------------------------------------------------------------------------------------------*)
+	active					: BOOL; 
+	id						: UDINT; 	
+	text					: T_MaxString; // Actuator fault
+	
+	(* Motion error
+	----------------------------------------------------------------------------------------------------*)
+	toHomeTransit			 : BOOL; // to Home transit timeout (actuator did not reach home position in time)
+	toWorkTransit			 : BOOL; // to Work transit timeout (actuator did not reach work position in time)
+	toHomeStall				 : BOOL; // to Home full stall (actuator did not move from work)
+	toWorkStall				 : BOOL; // to Work full stall (actuator did not move from home)
+	allFdbkOn				 : BOOL; // All feedback on (installation error)
+	
+	(* Programing error
+	----------------------------------------------------------------------------------------------------*)
+	homePermNOK				 : BOOL; // Home permissives not OK
+	homeIntlkNOK			 : BOOL; // Home interlocks not OK
+	workPermNOK				 : BOOL; // Work permissives not OK
+	workIntlkNOK			 : BOOL; // Work interlocks not OK
+	ocmdNOK					 : BOOL; // Operator command in Auto is not allowed
+	pcmdNOK					 : BOOL; // Program command in Manual is not allowed
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_ActuatorCommand" Id="{5c6b75a8-129a-0db4-1581-cc235c113bc5}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_ActuatorCommand :
+(
+	None	:= 0, //no command
+	Home	:= 1, //home output ON
+	Work	:= 2, //work output ON
+	AllOff	:= 3 //all output OFF
+) DINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

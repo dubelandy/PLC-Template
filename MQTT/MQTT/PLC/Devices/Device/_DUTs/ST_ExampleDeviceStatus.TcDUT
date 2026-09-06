@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_ExampleDeviceStatus" Id="{caa6342f-2a7c-46ea-bf57-3df96efac32d}">
+    <Declaration><![CDATA[TYPE ST_ExampleDeviceStatus EXTENDS ST_DeviceStatus :
+STRUCT
+	readyWork : BOOL;
+	readyHome : BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_ActuatorAnalogConfiguration" Id="{c8eca58a-8ba7-465f-9235-5688e0274a07}">
+    <Declaration><![CDATA[TYPE ST_ActuatorAnalogConfiguration :
+STRUCT
+	HomeValue			: LREAL := 0.0; //analog output (engineering units) to go to home position
+	WorkValue			: LREAL := 100.0; //analog output (engineering units) to go to work position
+	OutMin				: LREAL := 0.0; //minimum analog output
+	OutMax				: LREAL := 100.0; //maximum analog output
+	OutRawMin			: DINT := -32768; //minimum raw analog output to card
+	OutRawMax			: DINT := 32767; //maximum raw analog output to card
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

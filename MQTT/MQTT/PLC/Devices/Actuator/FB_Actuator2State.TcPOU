@@ -1,0 +1,686 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Actuator2State" Id="{8e32898a-57ca-4eac-aaf4-f3d1c34fa952}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Actuator2State EXTENDS FB_Device
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg						: ST_Actuator2StateConfiguration; //configuration
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	ocmd 					: E_ActuatorCommand; //operator command
+	
+	func					: ST_Actuator2StateFunctions; //functions
+	
+	(* Interlocks/Permissives
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}	
+	workIntlk				: FB_Permissive; //Interlocks to prevent motion towards work
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}	
+	workPerm				: FB_Permissive; //Permissives to prevent start of motion towards work
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	homeIntlk				: FB_Permissive; //Interlocks to prevent motion towards home
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	homePerm				: FB_Permissive; //Permissives to prevent start of motion towards home
+	
+	(* External inputs
+	----------------------------------------------------------------------------------------------------*)
+	workFdbk				: FB_DigitalInput;
+	homeFdbk				: FB_DigitalInput;
+END_VAR
+VAR_OUTPUT
+	outWork		AT %Q*	: BOOL; //Physical command to work position
+	outHome		AT %Q*	: BOOL;	//Physical command to home position
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts					: ST_Actuator2StateStatus;
+
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}	
+	fault		: ST_Actuator2StateFault;
+END_VAR
+VAR
+	//Command processing
+	pcmd				: E_ActuatorCommand; //program command
+	pcmdLast			: E_ActuatorCommand;
+	ocmdLast			: E_ActuatorCommand;
+	cmdReceived			: E_ActuatorCommand; //command received from external interface
+	cmdReceivedLast		: E_ActuatorCommand;
+	cmdExecuting		: E_ActuatorCommand; //command executed by the state machine
+
+	//state variables for tracking
+	stateLast			: E_ActuatorState; //last state before the previously active state (scan-independent)
+	stateLastScan		: E_ActuatorState; //state on last scan
+	
+	homeFdbkProcessed 	: BOOL; // processed home feedback
+	workFdbkProcessed 	: BOOL; // processed work feedback
+	//Oneshot triggers
+	rtNewState			: BOOL; //just entered new state
+	
+	//Timers
+	workTimer				: TON := (PT := T#5M);
+	homeTimer				: TON := (PT := T#5M);
+	allOnTimer				: TON := (PT := T#5M);
+	
+	resetFault	: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+StatusIn();
+ProcessInputs();
+ProcessCommands();
+Device();
+Functions();
+StateMachine();
+HandleFaults();
+ControlOutputs();
+StatusOut();]]></ST>
+    </Implementation>
+    <Folder Name="Protected" Id="{5f8edee8-f6fa-44a9-a853-e659ae76ceeb}">
+      <Folder Name="Commands" Id="{c2894895-8f60-4f54-97d3-815d3c8bed73}" />
+      <Folder Name="Logic" Id="{69f2b1cb-3511-4957-b556-7b7119c2091e}" />
+    </Folder>
+    <Folder Name="Public" Id="{8990e07d-b41e-42cc-a065-a0caa7bbd134}">
+      <Folder Name="Commands" Id="{b29a5b8b-abfd-4778-bc15-e82ce8357c4a}" />
+    </Folder>
+    <Method Name="AllOff" Id="{ac4363bb-7bd0-40c0-b26a-d2ec6e596098}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC AllOff]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_ActuatorCommand.AllOff;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ControlOutputs" Id="{a350f15b-d37e-4ffa-8018-8f8607480181}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED ControlOutputs //Set physical outputs]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF ctrl.sim THEN //do not command outputs when simulated
+	outWork := outHome := FALSE;
+ELSE
+	outWork := cmdExecuting = E_ActuatorCommand.Work;
+	outHome := cmdExecuting = E_ActuatorCommand.Home;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Device" Id="{37d6abe4-1750-4432-bdba-49a6284d172c}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD Device : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// to FB device
+opTimeout  			 := cfg.opTimeout;
+opTimeoutEnable 	 := cfg.opTimeoutEnable;
+opActivity 			 := ocmd <> E_ActuatorCommand.None;
+
+// from FB device
+sts.mode	   		 := mode;
+sts.modeAuto   		 := sts.mode = E_SystemMode.Auto;
+sts.modeManual 		 := sts.mode = E_SystemMode.Manual;
+sts.manualOvrde		 := ctrl.manualOvrde; 	
+sts.bypass 	   		 := ctrl.bypass;		
+sts.sim		   		 := ctrl.sim;			
+sts.parentConfigured := parentConfigured;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Functions" Id="{49c2ae45-c6c9-4c3c-afb0-f78d2c68af0c}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED Functions]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[func.toHome(hmiTextStatic := 'toHome', timeoutPT := T#30S);
+func.toHome.permComplete.cfg.condText[0] := CONCAT(cfg.actuatorId, ' at Home');
+func.toHome.permComplete.perm.0 := sts.atHome;
+
+IF func.toHome.entry THEN
+    ToHome();
+END_IF
+IF func.toHome.running THEN
+    IF NOT sts.atHome AND NOT sts.goingToHome THEN
+		ToHome(); // continue calling if didn't work at first
+	END_IF;
+	func.ToHome.inpError := fault.active;
+	func.ToHome.inpErrorText := fault.text;
+END_IF
+
+
+func.toWork(hmiTextStatic := 'toWork', timeoutPT := T#30S);
+func.toWork.permComplete.cfg.condText[0] := CONCAT(cfg.actuatorId, ' at Work');
+func.toWork.permComplete.perm.0 := sts.atWork; // condition to complete the step should be specified here
+
+IF func.toWork.entry THEN
+    ToWork();
+END_IF
+IF func.toWork.running THEN
+	IF NOT sts.atWork AND NOT sts.goingToWork THEN
+		ToWork(); // continue calling if didn't work at first
+	END_IF;
+	func.ToWork.inpError := fault.active;
+	func.ToWork.inpErrorText := fault.text;
+END_IF
+
+
+func.AllOff(hmiTextStatic := 'AllOff', timeoutPT := T#30S);
+func.AllOff.permComplete.cfg.condText[0] := CONCAT(cfg.actuatorId, ' all Off');
+func.AllOff.permComplete.perm.0 := sts.allOff; // condition to complete the step should be specified here
+
+IF func.AllOff.entry THEN
+    AllOff();
+END_IF
+IF func.AllOff.running THEN
+   	AllOff(); // continue calling if didn't work at first
+	func.AllOff.inpError := fault.active;
+	func.AllOff.inpErrorText := fault.text;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="HandleFaults" Id="{c793ff15-60d6-4279-a07c-70e5cbf558c2}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED HandleFaults : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fault.allFdbkOn S= allOnTimer.ET >= cfg.failTimeAllOn;
+//fault.homePermNOK; // Set in PrvHome
+//fault.workPermNOK; // Set in PrvWork
+//fault.ocmdNOK; // Set in ProcessCommands
+//fault.pcmdNOK; // Set in ProcessCommands
+//fault.workIntlkNOK; // Set in ProcessCommands AND PrvWork
+//fault.homeIntlkNOK; // Set in ProcessCommands AND PrvHome
+fault.toWorkStall S= homeFdbkProcessed AND NOT workFdbkProcessed AND workTimer.ET >= cfg.failTimeFullStall;
+fault.toHomeStall S= workFdbkProcessed AND NOT homeFdbkProcessed AND homeTimer.ET >= cfg.failTimeFullStall;
+fault.toWorkTransit S= NOT homeFdbkProcessed AND NOT workFdbkProcessed AND workTimer.ET >= cfg.failTimeTransit;
+fault.toHomeTransit S= NOT homeFdbkProcessed AND NOT workFdbkProcessed AND homeTimer.ET >= cfg.failTimeTransit;
+
+(* ----- Handle Reset ----- *)
+IF resetFault THEN
+	fault.allFdbkOn R= TRUE;
+	fault.homeIntlkNOK R= TRUE;
+	fault.homePermNOK R= TRUE;
+	fault.ocmdNOK R= TRUE;
+	fault.pcmdNOK R= TRUE;
+	fault.toHomeStall R= TRUE;
+	fault.toHomeTransit R= TRUE;
+	fault.toWorkStall R= TRUE;
+	fault.toWorkTransit R= TRUE;
+	fault.workIntlkNOK R= TRUE;
+	fault.workPermNOK R= TRUE;
+END_IF
+resetFault := FALSE;
+
+(* ----- Map Fault Id ----- *)
+fault.id.0 := fault.allFdbkOn;
+fault.id.1 := fault.homeIntlkNOK;
+fault.id.2 := fault.homePermNOK;
+fault.id.3 := fault.ocmdNOK;
+fault.id.4 := fault.pcmdNOK;
+fault.id.5 := fault.toHomeStall;
+fault.id.6 := fault.toHomeTransit;
+fault.id.7 := fault.toWorkStall;
+fault.id.8 := fault.toWorkTransit;
+fault.id.9 := fault.workIntlkNOK;
+fault.id.10 := fault.workPermNOK;
+
+
+(* ----- Map Fault Text ----- *)
+IF fault.allFdbkOn THEN	fault.text := 'All feedback on';
+ELSIF fault.homeIntlkNOK THEN	fault.text := 'Home interlocks not OK';
+ELSIF fault.homePermNOK THEN	fault.text := 'Home permissives not OK';
+ELSIF fault.ocmdNOK THEN	fault.text := 'Operator command in Auto is not allowed';
+ELSIF fault.pcmdNOK THEN	fault.text := 'Program command in Manual is not allowed';
+ELSIF fault.toHomeStall THEN	fault.text := 'To Home full stall';
+ELSIF fault.toHomeTransit THEN	fault.text := 'To Home transit timeout';
+ELSIF fault.toWorkStall THEN	fault.text := 'To Work full stall';
+ELSIF fault.toWorkTransit THEN	fault.text := 'To Work transit timeout';
+ELSIF fault.workIntlkNOK THEN	fault.text := 'Work interlocks not OK';
+ELSIF fault.workPermNOK THEN	fault.text := 'Work permissives not OK';
+ELSE fault.text := '';
+END_IF
+
+(* ----- Set Active ----- *)
+fault.active := fault.id > 0;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ProcessCommands" Id="{c1735962-13ec-46e4-9e29-0a8b8c70989a}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED ProcessCommands]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Check for new valid commands
+IF ctrl.reset THEN
+	PrvReset();
+ELSIF ocmd <> E_ActuatorCommand.None THEN
+	IF sts.modeManual THEN
+		cmdReceived := ocmd;
+	ELSE
+		fault.ocmdNOK := TRUE;
+	END_IF
+ELSIF pcmd <> E_ActuatorCommand.None THEN
+	IF sts.modeAuto THEN
+		cmdReceived := pcmd;
+	ELSE
+		fault.pcmdNOK := TRUE;
+	END_IF
+END_IF
+
+IF (outWork OR sts.atWork OR sts.goingToWork) AND NOT workIntlk.sts.ok THEN 
+	fault.workIntlkNOK S= TRUE;
+	PrvSafe();
+ELSIF (outHome OR sts.atHome OR sts.goingToHome) AND NOT homeIntlk.sts.ok THEN
+	fault.homeIntlkNOK S= TRUE;	
+	PrvSafe();
+END_IF
+
+CASE cmdReceived OF 
+	E_ActuatorCommand.Home:
+		PrvHome();
+	E_ActuatorCommand.Work:
+		PrvWork();
+	E_ActuatorCommand.AllOff:
+		PrvAllOff();
+END_CASE
+
+//Save last commands
+IF pcmd <> E_ActuatorCommand.None  THEN
+	pcmdLast := pcmd;
+END_IF
+IF ocmd <> E_ActuatorCommand.None THEN
+	ocmdLast := ocmd;
+END_IF
+IF cmdReceived <> E_ActuatorCommand.None THEN
+	cmdReceivedLast := cmdReceived;
+END_IF
+
+//Program Commands
+cmdReceived	:= E_ActuatorCommand.None;
+pcmd		:= E_ActuatorCommand.None;
+
+//Operator Commands
+ocmd := E_ActuatorCommand.None;
+ctrl.reset := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ProcessInputs" Id="{e08b3511-1281-4813-a902-989a4a13777e}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED ProcessInputs]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//device feedback processing
+//use sensor feedback if available and debounce as required
+//otherwise use simulation timers
+
+//Call input FBs
+homeFdbk(cfg := cfg.homeFdbk);
+workFdbk(cfg := cfg.workFdbk);
+
+IF cfg.homeNoFdbk OR sts.sim THEN
+	homeFdbkProcessed := homeTimer.ET >= cfg.homeNoFdbkTime;	
+ELSE
+	homeFdbkProcessed := homeFdbk.sts.debouncedSignal;
+END_IF
+IF cfg.workNoFdbk OR sts.sim THEN
+	workFdbkProcessed := workTimer.ET >= cfg.workNoFdbkTime;	
+ELSE
+	workFdbkProcessed := workFdbk.sts.debouncedSignal;	
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvAllOff" Id="{bfe8b81f-a5eb-4c38-aa78-fbe5270915dc}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvAllOff
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT sts.allOff THEN // ignore command if already at work
+	sts.state := E_ActuatorState.AllOff;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvHome" Id="{4c8cd75e-1d7d-4199-9b41-33524d169a4c}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvHome
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT sts.atHome THEN // ignore command if already at home
+	IF NOT homeIntlk.sts.ok THEN	// check intlk before starting home
+		fault.homeIntlkNOK S= TRUE;
+	ELSIF NOT homePerm.sts.ok THEN	// check perm before starting home
+		fault.homePermNOK S= TRUE;
+	ELSE
+		sts.state := E_ActuatorState.GoingToHome;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvReset" Id="{9fe4e32a-b003-4f31-a5fc-ffd178a03f9d}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvReset //Reset the device]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[resetFault S= TRUE;
+
+//Reset permissives/interlocks
+homePerm.Reset();
+homeIntlk.Reset();
+workPerm.Reset();
+workIntlk.Reset();
+
+IF ((cmdExecuting = E_ActuatorCommand.Work) AND NOT (sts.state = E_ActuatorState.AtWork)) OR
+   ((cmdExecuting = E_ActuatorCommand.Home) AND NOT (sts.state = E_ActuatorState.AtHome)) THEN
+	cmdExecuting := E_ActuatorCommand.None;
+END_IF
+IF NOT (sts.state = E_ActuatorState.AtWork OR sts.state = E_ActuatorState.AtHome) THEN
+	sts.state := E_ActuatorState.AllOff;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvSafe" Id="{bd2998aa-1b96-49dd-be07-29855a302105}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvSafe]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE cfg.safeAction OF
+	E_ActuatorCommand.None:
+		; // default behavior when intlk is lost
+	E_ActuatorCommand.AllOff:
+		sts.state := E_ActuatorState.AllOff; // this is ok because AllOff has no perm or intlk
+	E_ActuatorCommand.Home:
+		sts.state := E_ActuatorState.GoingToHome; // should this be forced? or should it play by intlk/perm rules?
+	E_ActuatorCommand.Work:
+		sts.state := E_ActuatorState.GoingToWork; // same question
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvWork" Id="{03dad046-4cb3-4f4b-a6d2-bea96f48ba03}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvWork
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT sts.atWork THEN // ignore command if already at work
+	IF NOT workIntlk.sts.ok THEN // check intlk before starting work
+		fault.workIntlkNOK S= TRUE;		
+	ELSIF NOT workPerm.sts.ok THEN	// check intlk before starting work
+		fault.workPermNOK S= TRUE;	
+	ELSE 
+		sts.state := E_ActuatorState.GoingToWork;	
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{e26ce039-c65e-400f-8d70-95d4cc29ba99}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE sts.state OF
+	
+	E_ActuatorState.AllOff:
+		cmdExecuting := E_ActuatorCommand.AllOff;
+		
+	E_ActuatorState.AtHome:
+		// If we got here based on a successful calling command (which is the only way to get here), reset faults
+		IF rtNewState THEN
+			resetFault := TRUE;
+		END_IF
+		cmdExecuting := SEL(cfg.releaseAtPos,E_ActuatorCommand.Home,E_ActuatorCommand.AllOff);
+		
+	E_ActuatorState.AtWork:
+		// If we got here based on a successful calling command (which is the only way to get here), reset faults
+		IF rtNewState THEN
+			resetFault := TRUE;
+		END_IF
+		cmdExecuting := SEL(cfg.releaseAtPos,E_ActuatorCommand.Work,E_ActuatorCommand.AllOff);
+		
+	E_ActuatorState.GoingToHome: //Check if we are at home
+		cmdExecuting := E_ActuatorCommand.Home;
+		IF homeFdbkProcessed THEN
+			sts.state := E_ActuatorState.AtHome;
+			sts.timeToHome := homeTimer.ET;
+		END_IF
+		
+	E_ActuatorState.GoingToWork: //Check if we are at work
+		cmdExecuting := E_ActuatorCommand.Work;
+		IF workFdbkProcessed THEN
+			sts.state := E_ActuatorState.AtWork;
+			sts.timeToWork := workTimer.ET;
+		END_IF
+		
+END_CASE
+
+rtNewState := sts.state <> stateLastScan; 
+IF rtNewState THEN
+	stateLast := stateLastScan;
+END_IF
+stateLastScan := sts.state;
+
+// Monitoring timers
+workTimer(IN := cmdExecuting = E_ActuatorCommand.Work);
+homeTimer(IN := cmdExecuting = E_ActuatorCommand.Home);
+allOnTimer(IN := homeFdbkProcessed AND workFdbkProcessed);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusIn" Id="{ec1191cb-ee43-43d2-a2c9-9a4c951a0a35}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED StatusIn]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Permissives and Interlocks
+workIntlk(bypActive := sts.bypass, cfg := cfg.workIntlk);
+workPerm(bypActive := sts.bypass, cfg := cfg.workPerm);
+homeIntlk(bypActive := sts.bypass, cfg := cfg.homeIntlk);
+homePerm(bypActive := sts.bypass, cfg := cfg.homePerm);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusOut" Id="{9af4ec37-a977-4ba6-9a30-b149d50b34b5}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sts.atHome 			:= sts.state = E_ActuatorState.AtHome;
+sts.atWork 			:= sts.state = E_ActuatorState.AtWork;
+sts.goingToHome 	:= sts.state = E_ActuatorState.GoingToHome;
+sts.goingToWork		:= sts.state = E_ActuatorState.GoingToWork;
+sts.allOff 			:= sts.state = E_ActuatorState.AllOff;
+
+sts.readyToHome := homeIntlk.sts.ok AND homePerm.sts.ok;
+sts.readyToWork := workIntlk.sts.ok AND workPerm.sts.ok;
+sts.echoHomeFdbk := homeFdbkProcessed;
+sts.echoWorkFdbk := workFdbkProcessed;
+sts.echoHomeOut := outHome;
+sts.echoWorkOut := outWork;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ToHome" Id="{1789c518-9713-4bac-a546-d2a84d69a67e}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC ToHome]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_ActuatorCommand.Home;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ToWork" Id="{a76b28a0-850b-43ca-8d01-dbcc4165f240}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC ToWork]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_ActuatorCommand.Work;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Actuator2State">
+      <LineId Id="11255" Count="0" />
+      <LineId Id="11139" Count="1" />
+      <LineId Id="11367" Count="0" />
+      <LineId Id="11142" Count="0" />
+      <LineId Id="11369" Count="0" />
+      <LineId Id="11364" Count="0" />
+      <LineId Id="11143" Count="0" />
+      <LineId Id="11368" Count="0" />
+      <LineId Id="11144" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.AllOff">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.ControlOutputs">
+      <LineId Id="6" Count="4" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.Device">
+      <LineId Id="6" Count="3" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="10" Count="5" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.Functions">
+      <LineId Id="351" Count="8" />
+      <LineId Id="406" Count="1" />
+      <LineId Id="402" Count="1" />
+      <LineId Id="401" Count="0" />
+      <LineId Id="365" Count="9" />
+      <LineId Id="409" Count="1" />
+      <LineId Id="408" Count="0" />
+      <LineId Id="400" Count="0" />
+      <LineId Id="404" Count="0" />
+      <LineId Id="376" Count="0" />
+      <LineId Id="381" Count="10" />
+      <LineId Id="398" Count="0" />
+      <LineId Id="405" Count="0" />
+      <LineId Id="392" Count="0" />
+      <LineId Id="396" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.HandleFaults">
+      <LineId Id="257" Count="16" />
+      <LineId Id="315" Count="1" />
+      <LineId Id="274" Count="4" />
+      <LineId Id="314" Count="0" />
+      <LineId Id="282" Count="6" />
+      <LineId Id="318" Count="0" />
+      <LineId Id="317" Count="0" />
+      <LineId Id="289" Count="5" />
+      <LineId Id="296" Count="5" />
+      <LineId Id="319" Count="1" />
+      <LineId Id="302" Count="5" />
+      <LineId Id="310" Count="3" />
+      <LineId Id="29" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.ProcessCommands">
+      <LineId Id="206" Count="2" />
+      <LineId Id="210" Count="0" />
+      <LineId Id="214" Count="8" />
+      <LineId Id="213" Count="0" />
+      <LineId Id="223" Count="0" />
+      <LineId Id="234" Count="1" />
+      <LineId Id="225" Count="0" />
+      <LineId Id="236" Count="1" />
+      <LineId Id="233" Count="0" />
+      <LineId Id="226" Count="0" />
+      <LineId Id="238" Count="0" />
+      <LineId Id="230" Count="0" />
+      <LineId Id="232" Count="0" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="182" Count="0" />
+      <LineId Id="136" Count="0" />
+      <LineId Id="184" Count="0" />
+      <LineId Id="179" Count="0" />
+      <LineId Id="186" Count="0" />
+      <LineId Id="138" Count="0" />
+      <LineId Id="149" Count="14" />
+      <LineId Id="166" Count="2" />
+      <LineId Id="239" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.ProcessInputs">
+      <LineId Id="107" Count="1" />
+      <LineId Id="105" Count="1" />
+      <LineId Id="101" Count="0" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="103" Count="0" />
+      <LineId Id="117" Count="0" />
+      <LineId Id="146" Count="1" />
+      <LineId Id="149" Count="1" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="151" Count="1" />
+      <LineId Id="154" Count="1" />
+      <LineId Id="153" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.PrvAllOff">
+      <LineId Id="6" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.PrvHome">
+      <LineId Id="6" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="10" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.PrvReset">
+      <LineId Id="31" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="32" Count="1" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="11" Count="6" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.PrvSafe">
+      <LineId Id="5" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="13" Count="5" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.PrvWork">
+      <LineId Id="6" Count="3" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.StateMachine">
+      <LineId Id="692" Count="0" />
+      <LineId Id="801" Count="0" />
+      <LineId Id="709" Count="1" />
+      <LineId Id="856" Count="0" />
+      <LineId Id="711" Count="0" />
+      <LineId Id="873" Count="0" />
+      <LineId Id="868" Count="1" />
+      <LineId Id="867" Count="0" />
+      <LineId Id="712" Count="0" />
+      <LineId Id="857" Count="0" />
+      <LineId Id="713" Count="0" />
+      <LineId Id="874" Count="0" />
+      <LineId Id="871" Count="1" />
+      <LineId Id="870" Count="0" />
+      <LineId Id="714" Count="0" />
+      <LineId Id="858" Count="0" />
+      <LineId Id="715" Count="5" />
+      <LineId Id="859" Count="0" />
+      <LineId Id="721" Count="2" />
+      <LineId Id="787" Count="0" />
+      <LineId Id="725" Count="1" />
+      <LineId Id="860" Count="0" />
+      <LineId Id="746" Count="3" />
+      <LineId Id="765" Count="0" />
+      <LineId Id="754" Count="0" />
+      <LineId Id="759" Count="0" />
+      <LineId Id="772" Count="0" />
+      <LineId Id="875" Count="1" />
+      <LineId Id="771" Count="0" />
+      <LineId Id="877" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.StatusIn">
+      <LineId Id="93" Count="0" />
+      <LineId Id="96" Count="4" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.StatusOut">
+      <LineId Id="8" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="9" Count="2" />
+      <LineId Id="18" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="21" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.ToHome">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Actuator2State.ToWork">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

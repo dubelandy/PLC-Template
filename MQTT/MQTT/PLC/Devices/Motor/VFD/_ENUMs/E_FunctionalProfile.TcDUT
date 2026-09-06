@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_FunctionalProfile" Id="{998e08b4-b7d3-4c18-9eff-dd4e28291d8f}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA' := '1'}
+{attribute 'OPC.UA.DA.Access' := '1'}
+{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_FunctionalProfile :
+(
+	CiA402 		:= 0,
+	SchneiderIO	:= 1
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

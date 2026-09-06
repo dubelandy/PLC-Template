@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_AxisCommand" Id="{ede34ce0-9a8b-4ff7-9943-a47c5e209693}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA' := '1'}
+{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_AxisCommand :
+(
+	Safe				:= -2,	// Explicit safe state request
+	Reset 				:= -1,	// Reset drive and errors
+	None 				:= 0,	
+	Home				:= 1,	
+	JogFwd				:= 2,	// Jog forward (must be continuously commanded)
+	JogRev				:= 3,	// Jog reverse (must be continuously commanded)
+	LatchJogFwd			:= 4,	// Jog forward (latches, must be ended with a stop command)
+	LatchJogRev			:= 5,	// Jog reverse (latches, must be ended with a stop command)
+	RelMove				:= 6,	
+	AbsMove				:= 7,	
+	ModMove				:= 8,	
+	Stop				:= 9,	// Stop any move - corresponds to mc halt command
+	TeachPosition		:= 10,	// Teach current position and store in persistent memory for absolute encoders
+	TeachPositionTemp	:= 11,	// Teach current position until next TC restart
+	EnableLag			:= 12,	// Enable lag monitoring
+	DisableLag			:= 13,	// Disable lag monitoring
+	ResetDrive			:= 14	// Send reset command to drive
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

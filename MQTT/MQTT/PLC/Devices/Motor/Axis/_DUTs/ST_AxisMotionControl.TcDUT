@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisMotionControl" Id="{acc8d556-dedc-4f9f-ac32-f5935985b0c0}">
+    <Declaration><![CDATA[TYPE ST_AxisMotionControl :
+STRUCT
+	power						: MC_Power;
+	moveVelocityA				: MC_MoveVelocity;
+	moveVelocityB				: MC_MoveVelocity;
+	moveAbsoluteA				: MC_MoveAbsolute;
+	moveAbsoluteB				: MC_MoveAbsolute;
+	moveModuloA					: MC_MoveModulo;
+	moveModuloB					: MC_MoveModulo;
+	halt						: MC_Halt;
+	setPosition					: MC_SetPosition;
+	readOffset					: MC_ReadParameter;
+	writeOffset					: MC_WriteParameter;
+	enableLag					: MC_WriteBoolParameter;
+	disableLag					: MC_WriteBoolParameter;
+	homing						: MC_Home;
+	reset						: MC_Reset;
+	resetSoe					: TC2_MC2_DRIVE.FB_SoEReset;
+	readPosition				: MC_ReadActualPosition;				
+	
+	moveDirection				: MC_Direction;					// Possible move directions for velocity move
+	bufferMode					: MC_BufferMode := MC_Aborting;	// Transition type when changing speed
+	
+	faultId						: ST_AxisMotionControlFaultId;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

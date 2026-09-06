@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_ActuatorState" Id="{86962f66-d368-0463-0046-d74c7a79a614}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_ActuatorState :
+(
+	AllOff			 := 0, // All outputs off
+	AtHome			 := 1, // At home position (last command home)
+	AtWork			 := 2, // At work position (last command work)
+	GoingToHome		 := 3, // Going to home position
+	GoingToWork		 := 4 // Going to work position
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

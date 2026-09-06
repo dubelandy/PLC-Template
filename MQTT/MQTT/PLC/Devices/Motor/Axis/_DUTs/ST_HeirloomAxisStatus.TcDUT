@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_HeirloomAxisStatus" Id="{8296c48c-8727-490a-a372-c8ae52e6e0ec}">
+    <Declaration><![CDATA[TYPE ST_AxisStatus EXTENDS ST_DeviceStatus :
+STRUCT
+	(* General Status
+	----------------------------------------------------------------------------------------------------*)	
+	position					: LREAL;
+	velocity					: LREAL;
+	torque						: LREAL;	
+	moving						: BOOL;
+	movingFwd					: BOOL;
+	movingRev					: BOOL;
+	
+	state						: E_AxisState;
+	
+	enable						: BOOL;				// Enable drive operation
+	homed                       : BOOL;
+	
+	(* Ready to move
+	----------------------------------------------------------------------------------------------------*)
+	readyFwd					: BOOL;
+	readyRev					: BOOL;
+	readyRelMove				: BOOL;
+	readyAbsMove				: BOOL;
+	readyModMove				: BOOL;
+	
+	(* Jog Status
+	----------------------------------------------------------------------------------------------------*)
+	jogFwdInProgress			: BOOL;
+	jogRevInProgress			: BOOL;
+	jogAtSpeed					: BOOL;
+	
+	(* Relative, absolute, and modulus move Status
+	----------------------------------------------------------------------------------------------------*)
+	relMoveInProgress			: BOOL;
+	relMoveComplete				: BOOL;
+	absMoveInProgress			: BOOL;
+	absMoveComplete				: BOOL;
+	modMoveInProgress			: BOOL;
+	modMoveComplete				: BOOL;
+	
+	(* Other task complete
+	----------------------------------------------------------------------------------------------------*)
+	stopComplete				: BOOL;
+	teachPositionComplete		: BOOL;
+	enableLagComplete			: BOOL;
+	disableLagComplete			: BOOL;
+	homingComplete				: BOOL;
+	resetComplete				: BOOL;
+	
+	(* Other Status
+	----------------------------------------------------------------------------------------------------*)
+	coupled                     : BOOL;
+	isFollower					: BOOL;			// Axis is coupled and is a follower
+	driveDiagnosticNumber		: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

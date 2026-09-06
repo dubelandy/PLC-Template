@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_Actuator2StateStatus" Id="{bef0cac6-26c3-47cc-a5cc-df3c2249cae8}">
+    <Declaration><![CDATA[TYPE ST_Actuator2StateStatus EXTENDS ST_DeviceStatus :
+STRUCT
+	atHome				: BOOL;		// at home position
+	atWork				: BOOL;		// at work position
+	goingToHome			: BOOL;		// actively moving to home
+	goingToWork			: BOOL;		// actively moving to work
+	allOff				: BOOL;		// all off position
+	
+	state				: E_ActuatorState := E_ActuatorState.AllOff; //status of component position
+	
+	readyToHome			: BOOL;		// home interlocks and permissives are good
+	readyToWork			: BOOL;		// work interlocks and permissives are good
+	echoWorkFdbk		: BOOL; 	// processed work feedback
+	echoHomeFdbk		: BOOL; 	// processed home feedback
+	echoWorkOut			: BOOL; 	// work output for hmi
+	echoHomeOut			: BOOL; 	// home output for hmi
+	
+	timeToHome			: TIME; 	// time for all components to reach home position
+	timeToWork			: TIME; 	// time for all components to reach work position
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

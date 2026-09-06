@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_Actuator2StateConfiguration" Id="{38f0c515-859a-02c9-205a-70801cc7a8bd}">
+    <Declaration><![CDATA[TYPE ST_Actuator2StateConfiguration :
+STRUCT
+	actuatorId 			: T_DeviceNameString; //actuator id	
+
+	releaseAtPos		: BOOL; //Releases output on making position
+	safeAction			: E_ActuatorCommand := E_ActuatorCommand.None; // Action to take during a "safe" trigger (intlk lost in position)
+	
+	//Feedback configuration
+	homeFdbk			: ST_DigitalInputConfiguration; //home feedback configuration
+	homeNoFdbk			: BOOL; //no home feedback
+	homeNoFdbkTime		: TIME := T#2S; //Simulation or no feedback return delay time
+	
+	workFdbk			: ST_DigitalInputConfiguration; //work feedback configuration
+	workNoFdbk			: BOOL; //no work feedback
+	workNoFdbkTime		: TIME := T#2S; //Simulation or no feedback advance delay time
+	
+	//Permissive/interlock configuration
+	homeIntlk			: ST_PermissiveConfiguration;
+	homePerm			: ST_PermissiveConfiguration;
+	workIntlk			: ST_PermissiveConfiguration;
+	workPerm			: ST_PermissiveConfiguration;
+	
+	//Configure monitoring timers
+	failTimeFullStall	: TIME := T#5S; //Full stall fail time
+	failTimeTransit		: TIME := T#5S; //Transit fail time
+	failTimeAllOn		: TIME := T#5S; //Short fail time
+	opTimeout			: TIME := T#300S; //How long operator override will stay on without commands
+	opTimeoutEnable		: BOOL := TRUE;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

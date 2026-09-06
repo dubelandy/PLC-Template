@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_AxisState" Id="{84e0f80a-d767-4772-8c0b-89953d61f1ce}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA' := '1'}
+{attribute 'OPC.UA.DA.Access' := '1'}
+{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_AxisState :
+(
+	Off							:= 1000,
+	InitReadPosition			:= 1010,
+	InitSetPosition				:= 1020,
+	InitEnableDelay				:= 1030,
+	TeachPosition_Read			:= 1040,
+	TeachPosition_Write			:= 1050,
+	TeachPosition_SaveData		:= 1060,
+	TeachPosition_EnableDelay	:= 1070,
+	Power						:= 2000,
+	Enabled						:= 2010,
+	JogFwd_A					:= 2020,
+	JogFwd_B					:= 2021,
+	JogRev_A					:= 2030,
+	JogRev_B					:= 2031,
+	LatchJogFwd_A				:= 2040,
+	LatchJogFwd_B				:= 2041,
+	LatchJogRev_A				:= 2050,
+	LatchJogRev_B				:= 2051,
+	RelMove_A					:= 2060,
+	RelMove_B					:= 2061,
+	AbsMove_A					:= 2070,
+	AbsMove_B					:= 2071,
+	ModMove_A					:= 2080,
+	ModMove_B					:= 2081,
+	TorqueControl				:= 2090,
+	VelocityControl				:= 2100,
+	Halting						:= 2110,
+	EnableLag					:= 2120,
+	DisableLag					:= 2140,
+	TorqueDisableLag			:= 2150,
+	ModeChangeResetPosition		:= 2160,
+	Homing						:= 2170,
+	TeachPositionTemp			:= 2180,
+	ResetDrive					:= 2190,
+	VelocityDisableLag			:= 2200,
+	Faulting					:= 9000,
+	Faulted						:= 9010
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_ActuatorAnalog" Id="{02407f16-9bec-4862-835f-ba8d9fc625e4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ActuatorAnalog EXTENDS FB_Actuator2State
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfgAnalog			: ST_ActuatorAnalogConfiguration; //configuration
+END_VAR
+VAR_OUTPUT
+	stsAnalogFeedback	AT %I* : LREAL; //scaled analog input (user units)
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}//read only
+	outAnalog 		: LREAL; //unscaled analog output (user units)
+	outAnalogRaw 	AT %Q* : LREAL; //scaled analog output (for IO control)
+	OutAnalogRawConv	AT %Q* : INT; //most IO cards will be directly mapped to this int
+END_VAR
+VAR
+	outputScaling	: LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+OutAnalogRawConv := LREAL_TO_INT(OutAnalogRaw); 
+RETURN;
+
+]]></ST>
+    </Implementation>
+    <Folder Name="_ENUMs" Id="{3e9dc44d-0aaf-47ff-b5c8-ae09ee272ea3}" />
+    <Folder Name="Protected" Id="{19999f4d-ee3f-4ce7-9ead-e433a2847e7b}" />
+    <Folder Name="Public" Id="{204b7646-a1cc-4289-8107-2417ce067002}">
+      <Folder Name="Commands" Id="{fc6a6638-2477-4994-a52f-34c803c7a00a}" />
+      <Folder Name="Control" Id="{c157602d-d7b8-4010-a507-2ced0c542c4d}" />
+    </Folder>
+    <Method Name="ControlOutputs" Id="{f03b31ca-2ec9-43f1-b39f-875a1f6db19a}" FolderPath="Protected\">
+      <Declaration><![CDATA[METHOD PROTECTED ControlOutputs //Set physical outputs
+VAR
+
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[outputScaling := (cfgAnalog.OutRawMax - cfgAnalog.OutRawMin)/
+					(cfgAnalog.OutMax -  cfgAnalog.OutMin);
+
+IF sts.sim THEN //do not command outputs when simulated
+	outWork := outHome := FALSE;
+ELSE
+	outWork := cmdExecuting = E_ActuatorCommand.Work;
+	outHome := cmdExecuting = E_ActuatorCommand.Home;
+	CASE cmdExecuting OF
+		E_ActuatorCommand.AllOff:
+			outAnalog := cfgAnalog.OutMin;
+			outAnalogRaw := cfgAnalog.OutRawMin;
+		E_ActuatorCommand.Home:
+			IF cfgAnalog.OutMax <> cfgAnalog.OutMin THEN
+				outAnalog := cfgAnalog.HomeValue;
+				outAnalogRaw := outputScaling*(cfgAnalog.HomeValue-cfgAnalog.OutMin) + cfgAnalog.OutRawMin;
+			END_IF
+		E_ActuatorCommand.Work:
+			IF cfgAnalog.OutMax <> cfgAnalog.OutMin THEN
+				outAnalog := cfgAnalog.WorkValue;
+				outAnalogRaw := outputScaling*(cfgAnalog.WorkValue-cfgAnalog.OutMin) + cfgAnalog.OutRawMin;
+			END_IF	
+	END_CASE
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_ActuatorAnalog">
+      <LineId Id="9" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="11" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_ActuatorAnalog.ControlOutputs">
+      <LineId Id="33" Count="0" />
+      <LineId Id="31" Count="1" />
+      <LineId Id="6" Count="4" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="18" Count="12" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

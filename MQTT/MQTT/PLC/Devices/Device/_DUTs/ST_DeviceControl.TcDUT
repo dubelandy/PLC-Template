@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_DeviceControl" Id="{054cfe46-13df-4179-847f-cfb9fdeccfe9}">
+    <Declaration><![CDATA[TYPE ST_DeviceControl :
+STRUCT
+	bypass				: BOOL; // Command to bypass interlocks/permissives
+	manualOvrde			: BOOL; // Manual override enable
+	reset				: BOOL; // Reset from HMI 
+	sim					: BOOL; // Simulation mode enable
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

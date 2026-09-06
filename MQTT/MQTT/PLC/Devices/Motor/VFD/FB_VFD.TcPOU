@@ -1,0 +1,867 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_VFD" Id="{0d1cf585-a757-4cd5-89df-c3d934be6e22}" SpecialFunc="None">
+    <Declaration><![CDATA[{attribute 'reflection'}
+FUNCTION_BLOCK FB_VFD
+VAR_INPUT
+	parentCtrl			: ST_ParentChildControl;
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	ocmd 				: E_VFDCommand; 
+	
+	//Interlocks and permissives
+	fwdIntlk			: FB_Permissive; 
+	fwdPerm				: FB_Permissive; 
+	revIntlk			: FB_Permissive; 
+	revPerm				: FB_Permissive; 
+
+	inStatusWord 	AT %I* 	: WORD; 
+	inControlEffort	AT %I* 	: WORD; 
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	ctrl 	: ST_Actuator2StateControl;
+	{attribute 'OPC.UA.DA' := '1'}
+	cfg 	: ST_VFDConfiguration;
+	
+	func	: ST_VFDFunctions;
+	
+	cmdQuickStop : BOOL;
+END_VAR
+VAR_OUTPUT
+	outControlWord 		AT %Q* : WORD; 
+	outTargetVelocity  	AT %Q* : WORD; 
+
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}//read only
+	sts					: ST_VFDStatus; //status
+
+	{attribute 'instance-path'}
+	{attribute 'no-init'}
+	instancePath		: T_MaxString;
+END_VAR
+VAR
+	// Command vars
+	pcmd			: E_VFDCommand;
+	pcmdLast		: E_VFDCommand;
+	ocmdLast		: E_VFDCommand;	
+	activeCommand	: E_VFDCommand;
+	activeCmdLast	: E_VFDCommand;
+	
+	// State vars
+	stCommands		: ST_VFDCommand;
+	maskState		: WORD := LOWEST_8_BITS;
+	arrNotReady		: ARRAY[1..MAX_ARR_LENGTH] OF WORD;
+	arrRunning		: ARRAY[1..MAX_ARR_LENGTH] OF WORD;
+	arrReady		: ARRAY[1..MAX_ARR_LENGTH] OF WORD;
+	
+	// Debugging 
+	statusWord_CiA402 : ST_CiA402StatusWord;
+	
+	// General
+	rtManualOvrde	: R_TRIG;
+	opActivity		: BOOL;
+	manualOvrdeTimer: TON;
+	firstEnable		: BOOL;
+END_VAR
+VAR CONSTANT
+	LOWEST_4_BITS	: WORD := 2#000000001111;
+	LOWEST_8_BITS	: WORD := 2#000011111111;
+	LOWEST_12_BITS	: WORD := 2#111111111111;
+	MAX_ARR_LENGTH	: INT  := 10;
+	
+	// Constants specific to the CiA402 functional profile
+	FAULTED_BIT			: INT := 3;
+	DISABLED_BIT		: INT := 6;
+	TARGET_REACHED_BIT	: INT := 10;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[ModeControl();
+MapInputs();
+ProcessCommands();
+StateMachine();
+Status();
+MapOutputs();
+Functions();]]></ST>
+    </Implementation>
+    <Folder Name="Private" Id="{af1d0f00-87b6-49f7-9dae-c7f7f7c8ccdc}" />
+    <Folder Name="Public" Id="{8791bf4f-97ef-4c50-b051-6902ac0074bd}">
+      <Folder Name="Commands" Id="{ccccdf33-98db-4c79-acc6-bca178260ff0}" />
+      <Folder Name="Control" Id="{94af824b-09e6-4683-9dd8-cef8c6da9323}" />
+    </Folder>
+    <Method Name="DisableBypass" Id="{21efe7c3-e85b-4aec-aa88-ae4082d184c6}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC DisableBypass : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.bypass := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DisableManualOverride" Id="{539e9a24-60ff-4ff5-a8ab-dad71df6e1b5}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC DisableManualOverride : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.manualOvrde := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DisableSimulation" Id="{4a29df98-a217-40bd-a20a-c1f8f32411ad}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC DisableSimulation : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.sim := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Enable" Id="{de58c68e-9055-4290-9302-4dacc9ec8684}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC Enable : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_VFDCommand.Enable;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableBypass" Id="{78c11156-c3d7-4638-8f87-666d64d31d2d}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC EnableBypass : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.bypass := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableManualOverride" Id="{46f0261d-2d23-48f3-9770-f1140dda7607}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC EnableManualOverride : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.manualOvrde := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableSimulation" Id="{cea2de95-7c88-4128-b85f-852d2f08e7d2}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC EnableSimulation : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.sim := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Functions" Id="{a950fa63-e1da-4bc9-b5a5-aad21c3ac84c}" FolderPath="Private\">
+      <Declaration><![CDATA[METHOD PROTECTED Functions : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	i : INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[func.Enable		(hmiTextStatic := CONCAT(cfg.motorId, 'Enable drive'));
+func.LatchJogFwd(hmiTextStatic := CONCAT(cfg.motorId, 'Latch jog forward command'));
+func.LatchJogRev(hmiTextStatic := CONCAT(cfg.motorId, 'Latch jog reverse command'));
+func.Stop		(hmiTextStatic := CONCAT(cfg.motorId, 'Stop'));
+
+IF func.Enable.running THEN
+	Enable();
+	func.Enable.permComplete.perm.0 := sts.enabled OR sts.sim;
+END_IF
+
+IF func.LatchJogFwd.running THEN
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		CASE func.LatchJogFwd.arrParam[i].typeEnum OF
+			E_VFDFunctionParam.JogSpeed:
+				cfg.targetVelocity := REAL_TO_WORD(func.LatchJogFwd.arrParam[i].value);
+		END_CASE
+	END_FOR
+	LatchJogFwd();
+	func.LatchJogFwd.permComplete.perm.0 := sts.state_running OR sts.sim;
+END_IF
+
+IF func.LatchJogRev.running THEN
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		CASE func.LatchJogRev.arrParam[i].typeEnum OF
+			E_VFDFunctionParam.JogSpeed:
+				cfg.targetVelocity := REAL_TO_WORD(func.LatchJogRev.arrParam[i].value);
+		END_CASE
+	END_FOR
+	LatchJogRev();
+	func.LatchJogRev.permComplete.perm.0 := sts.state_running OR sts.sim;
+END_IF
+
+IF func.Stop.running THEN
+	Stop();
+	func.Stop.permComplete.perm.0 := NOT sts.state_running;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="JogFwd" Id="{b4736f37-b8bd-460f-ba9f-1b034e41ec59}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC JogFwd : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_VFDCommand.JogFwd;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="JogRev" Id="{3888a317-5228-45ac-8471-1ed00a82aff0}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC JogRev : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_VFDCommand.JogRev;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="LatchJogFwd" Id="{336d95b5-86b1-43eb-a1b0-511f8c064e6e}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC LatchJogFwd : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_VFDCommand.LatchJogFwd;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="LatchJogRev" Id="{1a177586-e1d6-4455-8f39-244b3e9525ea}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC LatchJogRev : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_VFDCommand.LatchJogRev;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MapInputs" Id="{1d37a052-66c8-495f-b5ef-194541fad662}" FolderPath="Private\">
+      <Declaration><![CDATA[METHOD PROTECTED MapInputs : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	i : INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//***********************************************************//
+//				   Permissives & Interlocks					 //
+//***********************************************************//
+fwdPerm(	bypActive := sts.bypass, cfg := cfg.fwdPerm);
+fwdIntlk(	bypActive := sts.bypass, cfg := cfg.fwdIntlk);
+revPerm(	bypActive := sts.bypass, cfg := cfg.revPerm);
+revIntlk(	bypActive := sts.bypass, cfg := cfg.revIntlk);
+
+//***********************************************************//
+//		     	 Command & State Assignments				 //
+//***********************************************************//
+// Assign binary numbers to VFD commands and VFD states based on configured profile
+
+// Clear state arrays in preparation for assignment
+FOR i := 1 TO MAX_ARR_LENGTH DO
+	arrNotReady[i] 	:= 0;
+	arrReady[i] 	:= 0;
+	arrRunning[i] 	:= 0;
+END_FOR
+
+// Clear statusWord_CiA402 in case we're no longer using it
+statusWord_CiA402.ReadyToSwitch 	  := FALSE;
+statusWord_CiA402.SwitchedOn 		  := FALSE;
+statusWord_CiA402.OpEnabled 		  := FALSE;
+statusWord_CiA402.Fault 			  := FALSE;
+statusWord_CiA402.VoltageEnabled 	  := FALSE;
+statusWord_CiA402.QuickStopDisengaged := FALSE;
+statusWord_CiA402.SwitchOnDisabled    := FALSE;
+statusWord_CiA402.Warning 			  := FALSE;
+statusWord_CiA402.Reserved8 		  := FALSE;
+statusWord_CiA402.Remote 			  := FALSE;
+statusWord_CiA402.TargetReached 	  := FALSE;
+statusWord_CiA402.LimitExceeded 	  := FALSE;
+statusWord_CiA402.Reserved12 		  := FALSE;
+statusWord_CiA402.Reserved13 		  := FALSE;
+statusWord_CiA402.StopKey 			  := FALSE;
+statusWord_CiA402.Direction			  := FALSE;
+
+// Assign
+IF (cfg.profile = E_FunctionalProfile.CiA402) THEN
+	
+	// Build commands 
+	stCommands.Enable    := 2#000000000110; // Set: Enable Voltage, QuickStopDisengage   							
+	stCommands.JogFwd    := 2#000000001111; // Set: SwitchOn, Enable Voltage, QuickStopDisengage, EnableOp
+	stCommands.JogRev	 := 2#100000001111;	// Set: SwitchOn, Enable Voltage, QuickStopDisengage, EnableOp, Direction
+	stCommands.QuickStop := 2#000000000010; // Set: Enable Voltage
+	stCommands.Reset	 := 2#000010000000;	// Set: Fault Reset
+	stCommands.Stop 	 := 2#000000000111; // Set: SwitchOn, Enable Voltage, QuickStopDisengage
+	
+	// Build an array of acceptable status words per state
+	maskState 	:= LOWEST_8_BITS;
+	arrNotReady[1] := 2#01000000; // SwitchOnDisabled - 16#xx40
+	arrNotReady[2] := 2#01010000; // SwitchOnDisabled - 16#xx50
+	arrNotReady[3] := 2#00010111; // QuickStopActive
+	arrReady[1]    := 2#00100001; // ReadyToSwitchOn - 16#xx21
+	arrReady[2]    := 2#00110001; // ReadyToSwitchOn - 16#xx31
+	arrReady[3]    := 2#00110011; // SwitchedOn
+	arrRunning[1]  := 2#00110111; // OperationEnabled
+	
+	// Update other vars that are based on this profile
+	sts.faulted := inStatusWord.FAULTED_BIT;
+	sts.enabled := NOT inStatusWord.DISABLED_BIT;
+	sts.atSpeed := inStatusWord.TARGET_REACHED_BIT;
+							
+	// For easy debugging - map status word to a struct of bits 
+	statusWord_CiA402.ReadyToSwitch 	  := inStatusWord.0;
+	statusWord_CiA402.SwitchedOn 		  := inStatusWord.1;
+	statusWord_CiA402.OpEnabled 		  := inStatusWord.2;
+	statusWord_CiA402.Fault 			  := inStatusWord.3;
+	statusWord_CiA402.VoltageEnabled 	  := inStatusWord.4;
+	statusWord_CiA402.QuickStopDisengaged := inStatusWord.5;
+	statusWord_CiA402.SwitchOnDisabled    := inStatusWord.6;
+	statusWord_CiA402.Warning 			  := inStatusWord.7;
+	statusWord_CiA402.Reserved8 		  := inStatusWord.8;
+	statusWord_CiA402.Remote 			  := inStatusWord.9;
+	statusWord_CiA402.TargetReached 	  := inStatusWord.10;
+	statusWord_CiA402.LimitExceeded 	  := inStatusWord.11;
+	statusWord_CiA402.Reserved12 		  := inStatusWord.12;
+	statusWord_CiA402.Reserved13 		  := inStatusWord.13;
+	statusWord_CiA402.StopKey 			  := inStatusWord.14;
+	statusWord_CiA402.Direction			  := inStatusWord.15;
+	
+ELSIF (cfg.profile = E_FunctionalProfile.SchneiderIO) THEN
+	
+	// Build commands 
+	stCommands.Enable    := 2#000000000000;   							
+	stCommands.JogFwd    := 2#000000000001; 
+	stCommands.JogRev	 := 2#000000000101;	
+	stCommands.QuickStop := 2#000000000000;
+	stCommands.Reset	 := 2#000000000010;	
+	stCommands.Stop 	 := 2#000000000000; 
+	
+	// Build an array of acceptable status words per state
+	maskState 	:= LOWEST_8_BITS;
+	arrNotReady[1] := 2#01000000; // SwitchOnDisabled - 16#xx40
+	arrNotReady[2] := 2#01010000; // SwitchOnDisabled - 16#xx50
+	arrNotReady[3] := 2#00010111; // QuickStopActive
+	arrReady[1]    := 2#00100001; // ReadyToSwitchOn - 16#xx21
+	arrReady[2]    := 2#00110001; // ReadyToSwitchOn - 16#xx31
+	arrReady[3]    := 2#00110011; // SwitchedOn
+	arrRunning[1]  := 2#00110111; // OperationEnabled
+	
+	// Update other vars that are based on this profile
+	sts.faulted := inStatusWord.FAULTED_BIT;
+	sts.enabled := NOT inStatusWord.DISABLED_BIT;
+	sts.atSpeed := inStatusWord.TARGET_REACHED_BIT;
+							
+	// For easy debugging - map status word to a struct of bits 
+	statusWord_CiA402.ReadyToSwitch 	  := inStatusWord.0;
+	statusWord_CiA402.SwitchedOn 		  := inStatusWord.1;
+	statusWord_CiA402.OpEnabled 		  := inStatusWord.2;
+	statusWord_CiA402.Fault 			  := inStatusWord.3;
+	statusWord_CiA402.VoltageEnabled 	  := inStatusWord.4;
+	statusWord_CiA402.QuickStopDisengaged := inStatusWord.5;
+	statusWord_CiA402.SwitchOnDisabled    := inStatusWord.6;
+	statusWord_CiA402.Warning 			  := inStatusWord.7;
+	statusWord_CiA402.Reserved8 		  := inStatusWord.8;
+	statusWord_CiA402.Remote 			  := inStatusWord.9;
+	statusWord_CiA402.TargetReached 	  := inStatusWord.10;
+	statusWord_CiA402.LimitExceeded 	  := inStatusWord.11;
+	statusWord_CiA402.Reserved12 		  := inStatusWord.12;
+	statusWord_CiA402.Reserved13 		  := inStatusWord.13;
+	statusWord_CiA402.StopKey 			  := inStatusWord.14;
+	statusWord_CiA402.Direction			  := inStatusWord.15;
+ELSE
+	;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MapOutputs" Id="{643d0eb7-ae24-4e8d-a0b3-12528c319093}" FolderPath="Private\">
+      <Declaration><![CDATA[METHOD PROTECTED MapOutputs : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (sts.movingFwd AND NOT fwdIntlk.sts.ok) OR (sts.movingRev AND NOT revIntlk.sts.ok) THEN
+	activeCommand 		:= E_VFDCommand.Stop;
+	sts.error.error 	:= TRUE;
+	sts.error.message 	:= 'Interlocks were dropped';
+END_IF
+
+CASE activeCommand OF
+	E_VFDCommand.None:
+		;
+		
+	E_VFDCommand.Stop:
+		IF cmdQuickStop THEN
+			outControlWord	:= stCommands.QuickStop;
+		ELSE
+			outControlWord  := stCommands.Stop;
+		END_IF
+		
+	E_VFDCommand.Enable:
+		firstEnable := TRUE;
+		IF NOT sts.state_running THEN
+			outControlWord  := stCommands.Enable;
+		END_IF
+		
+	E_VFDCommand.JogFwd, E_VFDCommand.LatchJogFwd:
+		IF sts.ReadyFwd THEN
+			outControlWord 	:= stCommands.JogFwd;
+		ELSE
+			sts.error.error := TRUE;
+			IF NOT fwdIntlk.sts.ok OR NOT fwdPerm.sts.ok THEN
+				sts.error.message := 'Check perms and interlocks';
+			ELSE
+				sts.error.message := 'Command is invalid for current drive state';
+			END_IF
+		END_IF
+		
+	E_VFDCommand.JogRev, E_VFDCommand.LatchJogRev:
+		IF sts.ReadyRev THEN
+			outControlWord 	:= stCommands.JogRev;
+		ELSE
+			sts.error.error := TRUE;
+			IF NOT revIntlk.sts.ok OR NOT revPerm.sts.ok THEN
+				sts.error.message := 'Check perms and interlocks';
+			ELSE
+				sts.error.message := 'Command is invalid for current drive state';
+			END_IF
+		END_IF
+		
+	E_VFDCommand.Reset:
+		sts.error.error 	:= FALSE;
+		sts.error.message 	:= '';
+		outControlWord 		:= stCommands.Reset;
+
+END_CASE
+
+IF NOT sts.sim THEN
+	outTargetVelocity := cfg.targetVelocity;
+ELSE
+	outTargetVelocity := 0;
+END_IF
+
+// Clear variables before next cycle
+activeCommand	:= E_VFDCommand.None;
+cmdQuickStop 	:= FALSE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ModeControl" Id="{0286e2d1-0c0c-4395-859d-b0148e6b1bb8}" FolderPath="Private\">
+      <Declaration><![CDATA[METHOD PROTECTED ModeControl : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Check if parent is configured
+sts.parentConfigured := parentCtrl.instancePath <> '';
+
+// Manual override logic
+opActivity := ocmd <> E_VFDCommand.None;
+manualOvrdeTimer(IN := ctrl.manualOvrde AND NOT opActivity,
+		   		PT := cfg.opTimeout);
+IF manualOvrdeTimer.Q AND cfg.opTimeoutEnable THEN
+	ctrl.manualOvrde := FALSE;
+END_IF
+
+// Determine device mode
+CASE sts.mode OF
+	E_SystemMode.Idle:
+		sts.mode := E_SystemMode.Auto;
+	E_SystemMode.Auto:											
+		IF ctrl.manualOvrde															
+		OR (sts.parentConfigured AND parentCtrl.mode <> E_SystemMode.Auto)
+		THEN	
+			sts.mode := E_SystemMode.Manual;
+		END_IF
+	E_SystemMode.Manual:					
+		IF NOT ctrl.manualOvrde 			
+		AND (NOT sts.parentConfigured OR parentCtrl.mode = E_SystemMode.Auto)
+		THEN
+			sts.mode := E_SystemMode.Auto;
+		END_IF
+	ELSE
+		sts.mode := E_SystemMode.Idle;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ProcessCommands" Id="{0c639938-bc05-4faa-a6c5-5abbd3ebab96}" FolderPath="Private\">
+      <Declaration><![CDATA[METHOD PROTECTED ProcessCommands : BOOL
+VAR_INPUT
+END_VAR
+
+// Check for new valid command]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Check for reset command
+IF ctrl.reset THEN 
+	activeCommand := E_VFDCommand.Reset;
+	ctrl.reset := FALSE;
+	
+// Check for a special quick stop command (not available through HMI). This can be 
+// used for emergency stops if freewheel stop is not enough.
+ELSIF cmdQuickStop THEN
+	activeCommand := E_VFDCommand.Stop;
+
+// Else go through our typical manual vs. auto command checks
+ELSIF sts.modeManual AND ocmd <> E_VFDCommand.None AND NOT (parentCtrl.estop AND sts.parentConfigured) THEN
+	activeCommand := ocmd;
+ELSIF sts.modeAuto AND pcmd <> E_VFDCommand.None THEN
+	activeCommand := pcmd;
+
+// Lastly, the following logic is added to preserve similar behavior to FB_Servo
+ELSIF (activeCmdLast = E_VFDCommand.JogFwd) OR (activeCmdLast = E_VFDCommand.JogRev) THEN
+	activeCommand := E_VFDCommand.Stop;
+ELSIF (activeCmdLast = E_VFDCommand.Reset) AND firstEnable THEN
+	activeCommand := E_VFDCommand.Enable;
+END_IF
+
+// Store last commands for next cycle
+IF pcmd <> E_VFDCommand.None THEN
+	pcmdLast := pcmd;
+END_IF
+IF ocmd <> E_VFDCommand.None THEN
+	ocmdLast := ocmd;
+END_IF
+IF activeCommand <> E_VFDCommand.None THEN
+	activeCmdLast := activeCommand;
+END_IF
+
+pcmd := E_VFDCommand.None;
+ocmd := E_VFDCommand.None;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{03d1689d-635a-4e94-b388-2c9b83888cde}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC Reset : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.reset := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{bb5e6aa9-3ce3-4b82-a792-612d596e1bbd}" FolderPath="Private\">
+      <Declaration><![CDATA[METHOD StateMachine : BOOL
+VAR_INPUT
+END_VAR
+VAR
+	i : INT;
+END_VAR
+
+// NOTE : This is purely for information purposes. It is checking the actual state of the VFD
+// by interpreting the status word. It is intended mostly for debugging.]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sts.state := E_VFDState.Unknown;
+
+// This is very hacky
+FOR i := 1 TO MAX_ARR_LENGTH DO
+	IF (inStatusWord AND maskState) = arrRunning[i] THEN
+		sts.state := E_VFDState.Running;
+
+	ELSIF (inStatusWord AND maskState) = arrNotReady[i] OR sts.faulted THEN
+		sts.state := E_VFDState.NotReady;
+		
+	ELSIF (inStatusWord AND maskState) = arrReady[i] THEN
+		sts.state := E_VFDState.Ready;
+	END_IF
+	
+	IF sts.state <> E_VFDState.Unknown THEN
+		i := MAX_ARR_LENGTH;
+	END_IF
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Status" Id="{fa1ff35f-32a7-48b6-a906-081784bd4c29}" FolderPath="Private\">
+      <Declaration><![CDATA[METHOD PROTECTED Status : BOOL
+VAR_INPUT
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state flags
+sts.state_notReady  := (sts.state = E_VFDState.NotReady);
+sts.state_ready 	:= (sts.state = E_VFDState.Ready);
+sts.state_running	:= (sts.state = E_VFDState.Running);
+
+// general flags
+sts.modeAuto 	:= sts.mode = E_SystemMode.Auto;
+sts.modeManual 	:= sts.mode = E_SystemMode.Manual;
+
+sts.manualOvrde := ctrl.manualOvrde;
+sts.bypass 		:= ctrl.bypass;
+sts.sim 		:= ctrl.sim;
+
+sts.moving 		  := sts.state_running AND (outTargetVelocity > 0);
+sts.movingFwd	  := sts.moving AND (outControlWord = stCommands.JogFwd); // Better to check status word but I don't want even more bit configuration
+sts.movingRev	  := sts.moving AND (outControlWord = stCommands.JogRev);
+
+sts.readyFwd 	:= fwdPerm.sts.ok AND fwdIntlk.sts.ok AND (sts.state_ready OR sts.state_running);
+sts.readyRev 	:= revPerm.sts.ok AND revIntlk.sts.ok AND (sts.state_ready OR sts.state_running);
+
+// error flags
+IF sts.faulted THEN
+	sts.error.error 	:= TRUE;
+	sts.error.message 	:= 'Drive is in faulted state';
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Stop" Id="{8f38f5bb-c4b9-4079-8ff2-1cad64a55dbe}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC Stop : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_VFDCommand.Stop;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_VFD">
+      <LineId Id="88" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="86" Count="1" />
+      <LineId Id="89" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.DisableBypass">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.DisableManualOverride">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.DisableSimulation">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.Enable">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.EnableBypass">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.EnableManualOverride">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.EnableSimulation">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.Functions">
+      <LineId Id="53" Count="0" />
+      <LineId Id="55" Count="2" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="15" Count="1" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="22" Count="1" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="29" Count="1" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="38" Count="9" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="48" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="51" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.JogFwd">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.JogRev">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.LatchJogFwd">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.LatchJogRev">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.MapInputs">
+      <LineId Id="141" Count="1" />
+      <LineId Id="136" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="135" Count="0" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="138" Count="0" />
+      <LineId Id="137" Count="0" />
+      <LineId Id="139" Count="1" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="144" Count="0" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="150" Count="1" />
+      <LineId Id="149" Count="0" />
+      <LineId Id="153" Count="0" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="155" Count="13" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="224" Count="0" />
+      <LineId Id="143" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="228" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="112" Count="1" />
+      <LineId Id="219" Count="0" />
+      <LineId Id="210" Count="5" />
+      <LineId Id="132" Count="0" />
+      <LineId Id="197" Count="0" />
+      <LineId Id="202" Count="0" />
+      <LineId Id="220" Count="1" />
+      <LineId Id="217" Count="0" />
+      <LineId Id="92" Count="1" />
+      <LineId Id="96" Count="14" />
+      <LineId Id="223" Count="0" />
+      <LineId Id="115" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="117" Count="5" />
+      <LineId Id="116" Count="0" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="171" Count="0" />
+      <LineId Id="218" Count="0" />
+      <LineId Id="172" Count="2" />
+      <LineId Id="176" Count="2" />
+      <LineId Id="180" Count="0" />
+      <LineId Id="205" Count="0" />
+      <LineId Id="207" Count="0" />
+      <LineId Id="209" Count="0" />
+      <LineId Id="206" Count="0" />
+      <LineId Id="216" Count="0" />
+      <LineId Id="181" Count="15" />
+      <LineId Id="170" Count="0" />
+      <LineId Id="222" Count="0" />
+      <LineId Id="114" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="15" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.MapOutputs">
+      <LineId Id="82" Count="0" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="127" Count="0" />
+      <LineId Id="126" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="62" Count="0" />
+      <LineId Id="26" Count="1" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="76" Count="1" />
+      <LineId Id="94" Count="2" />
+      <LineId Id="79" Count="0" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="42" Count="1" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="120" Count="0" />
+      <LineId Id="116" Count="2" />
+      <LineId Id="110" Count="0" />
+      <LineId Id="119" Count="0" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="99" Count="0" />
+      <LineId Id="101" Count="2" />
+      <LineId Id="100" Count="0" />
+      <LineId Id="121" Count="4" />
+      <LineId Id="112" Count="0" />
+      <LineId Id="111" Count="0" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="114" Count="1" />
+      <LineId Id="90" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="74" Count="0" />
+      <LineId Id="105" Count="2" />
+      <LineId Id="98" Count="0" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="60" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.ModeControl">
+      <LineId Id="49" Count="0" />
+      <LineId Id="47" Count="1" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="14" Count="11" />
+      <LineId Id="29" Count="5" />
+      <LineId Id="39" Count="7" />
+    </LineIds>
+    <LineIds Name="FB_VFD.ProcessCommands">
+      <LineId Id="9" Count="3" />
+      <LineId Id="61" Count="1" />
+      <LineId Id="64" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="53" Count="0" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="13" Count="3" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="33" Count="7" />
+      <LineId Id="48" Count="2" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.Reset">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.StateMachine">
+      <LineId Id="51" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="58" Count="1" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="53" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="47" Count="3" />
+      <LineId Id="39" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.Status">
+      <LineId Id="51" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="49" Count="1" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="6" Count="1" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="9" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="30" Count="2" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="48" Count="0" />
+      <LineId Id="47" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_VFD.Stop">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_VFDFunctions" Id="{d0f738e3-fb35-4a4d-bd72-3dc8d41db94f}">
+    <Declaration><![CDATA[TYPE ST_VFDFunctions :
+STRUCT
+	Enable		: FB_SequencerFunction;
+	LatchJogFwd : FB_SequencerFunction;
+	LatchJogRev : FB_SequencerFunction;
+	Stop 		: FB_SequencerFunction;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

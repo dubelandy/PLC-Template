@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_AxisFunctionParam" Id="{73e1c0d4-19a3-40af-8f4d-bbb3b04f8b46}">
+    <Declaration><![CDATA[{attribute 'OPC.UA.DA' := '1'}
+{attribute 'OPC.UA.DA.Access' := '1'}
+{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_AxisFunctionParam : // Use for passing parameters into servo functions
+(
+	None				:= 0,
+	
+	(* Jog Parameters
+	----------------------------------------------------------------------------------------------------*)
+	JogSpeed			:= 1,
+	
+	(* Relative, absolute, and modulus move Parameters
+	----------------------------------------------------------------------------------------------------*)
+	RelMoveDistance		:= 10,
+	AbsMovePosition    	:= 20,
+	AbsMovePositionId	:= 21,
+	ModMovePosition    	:= 30,
+	moveSpeed	    	:= 40,
+	
+	(* Other Motion Parameters
+	----------------------------------------------------------------------------------------------------*)
+	TeachPosition	    := 60,
+	HomePosition       	:= 61
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

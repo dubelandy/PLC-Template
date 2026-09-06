@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisMotionControlFaultId" Id="{b8279c70-d334-4f07-9e2e-1512e463c837}">
+    <Declaration><![CDATA[TYPE ST_AxisMotionControlFaultId :
+STRUCT
+	power					: UDINT;
+	moveVelocityA			: UDINT;
+	moveVelocityB			: UDINT;
+	moveAbsoluteA			: UDINT;
+	moveAbsoluteB			: UDINT;
+	moveModuloA				: UDINT;
+	moveModuloB				: UDINT;
+	halt					: UDINT;
+	setPosition				: UDINT;
+	readOffset				: UDINT;
+	writeOffset				: UDINT;
+	enableLag				: UDINT;
+	disableLag				: UDINT;
+	homing					: UDINT;
+	reset					: UDINT;
+	resetSoeAds				: UDINT; 
+	resetSoeSercos			: UDINT; 
+	readPosition			: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

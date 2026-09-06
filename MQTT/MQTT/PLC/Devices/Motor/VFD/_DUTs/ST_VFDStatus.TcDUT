@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_VFDStatus" Id="{3016adf9-46d9-4a4b-a34e-ced1bc1d7dd9}">
+    <Declaration><![CDATA[TYPE ST_VFDStatus :
+STRUCT
+	parentConfigured	: BOOL;	
+	enabled				: BOOL;
+	
+	state 				: E_VFDState := E_VFDState.Unknown;
+	state_ready			: BOOL;
+	state_running		: BOOL;
+	state_notReady		: BOOL;
+	
+	moving				: BOOL;
+	movingFwd			: BOOL;
+	movingRev			: BOOL;
+	atSpeed				: BOOL;			// Steady-state
+	faulted				: BOOL;			// purely based on drive status
+	
+	readyFwd			: BOOL;
+	readyRev			: BOOL;
+	
+	mode				: E_SystemMode := E_SystemMode.Idle; 
+	modeAuto			: BOOL; 	
+	modeManual			: BOOL;		
+	
+	manualOvrde			: BOOL;		
+	bypass				: BOOL; 		// Allows jog interlocks to be bypassed	
+	sim					: BOOL;		
+	
+	error				: ST_VFDError; 	// includes additional errors beyond a drive fault
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>
