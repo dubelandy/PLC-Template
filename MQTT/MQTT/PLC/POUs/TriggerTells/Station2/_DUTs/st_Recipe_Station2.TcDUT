@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="st_Recipe_Station2" Id="{f71e0d68-4e7c-4a09-bc1e-22d881f6300d}">
+    <Declaration><![CDATA[(* The transaction request initiated from PLC to sw when Loader is ready to start processing a caddy. *)
+TYPE st_Recipe_Station2 :
+STRUCT
+	fTargetSpeed          : LREAL; //ID of a given caddy. 
+	fTargetTime           : LREAL;  //Mass of the caddy in kg. 
+	fTargetAcceleration   : LREAL;  //Trigger/Tell correlation id. 
+	UID					  : STRING; //
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

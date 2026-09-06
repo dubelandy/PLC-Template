@@ -103,16 +103,28 @@
     <Compile Include="POUs\Subscribe.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\TriggerTells\FB_Transaction.TcPOU">
+    <Compile Include="POUs\TriggerTells\Station1\FB_Transaction.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\TriggerTells\_DUTs\st_StationConfig.TcDUT">
+    <Compile Include="POUs\TriggerTells\Station1\_DUTs\st_ProcessMetrics.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\TriggerTells\_DUTs\st_Recipe.TcDUT">
+    <Compile Include="POUs\TriggerTells\Station1\_DUTs\st_Recipe.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\TriggerTells\_DUTs\st_ProcessMetrics.TcDUT">
+    <Compile Include="POUs\TriggerTells\Station1\_DUTs\st_StationConfig.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\TriggerTells\Station2\FB_Transaction_Station2.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\TriggerTells\Station2\_DUTs\st_ProcessMetrics_Station2.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\TriggerTells\Station2\_DUTs\st_Recipe_Station2.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\TriggerTells\Station2\_DUTs\st_StationConfig_Station2.TcDUT">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
@@ -137,7 +149,10 @@
     <Folder Include="Machine Library\_General\_Enums" />
     <Folder Include="Machine Library\_General\_GVLs" />
     <Folder Include="POUs\TriggerTells" />
-    <Folder Include="POUs\TriggerTells\_DUTs" />
+    <Folder Include="POUs\TriggerTells\Station1" />
+    <Folder Include="POUs\TriggerTells\Station1\_DUTs" />
+    <Folder Include="POUs\TriggerTells\Station2" />
+    <Folder Include="POUs\TriggerTells\Station2\_DUTs" />
     <Folder Include="VISUs" />
     <Folder Include="POUs" />
   </ItemGroup>
