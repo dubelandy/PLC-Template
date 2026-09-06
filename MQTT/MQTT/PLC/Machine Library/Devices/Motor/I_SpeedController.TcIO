@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <Itf Name="I_SpeedController" Id="{bf7b357c-8a33-46d9-bc9a-ccb99e6b4603}">
+    <Declaration><![CDATA[INTERFACE I_SpeedController
+]]></Declaration>
+    <Method Name="JogFwd" Id="{296c72fb-1c8b-4f55-91b2-1658ca46a4fd}">
+      <Declaration><![CDATA[METHOD PUBLIC JogFwd ]]></Declaration>
+    </Method>
+    <Method Name="JogRev" Id="{8bb0f188-78f8-43df-8726-8dc8a4ad7ba2}">
+      <Declaration><![CDATA[METHOD PUBLIC JogRev]]></Declaration>
+    </Method>
+    <Method Name="LatchJogFwd" Id="{77c4995b-fa10-4390-b33f-c60fc71adffc}">
+      <Declaration><![CDATA[METHOD PUBLIC LatchJogFwd]]></Declaration>
+    </Method>
+    <Method Name="LatchJogRev" Id="{5c3129c1-35ee-473e-a8b0-9aae7c77e60e}">
+      <Declaration><![CDATA[METHOD PUBLIC LatchJogRev]]></Declaration>
+    </Method>
+    <Method Name="ReadStatus" Id="{5e803f8f-4d8d-438e-a37d-0263051e497c}">
+      <Declaration><![CDATA[METHOD PUBLIC ReadStatus : ST_SpeedControllerStatus
+]]></Declaration>
+    </Method>
+    <Method Name="Reset" Id="{f8d4cc7c-5608-4a57-88af-4e178509b3fa}">
+      <Declaration><![CDATA[METHOD PUBLIC Reset
+]]></Declaration>
+    </Method>
+    <Method Name="SetMotionParam" Id="{a6fcd93d-5411-4c81-8649-16d5a2f69728}">
+      <Declaration><![CDATA[METHOD PUBLIC SetMotionParam 
+VAR_INPUT
+	param		: E_MotorMotionParam;
+	val			: LREAL;
+END_VAR
+
+]]></Declaration>
+    </Method>
+    <Method Name="Stop" Id="{c66cd3c2-1771-4893-bc77-08dc38c112dd}">
+      <Declaration><![CDATA[METHOD PUBLIC Stop
+]]></Declaration>
+    </Method>
+  </Itf>
+</TcPlcObject>
