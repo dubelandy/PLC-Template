@@ -13,9 +13,55 @@
 		</System>
 		<Plc>
 			<Project GUID="{AF76FED0-7B27-4FED-8B3D-AB1A345D1FC8}" Name="ExamplePLC" PrjFilePath="ExamplePLC\ExamplePLC.plcproj" TmcFilePath="ExamplePLC\ExamplePLC.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="ExamplePLC\ExamplePLC.tmc" TmcHash="{C701A7F4-96BF-4CC8-63A1-6EC3C52B1E28}">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="ExamplePLC\ExamplePLC.tmc" TmcHash="{281F28B3-9EE9-2CE6-CD1F-C78C00F68503}">
 					<Name>ExamplePLC Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
+					<Vars VarGrpType="1">
+						<Name>PlcTask Inputs</Name>
+						<Var>
+							<Name>MAIN.machine.exampleStation.actuatorA.workFdbk.inpSignal</Name>
+							<Comment><![CDATA[physical input, link in the I/O tree]]></Comment>
+							<Type>BOOL</Type>
+						</Var>
+						<Var>
+							<Name>MAIN.machine.exampleStation.actuatorA.homeFdbk.inpSignal</Name>
+							<Comment><![CDATA[physical input, link in the I/O tree]]></Comment>
+							<Type>BOOL</Type>
+						</Var>
+						<Var>
+							<Name>MAIN.machine.exampleStation.actuatorB.workFdbk.inpSignal</Name>
+							<Comment><![CDATA[physical input, link in the I/O tree]]></Comment>
+							<Type>BOOL</Type>
+						</Var>
+						<Var>
+							<Name>MAIN.machine.exampleStation.actuatorB.homeFdbk.inpSignal</Name>
+							<Comment><![CDATA[physical input, link in the I/O tree]]></Comment>
+							<Type>BOOL</Type>
+						</Var>
+					</Vars>
+					<Vars VarGrpType="2" AreaNo="1">
+						<Name>PlcTask Outputs</Name>
+						<Var>
+							<Name>MAIN.machine.exampleStation.actuatorA.outWork</Name>
+							<Comment><![CDATA[Physical command to work position]]></Comment>
+							<Type>BOOL</Type>
+						</Var>
+						<Var>
+							<Name>MAIN.machine.exampleStation.actuatorA.outHome</Name>
+							<Comment><![CDATA[Physical command to home position]]></Comment>
+							<Type>BOOL</Type>
+						</Var>
+						<Var>
+							<Name>MAIN.machine.exampleStation.actuatorB.outWork</Name>
+							<Comment><![CDATA[Physical command to work position]]></Comment>
+							<Type>BOOL</Type>
+						</Var>
+						<Var>
+							<Name>MAIN.machine.exampleStation.actuatorB.outHome</Name>
+							<Comment><![CDATA[Physical command to home position]]></Comment>
+							<Type>BOOL</Type>
+						</Var>
+					</Vars>
 					<Contexts>
 						<Context>
 							<Id>0</Id>
