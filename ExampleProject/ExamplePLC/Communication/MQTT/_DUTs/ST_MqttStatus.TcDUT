@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_MqttStatus" Id="{31d38ded-f387-403d-a18e-b4ea8421214e}">
+    <Declaration><![CDATA[TYPE ST_MqttStatus :
+STRUCT
+	connected				: BOOL; //connected to the broker
+	subscribed				: BOOL; //subscribed to commandTopic
+	error					: BOOL; //client error
+	errorCode				: HRESULT; //client error code
+	publishCount			: UDINT; //messages published
+	lastPayloadIn			: STRING(255); //last payload received on commandTopic
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

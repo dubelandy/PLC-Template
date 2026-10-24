@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_ExampleStationRunStep" Id="{a93898bd-8d3a-42ae-bdd2-e0868e69913a}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_ExampleStationRunStep :
+(
+	Idle		:= 0, //not running
+	Close		:= 10, //closing both actuators
+	Open		:= 20, //opening both actuators
+	Dwell		:= 30 //waiting before the next cycle
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

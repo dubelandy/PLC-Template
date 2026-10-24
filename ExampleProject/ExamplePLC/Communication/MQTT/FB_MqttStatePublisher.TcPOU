@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_MqttStatePublisher" Id="{fa6ab0d8-43b7-4bad-a9be-2e7a0e65b00b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MqttStatePublisher
+(*
+	Publishes the machine state as JSON over MQTT, and optionally accepts START/STOP/RESET.
+	Shows how Tc3_IotBase and Tc3_JsonXml are used next to MachineLibrary.
+	Payload example: {"state":"Started","cycleCount":12}
+*)
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg					: ST_MqttConfiguration; //configuration
+	
+	machineState		: E_ModuleState; //state to publish
+	cycleCount			: UDINT; //cycle count to publish
+END_VAR
+VAR_OUTPUT
+	cmd					: E_ModuleCommand; //remote command received this scan, None otherwise
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts					: ST_MqttStatus;
+END_VAR
+VAR
+	bInit				: BOOL := TRUE;
+	
+	//MQTT client
+	client				: FB_IotMqttClient;
+	queue				: FB_IotMqttMessageQueue;
+	message				: FB_IotMqttMessage;
+	
+	//Publish
+	json				: FB_JsonSaxWriter;
+	stateText			: STRING;
+	payloadOut			: STRING(255);
+	publishRequest		: BOOL;
+	machineStateLast	: E_ModuleState := E_ModuleState.Unknown;
+	publishTimer		: TON;
+	
+	//Subscribe
+	{attribute 'TcEncoding' := 'UTF-8'}
+	topicIn				: STRING(255);
+	{attribute 'TcEncoding' := 'UTF-8'}
+	payloadIn			: STRING(255);
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[cmd := E_ModuleCommand.None;
+
+IF NOT cfg.enable THEN
+	sts.connected := sts.subscribed := FALSE;
+	RETURN;
+END_IF
+
+IF bInit THEN
+	Init();
+	bInit := FALSE;
+END_IF
+
+Connection();
+Publish();
+Subscribe();]]></ST>
+    </Implementation>
+    <Method Name="Connection" Id="{660b978b-e2fa-4419-b410-49ca8e38d057}">
+      <Declaration><![CDATA[METHOD PROTECTED Connection //keep the client connected (must run every scan)]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[client.Execute(bConnect := TRUE);
+
+sts.connected 	:= client.bConnected;
+sts.error 		:= client.bError;
+sts.errorCode 	:= client.hrErrorCode;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Init" Id="{7a96b654-6646-479a-b904-1f1a95b12a04}">
+      <Declaration><![CDATA[METHOD PROTECTED Init : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[client.sHostName 		:= cfg.hostName;
+client.nHostPort 		:= cfg.hostPort;
+client.ipMessageQueue 	:= queue; //route received messages into the queue
+Init := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Publish" Id="{b68a4eed-13d5-4774-8043-4bb6f68e1d07}">
+      <Declaration><![CDATA[METHOD PROTECTED Publish //publish on state change and every publishInterval]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[publishTimer(IN := sts.connected AND NOT publishTimer.Q, PT := cfg.publishInterval);
+publishRequest := publishRequest OR publishTimer.Q OR (machineState <> machineStateLast);
+machineStateLast := machineState;
+
+IF publishRequest AND sts.connected THEN
+	stateText := TO_STRING(machineState);
+	
+	json.ResetDocument();
+	json.StartObject();
+	json.AddKey('state');
+	json.AddString(stateText);
+	json.AddKey('cycleCount');
+	json.AddDint(UDINT_TO_DINT(cycleCount));
+	json.EndObject();
+	json.CopyDocument(payloadOut, SIZEOF(payloadOut));
+	
+	IF client.Publish(
+		sTopic			:= cfg.stateTopic,
+		pPayload		:= ADR(payloadOut),
+		nPayloadSize	:= INT_TO_UDINT(LEN(payloadOut)),
+		eQoS			:= TcIotMqttQos.AtMostOnceDelivery,
+		bRetain			:= FALSE,
+		bQueue			:= FALSE)
+	THEN
+		publishRequest := FALSE;
+		sts.publishCount := sts.publishCount + 1;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Subscribe" Id="{d0792e11-57a8-4057-8145-9cd66e36b136}">
+      <Declaration><![CDATA[METHOD PROTECTED Subscribe //receive remote commands]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT cfg.enableRemoteCommands THEN
+	RETURN;
+END_IF
+
+IF sts.connected AND NOT sts.subscribed THEN
+	sts.subscribed := client.Subscribe(sTopic := cfg.commandTopic, eQoS := TcIotMqttQos.AtMostOnceDelivery);
+ELSIF NOT sts.connected THEN
+	sts.subscribed := FALSE;
+END_IF
+
+IF queue.nQueuedMessages > 0 THEN
+	IF queue.Dequeue(fbMessage := message) THEN
+		MEMSET(ADR(payloadIn), 0, SIZEOF(payloadIn));
+		message.GetTopic(pTopic := ADR(topicIn), nTopicSize := SIZEOF(topicIn));
+		message.GetPayload(pPayload := ADR(payloadIn), nPayloadSize := SIZEOF(payloadIn), bSetNullTermination := TRUE);
+		sts.lastPayloadIn := payloadIn;
+		
+		IF payloadIn = 'START' THEN
+			cmd := E_ModuleCommand.Start;
+		ELSIF payloadIn = 'STOP' THEN
+			cmd := E_ModuleCommand.Stop;
+		ELSIF payloadIn = 'RESET' THEN
+			cmd := E_ModuleCommand.Reset;
+		END_IF
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

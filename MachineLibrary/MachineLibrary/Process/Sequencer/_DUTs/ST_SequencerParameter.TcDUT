@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_SequencerParameter" Id="{6d4de9f7-0b19-41cc-a759-af8591c95566}">
+    <Declaration><![CDATA[TYPE ST_SequencerParameter :
+STRUCT
+	typeEnum			: INT; //parameter type, compared against the device's E_xxxFunctionParam enum (0 = unused)
+	value				: LREAL; //parameter value
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

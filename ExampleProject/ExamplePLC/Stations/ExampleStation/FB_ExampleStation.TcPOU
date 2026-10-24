@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_ExampleStation" Id="{ec9942f8-1fba-4f7b-ba35-139c4983ee10}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ExampleStation EXTENDS FB_Module
+(*
+	Example station with two 2-state actuators.
+	Home position = OPEN, Work position = CLOSED.
+	
+	Starting (homing)	: open both actuators, Started once both are open
+	Started (running)	: close both, open both, dwell, repeat
+	Stopping			: open both actuators (safe position), Stopped once both are open
+	Stopped				: actuators follow operator commands (manual mode)
+	
+	The actuators are configured with no feedback so the example runs without hardware.
+	Clear homeNoFdbk/workNoFdbk and link homeFdbk/workFdbk/outHome/outWork to use real I/O.
+*)
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg					: ST_ExampleStationConfiguration; //configuration
+	
+	(* Devices
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	actuatorA			: FB_Actuator2State := (cfg := (actuatorId := 'Actuator A', homeNoFdbk := TRUE, workNoFdbk := TRUE));
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	actuatorB			: FB_Actuator2State := (cfg := (actuatorId := 'Actuator B', homeNoFdbk := TRUE, workNoFdbk := TRUE));
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	stsStation			: ST_ExampleStationStatus; //station specific status (module status is in sts)
+END_VAR
+VAR
+	//Timers
+	dwellTimer			: TON; //dwell between cycles
+	cycleTimer			: TON := (PT := T#1D); //measures one close/open cycle
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+Devices();
+Permissives();
+StatusOut();]]></ST>
+    </Implementation>
+    <Method Name="CloseAll" Id="{8e52d248-87df-4c42-99f6-9d9c54f47983}">
+      <Declaration><![CDATA[METHOD PROTECTED CloseAll //command all actuators to work (closed)]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT actuatorA.sts.atWork AND NOT actuatorA.sts.goingToWork THEN
+	actuatorA.ToWork();
+END_IF
+IF NOT actuatorB.sts.atWork AND NOT actuatorB.sts.goingToWork THEN
+	actuatorB.ToWork();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Devices" Id="{f44671b1-c0e4-43be-93bd-be3677fe4079}">
+      <Declaration><![CDATA[METHOD PROTECTED Devices //call child devices]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Devices follow this module's mode through childCtrl
+actuatorA(parentCtrl := childCtrl);
+actuatorB(parentCtrl := childCtrl);
+
+//Report child faults to the module
+inpChildFaulted := actuatorA.fault.active OR actuatorB.fault.active;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="OpenAll" Id="{1e08200a-bb87-4855-85ad-e602e4fc47d6}">
+      <Declaration><![CDATA[METHOD PROTECTED OpenAll //command all actuators to home (open)]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT actuatorA.sts.atHome AND NOT actuatorA.sts.goingToHome THEN
+	actuatorA.ToHome();
+END_IF
+IF NOT actuatorB.sts.atHome AND NOT actuatorB.sts.goingToHome THEN
+	actuatorB.ToHome();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Permissives" Id="{d88cb704-047f-4a29-9dd2-a0bdee56da70}">
+      <Declaration><![CDATA[METHOD PROTECTED Permissives //set module permissives and interlocks]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Homing is complete when all actuators are open
+PermStartComplete.cfg.condText[0] := 'Actuator A open';
+PermStartComplete.cfg.condText[1] := 'Actuator B open';
+PermStartComplete.perm.0 := actuatorA.sts.atHome;
+PermStartComplete.perm.1 := actuatorB.sts.atHome;
+
+//Stopping is complete when all actuators are open, or faulted so they cannot move
+PermStopComplete.cfg.condText[0] := 'Actuator A open or faulted';
+PermStopComplete.cfg.condText[1] := 'Actuator B open or faulted';
+PermStopComplete.perm.0 := actuatorA.sts.atHome OR actuatorA.fault.active;
+PermStopComplete.perm.1 := actuatorB.sts.atHome OR actuatorB.fault.active;
+
+//A faulted actuator stops the station
+IntlkAuto.cfg.condText[0] := 'Actuator A not faulted';
+IntlkAuto.cfg.condText[1] := 'Actuator B not faulted';
+IntlkAuto.perm.0 := NOT actuatorA.fault.active;
+IntlkAuto.perm.1 := NOT actuatorB.fault.active;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{23c61360-e642-4960-8caa-c42cb99c1793}">
+      <Declaration><![CDATA[METHOD Reset : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[actuatorA.Reset();
+actuatorB.Reset();
+Reset := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Started" Id="{766cf290-1a71-461d-81fe-613336b7212d}">
+      <Declaration><![CDATA[METHOD PROTECTED Started : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Running sequence: close both, open both, dwell, repeat
+CASE stsStation.runStep OF
+	
+	E_ExampleStationRunStep.Idle:
+		stsStation.runStep := E_ExampleStationRunStep.Close;
+		
+	E_ExampleStationRunStep.Close:
+		CloseAll();
+		IF stsStation.allClosed THEN
+			stsStation.runStep := E_ExampleStationRunStep.Open;
+		END_IF
+		
+	E_ExampleStationRunStep.Open:
+		OpenAll();
+		IF stsStation.allOpen THEN
+			stsStation.cycleCount 		:= stsStation.cycleCount + 1;
+			stsStation.lastCycleTime 	:= cycleTimer.ET;
+			stsStation.runStep 			:= E_ExampleStationRunStep.Dwell;
+		END_IF
+		
+	E_ExampleStationRunStep.Dwell:
+		IF dwellTimer.Q THEN
+			stsStation.runStep := E_ExampleStationRunStep.Close;
+		END_IF
+		
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Starting" Id="{3fe50c0b-caad-4b2b-8963-ca5f99eef799}">
+      <Declaration><![CDATA[METHOD PROTECTED Starting : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Homing: open all actuators
+OpenAll();
+stsStation.runStep := E_ExampleStationRunStep.Idle;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusOut" Id="{9145cda4-cd6c-47f3-90f1-a708e1e13d88}">
+      <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[stsStation.allOpen 	:= actuatorA.sts.atHome AND actuatorB.sts.atHome;
+stsStation.allClosed 	:= actuatorA.sts.atWork AND actuatorB.sts.atWork;
+
+//Monitoring timers
+dwellTimer(IN := stsStation.runStep = E_ExampleStationRunStep.Dwell, PT := cfg.cycleDwell);
+cycleTimer(IN := stsStation.runStep = E_ExampleStationRunStep.Close OR stsStation.runStep = E_ExampleStationRunStep.Open);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Stopping" Id="{51f6e602-e616-41ff-b9af-086d08317e64}">
+      <Declaration><![CDATA[METHOD PROTECTED Stopping : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Finish in the safe position: all actuators open
+OpenAll();
+stsStation.runStep := E_ExampleStationRunStep.Idle;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

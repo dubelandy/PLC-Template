@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_DigitalInputStatus" Id="{a92fb050-346c-4ccb-bf88-e9abeab50416}">
+    <Declaration><![CDATA[TYPE ST_DigitalInputStatus :
+STRUCT
+	rawSignal			: BOOL; //selected signal after inversion, before debounce
+	debouncedSignal		: BOOL; //debounced signal, use this in logic
+	risingEdge			: BOOL; //debounced signal turned on this scan
+	fallingEdge			: BOOL; //debounced signal turned off this scan
+	echoInput			: BOOL; //physical input state for HMI
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

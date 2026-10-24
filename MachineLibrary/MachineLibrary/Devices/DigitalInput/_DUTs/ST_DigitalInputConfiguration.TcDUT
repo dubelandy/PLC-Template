@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_DigitalInputConfiguration" Id="{ff42da0e-72a8-4466-963a-226663cb69cd}">
+    <Declaration><![CDATA[TYPE ST_DigitalInputConfiguration :
+STRUCT
+	desc				: T_DeviceNameString; //input description
+	invert				: BOOL; //invert the physical signal (e.g. normally closed sensor)
+	debounceOn			: TIME := T#50MS; //signal must be on this long before debouncedSignal turns on
+	debounceOff			: TIME := T#50MS; //signal must be off this long before debouncedSignal turns off
+	sim					: BOOL; //use simSignal instead of the physical input
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

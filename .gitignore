@@ -1,0 +1,26 @@
+# Visual Studio / TcXaeShell
+.vs/
+*.suo
+*.user
+*.~u
+
+# TwinCAT build output (regenerated on build)
+_Boot/
+_CompileInfo/
+_Libraries/
+*.tmc
+*.tpy
+*.compileinfo
+*.library
+*.compiled-library
+
+# TwinCAT backups, licenses, archives
+*.bak
+*.orig
+*.tclrs
+*.tnzip
+*.tpzip
+*.tszip
+
+# Runtime output
+*.log

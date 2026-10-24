@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN" Id="{4db6d972-4f74-41c6-99a2-361264a8ef89}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	machine		: FB_Machine; //top-level module, start/stop with machine.ocmd
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[machine();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

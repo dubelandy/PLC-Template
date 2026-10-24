@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="GVL_Lib_SequencerConstants" Id="{c9147559-e82b-42e4-9ddb-869463190a84}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL CONSTANT
+	MIN_PARAMETERS		: INT := 0; //first index of FB_SequencerFunction.arrParam
+	MAX_PARAMETERS		: INT := 4; //last index of FB_SequencerFunction.arrParam
+END_VAR
+]]></Declaration>
+  </GVL>
+</TcPlcObject>

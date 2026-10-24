@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Machine" Id="{fd543e1c-2eca-4831-ae5c-5f1ac010e45e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Machine EXTENDS FB_Module
+(*
+	Top-level module. Starting/stopping the machine starts/stops its stations.
+	Start/stop/reset from the HMI with ocmd, or over MQTT (see cfgMqtt.enableRemoteCommands).
+*)
+VAR_INPUT
+	(* Stations
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	exampleStation		: FB_ExampleStation;
+	
+	(* Communication
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfgMqtt				: ST_MqttConfiguration; //MQTT configuration
+END_VAR
+VAR
+	mqtt				: FB_MqttStatePublisher;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+Stations();
+Permissives();
+Communication();]]></ST>
+    </Implementation>
+    <Method Name="Communication" Id="{e2b37e0b-5eb1-4160-9702-ac335e75a9a8}">
+      <Declaration><![CDATA[METHOD PROTECTED Communication]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[mqtt(cfg 			:= cfgMqtt,
+	 machineState 	:= sts.State,
+	 cycleCount 	:= exampleStation.stsStation.cycleCount);
+
+//Remote commands are handled like program commands
+IF mqtt.cmd <> E_ModuleCommand.None THEN
+	pcmd := mqtt.cmd;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Permissives" Id="{1d31ecc1-e23a-4b40-80b2-f8cf2e2bed17}">
+      <Declaration><![CDATA[METHOD PROTECTED Permissives //set module permissives and interlocks]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Started once every station is running
+PermStartComplete.cfg.condText[0] := 'Example station started';
+PermStartComplete.perm.0 := exampleStation.sts.Started;
+
+//Stopped once every station is stopped
+PermStopComplete.cfg.condText[0] := 'Example station stopped';
+PermStopComplete.perm.0 := exampleStation.sts.Stopped;
+
+//A faulted station stops the machine
+IntlkAuto.cfg.condText[0] := 'Example station not faulted';
+IntlkAuto.perm.0 := NOT exampleStation.sts.Faulted;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{cb192e32-b467-40eb-bce0-ecf1ba70a10f}">
+      <Declaration><![CDATA[METHOD Reset : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[exampleStation.cmdReset := TRUE;
+Reset := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Started" Id="{6572cca9-89d7-4580-ba96-befb8e702fef}">
+      <Declaration><![CDATA[METHOD PROTECTED Started : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Stations run their own sequences while the machine is started]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Starting" Id="{a1a124df-8592-4282-a52c-e0737dc46e9e}">
+      <Declaration><![CDATA[METHOD PROTECTED Starting : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[exampleStation.pcmd := E_ModuleCommand.Start;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Stations" Id="{28a083f7-7251-46a3-abba-099a8be6f6ae}">
+      <Declaration><![CDATA[METHOD PROTECTED Stations //call child modules]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[exampleStation();
+
+inpChildFaulted := exampleStation.sts.Faulted;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Stopping" Id="{daf1d2a3-6b3e-4e18-a0d6-7c6c58ffd8ee}">
+      <Declaration><![CDATA[METHOD PROTECTED Stopping : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[exampleStation.pcmd := E_ModuleCommand.Stop;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_DigitalInput" Id="{e28db828-1e13-4566-8971-ec050589d736}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DigitalInput
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg					: ST_DigitalInputConfiguration; //configuration
+	
+	simSignal			: BOOL; //signal used when cfg.sim is TRUE
+	
+	(* External inputs
+	----------------------------------------------------------------------------------------------------*)
+	inpSignal	AT %I*	: BOOL; //physical input, link in the I/O tree
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts					: ST_DigitalInputStatus;
+END_VAR
+VAR
+	//Timers
+	onTimer				: TON; //debounce timer for signal turning on
+	offTimer			: TON; //debounce timer for signal turning off
+	
+	//Oneshot triggers
+	rtSignal			: R_TRIG;
+	ftSignal			: F_TRIG;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[ProcessInputs();
+StatusOut();]]></ST>
+    </Implementation>
+    <Method Name="ProcessInputs" Id="{db0695a0-8697-47b7-8f03-6d408e3586e2}">
+      <Declaration><![CDATA[METHOD PROTECTED ProcessInputs //Select signal source and debounce]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Select signal source
+IF cfg.sim THEN
+	sts.rawSignal := simSignal;
+ELSE
+	sts.rawSignal := inpSignal XOR cfg.invert;
+END_IF
+
+//Debounce. A debounce time of T#0S passes the signal straight through.
+onTimer(IN := sts.rawSignal, PT := cfg.debounceOn);
+offTimer(IN := NOT sts.rawSignal, PT := cfg.debounceOff);
+IF onTimer.Q THEN
+	sts.debouncedSignal := TRUE;
+ELSIF offTimer.Q THEN
+	sts.debouncedSignal := FALSE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusOut" Id="{13f5efeb-d7f2-4489-bffe-4a6985d419d4}">
+      <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[rtSignal(CLK := sts.debouncedSignal);
+ftSignal(CLK := sts.debouncedSignal);
+
+sts.risingEdge	:= rtSignal.Q;
+sts.fallingEdge	:= ftSignal.Q;
+sts.echoInput	:= inpSignal;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

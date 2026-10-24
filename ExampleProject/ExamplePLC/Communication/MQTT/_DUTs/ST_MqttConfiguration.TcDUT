@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_MqttConfiguration" Id="{79321668-bc2b-467c-b6e7-0ecdf0ab4944}">
+    <Declaration><![CDATA[TYPE ST_MqttConfiguration :
+STRUCT
+	enable					: BOOL := TRUE; //connect to the broker and publish state
+	hostName				: STRING(255) := 'broker.hivemq.com'; //public test broker, replace with your own
+	hostPort				: UINT := 1883; //8883 for TLS
+	stateTopic				: STRING(255) := 'plc-template/example/state'; //machine state is published here as JSON
+	commandTopic			: STRING(255) := 'plc-template/example/cmd'; //START, STOP or RESET
+	enableRemoteCommands	: BOOL := FALSE; //accept commands on commandTopic. Off by default: anyone on a public broker can publish to it
+	publishInterval			: TIME := T#10S; //state is also published on every state change
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

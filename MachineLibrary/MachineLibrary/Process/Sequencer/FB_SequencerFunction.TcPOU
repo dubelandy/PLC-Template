@@ -1,0 +1,160 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_SequencerFunction" Id="{9cb75d03-3c94-4cb7-9c32-c7b80777cba9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_SequencerFunction
+(*
+	A single function a device exposes to a sequencer (e.g. ToHome, LatchJogFwd).
+	The device calls this FB every scan, starts its action on 'entry'/'running',
+	and sets permComplete.perm.0 when the action is finished. Bit 0 is cleared on every start.
+*)
+VAR_INPUT
+	hmiTextStatic		: T_MaxString; //description of the function shown on the HMI
+	timeoutPT			: TIME := T#30S; //function errors if not complete within this time, T#0S disables
+	
+	inpError			: BOOL; //error reported by the device while running
+	inpErrorText		: T_MaxString; //error text reported by the device while running
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	arrParam			: ARRAY[GVL_Lib_SequencerConstants.MIN_PARAMETERS..GVL_Lib_SequencerConstants.MAX_PARAMETERS] OF ST_SequencerParameter; //parameters passed to the device
+	
+	(* Interlocks/Permissives
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	permComplete		: FB_Permissive; //all conditions must be true for the function to complete
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	state				: E_SequencerFunctionState := E_SequencerFunctionState.Idle;
+	entry				: BOOL; //first scan of running
+	running				: BOOL; //function is running
+	complete			: BOOL; //function completed
+	error				: BOOL; //function errored
+	errorText			: T_MaxString;
+	elapsed				: TIME; //time spent running
+END_VAR
+VAR
+	//Command processing
+	startRequest		: BOOL;
+	abortRequest		: BOOL;
+	resetRequest		: BOOL;
+	
+	//state variables for tracking
+	stateLastScan		: E_SequencerFunctionState := E_SequencerFunctionState.Idle;
+	
+	//Timers
+	timeoutTimer		: TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[StateMachine();
+StatusOut();]]></ST>
+    </Implementation>
+    <Method Name="Abort" Id="{3744c5b7-6f8d-4438-b307-99d42d071f6c}">
+      <Declaration><![CDATA[METHOD PUBLIC Abort //abort the function if it is running]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[abortRequest := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ClearParameters" Id="{6b3c977d-244d-4ff7-bfa9-0e81c4242037}">
+      <Declaration><![CDATA[METHOD PUBLIC ClearParameters //clear all parameters]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[VAR
+	i : INT;
+END_VAR
+FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+	arrParam[i].typeEnum := 0;
+	arrParam[i].value := 0;
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{d992ce48-3d78-4abf-97a3-c49a20eb7950}">
+      <Declaration><![CDATA[METHOD PUBLIC Reset //return to idle and clear errors]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[resetRequest := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetParameter" Id="{24b72d73-7296-414c-a3f3-04b89375552f}">
+      <Declaration><![CDATA[METHOD PUBLIC SetParameter : BOOL //returns FALSE if index is out of range
+VAR_INPUT
+	index		: INT; //arrParam index
+	typeEnum	: INT; //device E_xxxFunctionParam value, e.g. E_VFDFunctionParam.JogSpeed
+	value		: LREAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF index < GVL_Lib_SequencerConstants.MIN_PARAMETERS OR index > GVL_Lib_SequencerConstants.MAX_PARAMETERS THEN
+	SetParameter := FALSE;
+	RETURN;
+END_IF
+arrParam[index].typeEnum := typeEnum;
+arrParam[index].value := value;
+SetParameter := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Start" Id="{562a0e96-1a44-4ca6-8136-49e9bfcd9b7b}">
+      <Declaration><![CDATA[METHOD PUBLIC Start //start the function (ignored while running)]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[startRequest := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{f349b874-2908-43a5-8f9b-48b52466d1e5}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[timeoutTimer(IN := (state = E_SequencerFunctionState.Running) AND (timeoutPT > T#0S), PT := timeoutPT);
+
+CASE state OF
+	
+	E_SequencerFunctionState.Running:
+		permComplete();
+		IF abortRequest THEN
+			state := E_SequencerFunctionState.Aborted;
+		ELSIF inpError THEN
+			IF inpErrorText <> '' THEN
+				errorText := inpErrorText;
+			ELSE
+				errorText := CONCAT(hmiTextStatic, ' error');
+			END_IF
+			state := E_SequencerFunctionState.Error;
+		ELSIF permComplete.sts.ok THEN
+			state := E_SequencerFunctionState.Complete;
+		ELSIF timeoutTimer.Q THEN
+			errorText := CONCAT(hmiTextStatic, ' timed out');
+			state := E_SequencerFunctionState.Error;
+		END_IF
+		
+	ELSE // Idle, Complete, Error, Aborted
+		IF resetRequest THEN
+			errorText := '';
+			state := E_SequencerFunctionState.Idle;
+		END_IF
+		IF startRequest THEN
+			permComplete.perm := GVL_Lib_GeneralConstants.LOWEST_BIT_FALSE; //device must set bit 0 to complete
+			inpError := FALSE;
+			inpErrorText := '';
+			errorText := '';
+			state := E_SequencerFunctionState.Running;
+		END_IF
+		
+END_CASE
+
+//Clear requests
+startRequest := abortRequest := resetRequest := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusOut" Id="{e26eaa1c-84c0-4a13-a668-6ac6b8ab1261}">
+      <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[entry		:= (state = E_SequencerFunctionState.Running) AND (stateLastScan <> E_SequencerFunctionState.Running);
+running		:= state = E_SequencerFunctionState.Running;
+complete	:= state = E_SequencerFunctionState.Complete;
+error		:= state = E_SequencerFunctionState.Error;
+elapsed		:= timeoutTimer.ET;
+
+stateLastScan := state;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

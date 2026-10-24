@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <FileVersion>1.0.0.0</FileVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{3f1c2a9e-7d84-4b5f-9a61-2c8e5d0b7f13}</ProjectGuid>
+    <SubObjectsSortedByName>True</SubObjectsSortedByName>
+    <DownloadApplicationInfo>true</DownloadApplicationInfo>
+    <WriteProductVersion>true</WriteProductVersion>
+    <GenerateTpy>false</GenerateTpy>
+    <Name>MachineLibrary</Name>
+    <ProgramVersion>3.1.4024.0</ProgramVersion>
+    <Application>{ba216c0a-8a83-4f07-80ad-1c5af979b316}</Application>
+    <TypeSystem>{1cba72fc-c4ba-47c1-a789-6926c1367d3a}</TypeSystem>
+    <Implicit_Task_Info>{e5d7b146-b3de-4292-94ac-1c39808f438f}</Implicit_Task_Info>
+    <Implicit_KindOfTask>{2ceeb853-455c-4072-8184-d599308d204e}</Implicit_KindOfTask>
+    <Implicit_Jitter_Distribution>{efddfccf-3a33-485f-828a-b08088f5116d}</Implicit_Jitter_Distribution>
+    <LibraryReferences>{281383dd-322d-4a7c-9da0-90330d29b7eb}</LibraryReferences>
+    <Company>PLC-Template</Company>
+    <Title>MachineLibrary</Title>
+    <ProjectVersion>1.0.0.0</ProjectVersion>
+    <DefaultNamespace>MachineLibrary</DefaultNamespace>
+    <Author>Andy Dubel</Author>
+    <Description>Reusable machine building blocks: devices (actuators, motors, inputs), modules, permissives, sequencer functions and utilities.</Description>
+    <Released>false</Released>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="_General\_DUTs\ST_AnalogSetpoints.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="_General\_DUTs\ST_Stacklight.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="_General\_DUTs\ST_TcError.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="_General\_DUTs\Strings\T_DeviceNameString.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="_General\_ENUMs\E_SystemMode.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="_General\_GVLs\GVL_Lib_GeneralConstants.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="_General\_GVLs\GVL_Lib_TcErrors.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="Devices\Actuator\_DUTs\ST_Actuator2StateConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_DUTs\ST_Actuator2StateFault.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_DUTs\ST_Actuator2StateFunctions.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_DUTs\ST_Actuator2StateStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_ENUMs\E_ActuatorCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\_ENUMs\E_ActuatorState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Actuator\FB_Actuator2State.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\AnalogActuator\_DUTs\ST_ActuatorAnalogConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\AnalogActuator\FB_ActuatorAnalog.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Device\_DUTs\ST_DeviceControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Device\_DUTs\ST_DeviceStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Device\FB_Device.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\DigitalInput\_DUTs\ST_DigitalInputConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\DigitalInput\_DUTs\ST_DigitalInputStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\DigitalInput\FB_DigitalInput.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\_DUTs\ST_SpeedControllerStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\_ENUMs\E_MotorMotionParam.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisDeviceStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisFault.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisFunctions.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisMotionControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisMotionControlFaultId.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisMotionParameters.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_DUTs\ST_AxisPosition.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_ENUMs\E_AxisCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_ENUMs\E_AxisFunctionParam.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_ENUMs\E_AxisState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\_GVLs\GVL_Lib_ServoConstants.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="Devices\Motor\Axis\FB_Axis.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\I_SpeedController.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_CiA402ControlWord.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_CiA402StatusWord.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_VFDCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_VFDConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_VFDError.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_VFDFunctions.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_DUTs\ST_VFDStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_ENUMs\E_FunctionalProfile.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_ENUMs\E_VFDCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_ENUMs\E_VFDFunctionParam.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\_ENUMs\E_VFDState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\Motor\VFD\FB_VFD.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Module\_DUTs\ST_ModuleModeFlags.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Module\_DUTs\ST_ModuleStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Module\_ENUMs\E_ModuleCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Module\_ENUMs\E_ModuleMode.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Module\_ENUMs\E_ModuleState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Module\FB_Module.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\ParentChildControl\_DUTs\ST_ParentChildControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\Permissive\_DUTs\ST_PermissiveConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\Permissive\_DUTs\ST_PermissiveStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\Permissive\FB_Permissive.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\Sequencer\_DUTs\ST_SequencerParameter.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\Sequencer\_ENUMs\E_SequencerFunctionState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\Sequencer\_GVLs\GVL_Lib_SequencerConstants.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="Process\Sequencer\FB_SequencerFunction.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\TriggerTell\_DUTs\ST_TriggerTellConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\TriggerTell\_DUTs\ST_TriggerTellControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\TriggerTell\_DUTs\ST_TriggerTellHandshake.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\TriggerTell\_DUTs\ST_TriggerTellStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\TriggerTell\_ENUMs\E_TriggerTellState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\TriggerTell\FB_TriggerTell.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Utility\RTO.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="_General" />
+    <Folder Include="_General\_DUTs" />
+    <Folder Include="_General\_DUTs\Strings" />
+    <Folder Include="_General\_ENUMs" />
+    <Folder Include="_General\_GVLs" />
+    <Folder Include="Devices" />
+    <Folder Include="Devices\Actuator" />
+    <Folder Include="Devices\Actuator\_DUTs" />
+    <Folder Include="Devices\Actuator\_ENUMs" />
+    <Folder Include="Devices\AnalogActuator" />
+    <Folder Include="Devices\AnalogActuator\_DUTs" />
+    <Folder Include="Devices\Device" />
+    <Folder Include="Devices\Device\_DUTs" />
+    <Folder Include="Devices\DigitalInput" />
+    <Folder Include="Devices\DigitalInput\_DUTs" />
+    <Folder Include="Devices\Motor" />
+    <Folder Include="Devices\Motor\_DUTs" />
+    <Folder Include="Devices\Motor\_ENUMs" />
+    <Folder Include="Devices\Motor\Axis" />
+    <Folder Include="Devices\Motor\Axis\_DUTs" />
+    <Folder Include="Devices\Motor\Axis\_ENUMs" />
+    <Folder Include="Devices\Motor\Axis\_GVLs" />
+    <Folder Include="Devices\Motor\VFD" />
+    <Folder Include="Devices\Motor\VFD\_DUTs" />
+    <Folder Include="Devices\Motor\VFD\_ENUMs" />
+    <Folder Include="Module" />
+    <Folder Include="Module\_DUTs" />
+    <Folder Include="Module\_ENUMs" />
+    <Folder Include="Process" />
+    <Folder Include="Process\ParentChildControl" />
+    <Folder Include="Process\ParentChildControl\_DUTs" />
+    <Folder Include="Process\Permissive" />
+    <Folder Include="Process\Permissive\_DUTs" />
+    <Folder Include="Process\Sequencer" />
+    <Folder Include="Process\Sequencer\_DUTs" />
+    <Folder Include="Process\Sequencer\_ENUMs" />
+    <Folder Include="Process\Sequencer\_GVLs" />
+    <Folder Include="Process\TriggerTell" />
+    <Folder Include="Process\TriggerTell\_DUTs" />
+    <Folder Include="Process\TriggerTell\_ENUMs" />
+    <Folder Include="Utility" />
+  </ItemGroup>
+  <ItemGroup>
+    <PlaceholderReference Include="Tc2_Standard">
+      <DefaultResolution>Tc2_Standard, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_Standard</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_System">
+      <DefaultResolution>Tc2_System, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_System</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_Utilities">
+      <DefaultResolution>Tc2_Utilities, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_Utilities</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_MC2">
+      <DefaultResolution>Tc2_MC2, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_MC2</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_MC2_Drive">
+      <DefaultResolution>Tc2_MC2_Drive, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_MC2_Drive</Namespace>
+    </PlaceholderReference>
+  </ItemGroup>
+</Project>
