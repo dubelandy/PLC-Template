@@ -2,9 +2,9 @@
 # TcXaeShell Solution File, Format Version 11.00
 VisualStudioVersion = 15.0.33403.129
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{B1E792BE-AA5F-4E3C-8C82-674BF9C0715B}") = "MachineLibrary", "MachineLibrary\MachineLibrary.tsproj", "{8B2E4C71-5A3D-4F96-B0E8-1D7C6A9F2E45}"
-EndProject
 Project("{B1E792BE-AA5F-4E3C-8C82-674BF9C0715B}") = "ExampleProject", "ExampleProject\ExampleProject.tsproj", "{A60F8A9C-0337-489F-A194-2F2FA62EA172}"
+EndProject
+Project("{B1E792BE-AA5F-4E3C-8C82-674BF9C0715B}") = "MachineLibrary", "MachineLibrary\MachineLibrary.tsproj", "{8B2E4C71-5A3D-4F96-B0E8-1D7C6A9F2E45}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

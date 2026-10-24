@@ -31,7 +31,11 @@ ExampleProject/
 1. Open `PLC Template.sln` in TwinCAT XAE (4024 or newer).
 2. Install the library: right-click the **MachineLibrary** PLC project, choose **Save as library and install**.
 3. Build **ExampleProject**. It references `MachineLibrary, * (PLC-Template)`, so it always uses the newest installed version.
-4. Activate on a target (or local runtime) and log in.
+4. Make sure **ExampleProject** is the active project (right-click it → **Set as StartUp Project**), then activate and log in.
+
+Only activate ExampleProject. MachineLibrary is a library and has nothing to run.
+
+Both projects run real-time on an isolated core (core 19 of 20, set in each `.tsproj` under SYSTEM → Real-Time). If your PC has a different core count, change it there before activating. Never run real-time on a core shared with Windows on a laptop: it can crash the PC.
 
 After changing the library, bump `ProjectVersion` in the library properties and install it again.
 

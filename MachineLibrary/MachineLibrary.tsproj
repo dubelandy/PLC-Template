@@ -1,6 +1,11 @@
 <?xml version="1.0"?>
 <TcSmProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4024.50">
 	<Project ProjectGUID="{8B2E4C71-5A3D-4F96-B0E8-1D7C6A9F2E45}" Target64Bit="true" ShowHideConfigurations="#x6">
+		<System>
+			<Settings MaxCpus="20" NonWinCpus="1">
+				<Cpu CpuId="19"/>
+			</Settings>
+		</System>
 		<Plc>
 			<Project GUID="{3F1C2A9E-7D84-4B5F-9A61-2C8E5D0B7F13}" Name="MachineLibrary" PrjFilePath="MachineLibrary\MachineLibrary.plcproj" TmcFilePath="MachineLibrary\MachineLibrary.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" SymbolicMapping="true"/>
 		</Plc>
