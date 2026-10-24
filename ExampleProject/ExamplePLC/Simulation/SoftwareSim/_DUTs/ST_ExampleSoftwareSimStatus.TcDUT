@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_ExampleSoftwareSimStatus" Id="{dbfc8b0e-b1b8-44b0-a81d-1207e37416d6}">
+    <Declaration><![CDATA[TYPE ST_ExampleSoftwareSimStatus :
+STRUCT
+	step				: E_ExampleSoftwareSimStep := E_ExampleSoftwareSimStep.Idle; //current step
+	requestsSent		: UDINT; //requests sent (trigger raised)
+	responsesReceived	: UDINT; //responses received (tell acknowledged)
+	aborts				: UDINT; //transactions aborted by the PLC
+	lastResponse		: ST_ExampleResponse; //last response read on tell
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

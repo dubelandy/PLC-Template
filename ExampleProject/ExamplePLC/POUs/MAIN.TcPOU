@@ -6,10 +6,19 @@ VAR
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	machine		: FB_Machine; //top-level module, start/stop with machine.ocmd
+	
+	(* Test harness
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	softwareSim	: FB_ExampleSoftwareSim; //plays the software side of the station's trigger/tell
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[machine();]]></ST>
+      <ST><![CDATA[machine();
+
+//Outside world: answers the example station's job requests
+softwareSim(transaction := machine.exampleStation.transaction);]]></ST>
     </Implementation>
   </POU>
 </TcPlcObject>

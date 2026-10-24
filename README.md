@@ -53,6 +53,21 @@ While stopped, the actuators are in Manual and accept operator commands (`machin
 
 The actuators are configured without feedback, so the example runs with no I/O. To use real hardware, clear `homeNoFdbk`/`workNoFdbk` in `FB_ExampleStation` and link `homeFdbk.inpSignal`, `workFdbk.inpSignal`, `outHome` and `outWork` in the I/O tree.
 
+### Trigger/tell test
+
+Each running cycle of the station is one `FB_TriggerTell` transaction (`FB_ExampleTransaction`). `MAIN.softwareSim` plays the software side, so it runs with no outside software.
+
+1. Start the machine (`MAIN.machine.ocmd := Start`).
+2. Watch `MAIN.machine.exampleStation.stsStation.runStep` go RequestJob → WaitJob → WaitWorking → Close → HoldClosed → Open → Report → WaitReportAck → Dwell, and `transaction.sts.state` / `transaction.handshake` step through the handshake.
+3. `MAIN.softwareSim.sts.lastResponse` shows what the station reported (cycleId, cycleTime, ok).
+
+| Test | Set | Expect |
+|---|---|---|
+| Comm timeout | `softwareSim.cfg.freeze := TRUE` | After `commTimeout` (10 s), `stsStation.commError` and `transaction.sts.errTimeout` turn on. Clear `freeze` and the cycle continues. |
+| Rejected request | `softwareSim.cfg.sendInvalidRequest := TRUE` | Station aborts the transaction, `stsStation.jobsRejected` counts up, `lastRejectText` says why, `softwareSim.sts.aborts` counts up. |
+| Recipe value | `softwareSim.cfg.closeDwell := T#5S` | Actuators stay closed 5 s per cycle, `lastResponse.cycleTime` grows. |
+| Stop mid-transaction | `machine.ocmd := Stop` | Transaction aborted, actuators open, simulator resets to Idle. |
+
 ### MQTT
 
 `FB_MqttStatePublisher` publishes `{"state":"Started","cycleCount":12}` to `plc-template/example/state` on `broker.hivemq.com` (a public test broker) on every state change and every 10 s. Settings live in `machine.cfgMqtt`.

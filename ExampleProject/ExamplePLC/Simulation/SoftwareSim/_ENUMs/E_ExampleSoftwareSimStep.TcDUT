@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_ExampleSoftwareSimStep" Id="{5eab3869-3aa6-460d-91ca-72cf4f6dadd2}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_ExampleSoftwareSimStep :
+(
+	Idle			:= 0, //waiting for attention
+	SendTrigger		:= 10, //delay, then raise trigger with a request
+	WaitTriggerAck	:= 20, //waiting for trigger_ack
+	DropTrigger		:= 30, //delay, then drop trigger
+	WaitTell		:= 40, //waiting for tell
+	SendTellAck		:= 50, //delay, read response, raise tell_ack
+	WaitTellDrop	:= 60, //waiting for tell to drop
+	DropTellAck		:= 70 //drop tell_ack, transaction closed
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

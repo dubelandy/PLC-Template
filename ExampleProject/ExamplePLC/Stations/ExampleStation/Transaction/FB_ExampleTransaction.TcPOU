@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_ExampleTransaction" Id="{78b4c053-26a1-490a-a31e-16b0680efcf1}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ExampleTransaction EXTENDS FB_TriggerTell
+(*
+	Trigger/tell transaction for the example station, carrying ST_ExampleRequest in
+	and ST_ExampleResponse out.
+	
+	FB_TriggerTell keeps its handshake bits internal. This FB is the transport layer:
+	the software side writes trigger/tell_ack with WriteTrigger()/WriteTellAck() and
+	reads the PLC bits from handshake. A real project would map these to OPC UA or MQTT.
+*)
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	response			: ST_ExampleResponse; //set by the station before FinishWork()
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	request				: ST_ExampleRequest; //request latched when trigger rises
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	handshake			: ST_TriggerTellHandshake; //copy of all handshake bits for the software side
+END_VAR
+VAR
+	requestIn			: ST_ExampleRequest; //request written by the software with trigger
+	
+	//Oneshot triggers
+	rtTrigger			: R_TRIG;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[//Latch the request when the software raises trigger
+rtTrigger(CLK := stHandshake.trigger);
+IF rtTrigger.Q THEN
+	request := requestIn;
+END_IF
+
+SUPER^();
+
+handshake := stHandshake;]]></ST>
+    </Implementation>
+    <Method Name="Response_Cleanup" Id="{6ea7eef6-c3db-4806-a507-0b222caaeeae}">
+      <Declaration><![CDATA[METHOD Response_Cleanup : BOOL //clear the response once the software acknowledged it
+VAR
+	emptyResponse : ST_ExampleResponse;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Response_Cleanup();
+response := emptyResponse;
+Response_Cleanup := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="WriteTellAck" Id="{c1de2856-ecbd-4184-a87d-66d4336aed34}">
+      <Declaration><![CDATA[METHOD PUBLIC WriteTellAck //software side: set or clear tell_ack
+VAR_INPUT
+	value		: BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[stHandshake.tell_ack := value;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="WriteTrigger" Id="{e5b6a375-7f80-4a3b-b055-517d3a3b6eb4}">
+      <Declaration><![CDATA[METHOD PUBLIC WriteTrigger //software side: set or clear trigger, with the request data
+VAR_INPUT
+	value		: BOOL;
+	req			: ST_ExampleRequest; //only used when value is TRUE
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF value THEN
+	requestIn := req;
+END_IF
+stHandshake.trigger := value;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_ExampleRequest" Id="{0630d959-c2d6-4d80-a1f6-f549b2c2ee3a}">
+    <Declaration><![CDATA[(* Request from the software to the station, sent with trigger. *)
+TYPE ST_ExampleRequest :
+STRUCT
+	cycleId				: UDINT; //id chosen by the software, echoed back in the response
+	closeDwell			: TIME; //how long to hold the actuators closed
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

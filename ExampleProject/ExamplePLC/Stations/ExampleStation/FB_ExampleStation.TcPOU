@@ -3,12 +3,14 @@
   <POU Name="FB_ExampleStation" Id="{ec9942f8-1fba-4f7b-ba35-139c4983ee10}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_ExampleStation EXTENDS FB_Module
 (*
-	Example station with two 2-state actuators.
+	Example station with two 2-state actuators and a trigger/tell transaction.
 	Home position = OPEN, Work position = CLOSED.
 	
 	Starting (homing)	: open both actuators, Started once both are open
-	Started (running)	: close both, open both, dwell, repeat
-	Stopping			: open both actuators (safe position), Stopped once both are open
+	Started (running)	: one job per cycle:
+						  ask the software for a job (attention), validate and ack the request,
+						  close both, hold for request.closeDwell, open both, report (tell), dwell
+	Stopping			: abort any open transaction, open both actuators (safe position)
 	Stopped				: actuators follow operator commands (manual mode)
 	
 	The actuators are configured with no feedback so the example runs without hardware.
@@ -27,6 +29,12 @@ VAR_INPUT
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	actuatorB			: FB_Actuator2State := (cfg := (actuatorId := 'Actuator B', homeNoFdbk := TRUE, workNoFdbk := TRUE));
+	
+	(* Communication
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	transaction			: FB_ExampleTransaction := (cfg := (commTimeout := T#10S)); //job request/response with the software
 END_VAR
 VAR_OUTPUT
 	{attribute 'OPC.UA.DA' := '1'}
@@ -37,7 +45,8 @@ END_VAR
 VAR
 	//Timers
 	dwellTimer			: TON; //dwell between cycles
-	cycleTimer			: TON := (PT := T#1D); //measures one close/open cycle
+	holdTimer			: TON; //holds the actuators closed for job.closeDwell
+	cycleTimer			: TON := (PT := T#1D); //measures one close/hold/open cycle
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -64,6 +73,7 @@ END_IF]]></ST>
         <ST><![CDATA[//Devices follow this module's mode through childCtrl
 actuatorA(parentCtrl := childCtrl);
 actuatorB(parentCtrl := childCtrl);
+transaction();
 
 //Report child faults to the module
 inpChildFaulted := actuatorA.fault.active OR actuatorB.fault.active;]]></ST>
@@ -107,35 +117,77 @@ IntlkAuto.perm.1 := NOT actuatorB.fault.active;]]></ST>
       <Implementation>
         <ST><![CDATA[actuatorA.Reset();
 actuatorB.Reset();
+transaction.Reset();
 Reset := TRUE;]]></ST>
       </Implementation>
     </Method>
     <Method Name="Started" Id="{766cf290-1a71-461d-81fe-613336b7212d}">
       <Declaration><![CDATA[METHOD PROTECTED Started : BOOL]]></Declaration>
       <Implementation>
-        <ST><![CDATA[//Running sequence: close both, open both, dwell, repeat
+        <ST><![CDATA[//Running sequence: one trigger/tell transaction per close/open cycle
 CASE stsStation.runStep OF
 	
 	E_ExampleStationRunStep.Idle:
-		stsStation.runStep := E_ExampleStationRunStep.Close;
+		stsStation.runStep := E_ExampleStationRunStep.RequestJob;
+		
+	E_ExampleStationRunStep.RequestJob:
+		IF transaction.sts.Idle THEN
+			transaction.Start(); //raises attention
+			stsStation.runStep := E_ExampleStationRunStep.WaitJob;
+		END_IF
+		
+	E_ExampleStationRunStep.WaitJob:
+		IF transaction.sts.Request_Start THEN
+			IF ValidateJob(transaction.request) THEN
+				stsStation.job := transaction.request;
+				transaction.SetRequestACK();
+				stsStation.runStep := E_ExampleStationRunStep.WaitWorking;
+			ELSE
+				transaction.Abort();
+				stsStation.jobsRejected := stsStation.jobsRejected + 1;
+				stsStation.runStep := E_ExampleStationRunStep.Dwell;
+			END_IF
+		END_IF
+		
+	E_ExampleStationRunStep.WaitWorking:
+		IF transaction.sts.Working THEN
+			stsStation.runStep := E_ExampleStationRunStep.Close;
+		END_IF
 		
 	E_ExampleStationRunStep.Close:
 		CloseAll();
 		IF stsStation.allClosed THEN
+			stsStation.runStep := E_ExampleStationRunStep.HoldClosed;
+		END_IF
+		
+	E_ExampleStationRunStep.HoldClosed:
+		IF holdTimer.Q THEN
 			stsStation.runStep := E_ExampleStationRunStep.Open;
 		END_IF
 		
 	E_ExampleStationRunStep.Open:
 		OpenAll();
 		IF stsStation.allOpen THEN
-			stsStation.cycleCount 		:= stsStation.cycleCount + 1;
-			stsStation.lastCycleTime 	:= cycleTimer.ET;
-			stsStation.runStep 			:= E_ExampleStationRunStep.Dwell;
+			stsStation.lastCycleTime := cycleTimer.ET;
+			stsStation.runStep := E_ExampleStationRunStep.Report;
+		END_IF
+		
+	E_ExampleStationRunStep.Report:
+		transaction.response.cycleId 	:= stsStation.job.cycleId;
+		transaction.response.cycleTime 	:= stsStation.lastCycleTime;
+		transaction.response.ok 		:= NOT (actuatorA.fault.active OR actuatorB.fault.active);
+		transaction.FinishWork(); //raises tell
+		stsStation.cycleCount := stsStation.cycleCount + 1;
+		stsStation.runStep := E_ExampleStationRunStep.WaitReportAck;
+		
+	E_ExampleStationRunStep.WaitReportAck:
+		IF transaction.sts.Idle THEN
+			stsStation.runStep := E_ExampleStationRunStep.Dwell;
 		END_IF
 		
 	E_ExampleStationRunStep.Dwell:
 		IF dwellTimer.Q THEN
-			stsStation.runStep := E_ExampleStationRunStep.Close;
+			stsStation.runStep := E_ExampleStationRunStep.RequestJob;
 		END_IF
 		
 END_CASE]]></ST>
@@ -144,8 +196,9 @@ END_CASE]]></ST>
     <Method Name="Starting" Id="{3fe50c0b-caad-4b2b-8963-ca5f99eef799}">
       <Declaration><![CDATA[METHOD PROTECTED Starting : BOOL]]></Declaration>
       <Implementation>
-        <ST><![CDATA[//Homing: open all actuators
+        <ST><![CDATA[//Homing: open all actuators, no transaction open
 OpenAll();
+AbortTransaction();
 stsStation.runStep := E_ExampleStationRunStep.Idle;]]></ST>
       </Implementation>
     </Method>
@@ -155,17 +208,48 @@ stsStation.runStep := E_ExampleStationRunStep.Idle;]]></ST>
         <ST><![CDATA[stsStation.allOpen 	:= actuatorA.sts.atHome AND actuatorB.sts.atHome;
 stsStation.allClosed 	:= actuatorA.sts.atWork AND actuatorB.sts.atWork;
 
+stsStation.commError 	:= transaction.sts.errTimeout;
+
 //Monitoring timers
 dwellTimer(IN := stsStation.runStep = E_ExampleStationRunStep.Dwell, PT := cfg.cycleDwell);
-cycleTimer(IN := stsStation.runStep = E_ExampleStationRunStep.Close OR stsStation.runStep = E_ExampleStationRunStep.Open);]]></ST>
+holdTimer(IN := stsStation.runStep = E_ExampleStationRunStep.HoldClosed, PT := stsStation.job.closeDwell);
+cycleTimer(IN := stsStation.runStep = E_ExampleStationRunStep.Close
+			OR stsStation.runStep = E_ExampleStationRunStep.HoldClosed
+			OR stsStation.runStep = E_ExampleStationRunStep.Open);]]></ST>
       </Implementation>
     </Method>
     <Method Name="Stopping" Id="{51f6e602-e616-41ff-b9af-086d08317e64}">
       <Declaration><![CDATA[METHOD PROTECTED Stopping : BOOL]]></Declaration>
       <Implementation>
-        <ST><![CDATA[//Finish in the safe position: all actuators open
+        <ST><![CDATA[//Finish in the safe position: all actuators open, transaction closed
 OpenAll();
+AbortTransaction();
 stsStation.runStep := E_ExampleStationRunStep.Idle;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="AbortTransaction" Id="{0f8ac1c9-2c94-41b9-873e-b37a0981dad2}">
+      <Declaration><![CDATA[METHOD PROTECTED AbortTransaction //cancel an open transaction]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF transaction.sts.bBusy THEN
+	transaction.Abort();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ValidateJob" Id="{8c3e32c7-7e51-442c-ad45-d75788e1cd57}">
+      <Declaration><![CDATA[METHOD PROTECTED ValidateJob : BOOL //TRUE if the request can be worked on, sets lastRejectText otherwise
+VAR_INPUT
+	job			: ST_ExampleRequest;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF job.closeDwell <= T#0S THEN
+	stsStation.lastRejectText := 'closeDwell must be greater than 0';
+ELSIF job.closeDwell > cfg.maxCloseDwell THEN
+	stsStation.lastRejectText := 'closeDwell is longer than cfg.maxCloseDwell';
+ELSE
+	ValidateJob := TRUE;
+	RETURN;
+END_IF
+ValidateJob := FALSE;]]></ST>
       </Implementation>
     </Method>
   </POU>

@@ -48,6 +48,27 @@
     <Compile Include="Stations\ExampleStation\FB_ExampleStation.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Simulation\SoftwareSim\_DUTs\ST_ExampleSoftwareSimConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Simulation\SoftwareSim\_DUTs\ST_ExampleSoftwareSimStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Simulation\SoftwareSim\_ENUMs\E_ExampleSoftwareSimStep.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Simulation\SoftwareSim\FB_ExampleSoftwareSim.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Stations\ExampleStation\Transaction\_DUTs\ST_ExampleRequest.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Stations\ExampleStation\Transaction\_DUTs\ST_ExampleResponse.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Stations\ExampleStation\Transaction\FB_ExampleTransaction.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Communication" />
@@ -59,6 +80,12 @@
     <Folder Include="Stations\ExampleStation\_DUTs" />
     <Folder Include="Stations\ExampleStation\_ENUMs" />
     <Folder Include="VISUs" />
+    <Folder Include="Simulation" />
+    <Folder Include="Simulation\SoftwareSim" />
+    <Folder Include="Simulation\SoftwareSim\_DUTs" />
+    <Folder Include="Simulation\SoftwareSim\_ENUMs" />
+    <Folder Include="Stations\ExampleStation\Transaction" />
+    <Folder Include="Stations\ExampleStation\Transaction\_DUTs" />
   </ItemGroup>
   <ItemGroup>
     <PlaceholderReference Include="MachineLibrary">

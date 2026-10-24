@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_ExampleSoftwareSim" Id="{93cc8a81-a0bc-4796-befe-e67cf0196d08}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ExampleSoftwareSim
+(*
+	Plays the software (MES) side of FB_ExampleTransaction so the trigger/tell
+	handshake can be tested without any outside software.
+	
+	For each transaction: wait for attention, send a request with trigger, drop trigger
+	after trigger_ack, read the response on tell, acknowledge with tell_ack.
+	Use cfg.freeze and cfg.sendInvalidRequest to test timeouts and rejected requests.
+*)
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg					: ST_ExampleSoftwareSimConfiguration; //configuration
+END_VAR
+VAR_IN_OUT
+	transaction			: FB_ExampleTransaction; //transaction to answer
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts					: ST_ExampleSoftwareSimStatus;
+END_VAR
+VAR
+	request				: ST_ExampleRequest; //request being sent
+	nextCycleId			: UDINT; //last cycleId sent
+	
+	//state variables for tracking
+	stepLastScan		: E_ExampleSoftwareSimStep;
+	
+	//Timers
+	delayTimer			: TON; //responseDelay, restarts on every step change
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT cfg.enable THEN
+	RETURN;
+END_IF
+
+HandleAbort();
+StateMachine();]]></ST>
+    </Implementation>
+    <Method Name="HandleAbort" Id="{23f5d6fa-e27e-4ede-9fa2-128a03d5ee4c}">
+      <Declaration><![CDATA[METHOD PROTECTED HandleAbort //PLC aborted mid-transaction: drop our bits and start over]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF transaction.sts.Idle AND sts.step >= E_ExampleSoftwareSimStep.WaitTriggerAck THEN
+	transaction.WriteTrigger(value := FALSE, req := request);
+	transaction.WriteTellAck(value := FALSE);
+	sts.aborts := sts.aborts + 1;
+	sts.step := E_ExampleSoftwareSimStep.Idle;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{52f149d0-a3e7-4d41-a718-feffc5c6e35a}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Restart the delay on every step change, hold it while frozen
+delayTimer(IN := (sts.step = stepLastScan) AND NOT cfg.freeze, PT := cfg.responseDelay);
+stepLastScan := sts.step;
+
+IF cfg.freeze THEN
+	RETURN;
+END_IF
+
+CASE sts.step OF
+	
+	E_ExampleSoftwareSimStep.Idle:
+		IF transaction.handshake.attention THEN
+			sts.step := E_ExampleSoftwareSimStep.SendTrigger;
+		END_IF
+		
+	E_ExampleSoftwareSimStep.SendTrigger:
+		IF delayTimer.Q THEN
+			nextCycleId 		:= nextCycleId + 1;
+			request.cycleId 	:= nextCycleId;
+			request.closeDwell 	:= SEL(cfg.sendInvalidRequest, cfg.closeDwell, T#0S);
+			transaction.WriteTrigger(value := TRUE, req := request);
+			sts.requestsSent 	:= sts.requestsSent + 1;
+			sts.step 			:= E_ExampleSoftwareSimStep.WaitTriggerAck;
+		END_IF
+		
+	E_ExampleSoftwareSimStep.WaitTriggerAck:
+		IF transaction.handshake.trigger_ack THEN
+			sts.step := E_ExampleSoftwareSimStep.DropTrigger;
+		END_IF
+		
+	E_ExampleSoftwareSimStep.DropTrigger:
+		IF delayTimer.Q THEN
+			transaction.WriteTrigger(value := FALSE, req := request);
+			sts.step := E_ExampleSoftwareSimStep.WaitTell;
+		END_IF
+		
+	E_ExampleSoftwareSimStep.WaitTell:
+		IF transaction.handshake.tell THEN
+			sts.step := E_ExampleSoftwareSimStep.SendTellAck;
+		END_IF
+		
+	E_ExampleSoftwareSimStep.SendTellAck:
+		IF delayTimer.Q THEN
+			sts.lastResponse 		:= transaction.response;
+			sts.responsesReceived 	:= sts.responsesReceived + 1;
+			transaction.WriteTellAck(value := TRUE);
+			sts.step 				:= E_ExampleSoftwareSimStep.WaitTellDrop;
+		END_IF
+		
+	E_ExampleSoftwareSimStep.WaitTellDrop:
+		IF NOT transaction.handshake.tell THEN
+			sts.step := E_ExampleSoftwareSimStep.DropTellAck;
+		END_IF
+		
+	E_ExampleSoftwareSimStep.DropTellAck:
+		transaction.WriteTellAck(value := FALSE);
+		sts.step := E_ExampleSoftwareSimStep.Idle;
+		
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

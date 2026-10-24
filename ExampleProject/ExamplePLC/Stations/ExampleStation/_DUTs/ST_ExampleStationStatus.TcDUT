@@ -6,8 +6,13 @@ STRUCT
 	runStep				: E_ExampleStationRunStep := E_ExampleStationRunStep.Idle; //running sequence step
 	allOpen				: BOOL; //both actuators at home (open)
 	allClosed			: BOOL; //both actuators at work (closed)
-	cycleCount			: UDINT; //completed close/open cycles
-	lastCycleTime		: TIME; //duration of the last close/open cycle
+	
+	job					: ST_ExampleRequest; //job being worked on
+	cycleCount			: UDINT; //completed jobs
+	lastCycleTime		: TIME; //duration of the last close/hold/open cycle
+	jobsRejected		: UDINT; //requests rejected as invalid
+	lastRejectText		: T_MaxString; //reason for the last rejection
+	commError			: BOOL; //transaction timed out waiting for the software
 END_STRUCT
 END_TYPE
 ]]></Declaration>

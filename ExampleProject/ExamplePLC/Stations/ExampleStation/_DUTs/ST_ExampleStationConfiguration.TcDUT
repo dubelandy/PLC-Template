@@ -3,7 +3,8 @@
   <DUT Name="ST_ExampleStationConfiguration" Id="{434ce971-85e6-4397-9a11-c884bb9f974f}">
     <Declaration><![CDATA[TYPE ST_ExampleStationConfiguration :
 STRUCT
-	cycleDwell			: TIME := T#2S; //wait time between close/open cycles while running
+	cycleDwell			: TIME := T#2S; //wait time between jobs while running
+	maxCloseDwell		: TIME := T#10S; //longest closeDwell accepted in a request
 END_STRUCT
 END_TYPE
 ]]></Declaration>

@@ -6,10 +6,16 @@
 {attribute 'to_string'}
 TYPE E_ExampleStationRunStep :
 (
-	Idle		:= 0, //not running
-	Close		:= 10, //closing both actuators
-	Open		:= 20, //opening both actuators
-	Dwell		:= 30 //waiting before the next cycle
+	Idle			:= 0, //not running
+	RequestJob		:= 10, //raise attention, ask the software for a job
+	WaitJob			:= 20, //wait for the request, validate it, ack or reject
+	WaitWorking		:= 30, //wait for the software to drop trigger
+	Close			:= 40, //closing both actuators
+	HoldClosed		:= 50, //holding closed for the requested closeDwell
+	Open			:= 60, //opening both actuators
+	Report			:= 70, //send the response with tell
+	WaitReportAck	:= 80, //wait for the software to acknowledge the response
+	Dwell			:= 90 //wait before requesting the next job
 );
 END_TYPE
 ]]></Declaration>
