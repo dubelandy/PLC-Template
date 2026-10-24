@@ -31,7 +31,11 @@ ExampleProject/
 1. Open `PLC Template.sln` in TwinCAT XAE (4024 or newer).
 2. Install the library: right-click the **MachineLibrary** PLC project, choose **Save as library and install**.
 3. Build **ExampleProject**. It references `MachineLibrary, * (PLC-Template)`, so it always uses the newest installed version.
-4. Make sure **ExampleProject** is the active project (right-click it → **Set as StartUp Project**), then activate and log in.
+4. In the TwinCAT XAE Base toolbar, set the first dropdown (active TwinCAT project) to **ExampleProject**, then activate and log in.
+
+### Pulling changes while TwinCAT is open
+
+TwinCAT doesn't reliably reload files that change on disk. Close the solution first (**File → Close Solution**, answer **No** to saving), pull in GitHub Desktop, then reopen it. If the library changed, reinstall it before building ExampleProject.
 
 Only activate ExampleProject. MachineLibrary is a library and has nothing to run.
 
