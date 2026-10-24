@@ -60,12 +60,13 @@ StatusOut();]]></ST>
       </Implementation>
     </Method>
     <Method Name="ClearParameters" Id="{6b3c977d-244d-4ff7-bfa9-0e81c4242037}">
-      <Declaration><![CDATA[METHOD PUBLIC ClearParameters //clear all parameters]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[VAR
+      <Declaration><![CDATA[METHOD PUBLIC ClearParameters //clear all parameters
+VAR
 	i : INT;
 END_VAR
-FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
 	arrParam[i].typeEnum := 0;
 	arrParam[i].value := 0;
 END_FOR]]></ST>
