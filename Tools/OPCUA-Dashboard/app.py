@@ -98,7 +98,8 @@ class Plc:
                 await self._connect()
                 await self._resolve()
                 self.connected, self.error = True, ""
-                log.info("Connected, %d tags (%d missing)", len(TAGS) - len(self.missing), len(self.missing))
+                total = len(set(TAGS) | WRITABLE)
+                log.info("Connected, %d of %d tags found", total - len(self.missing), total)
                 while True:
                     await self._poll()
                     await asyncio.sleep(CONFIG["pollIntervalMs"] / 1000)
@@ -190,7 +191,10 @@ class Plc:
             else:
                 self.leaf[path] = node
         if self.missing:
-            log.warning("Not found on the server (missing OPC.UA.DA attribute?):\n  %s", "\n  ".join(self.missing))
+            log.warning("Not found on the server:\n  %s\n"
+                        "If all are missing: tick PLC project > Settings > Target files > TMC File, then activate.\n"
+                        "If only some: add {attribute 'OPC.UA.DA' := '1'} to them (and each parent).",
+                        "\n  ".join(self.missing))
 
     # ------------------------------------------------------------------ polling
     async def _poll(self):

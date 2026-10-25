@@ -10,6 +10,10 @@ A small web page that shows the example machine live over OPC UA (TwinCAT TF6100
    pip install -r requirements.txt
    ```
 
+## PLC setting (once)
+
+The OPC UA server builds its tree from the PLC's TMC file, which TwinCAT doesn't send to the runtime by default. In TwinCAT, double-click the **ExamplePLC** project, open the **Settings** tab, tick **Target files → TMC File**, then activate. Without it the server shows `PLC1` with nothing under it.
+
 ## Run
 
 1. Activate ExampleProject and make sure the PLC is running.

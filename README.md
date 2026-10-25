@@ -71,7 +71,7 @@ Each running cycle of the station is one `FB_TriggerTell` transaction (`FB_Examp
 
 ### OPC UA dashboard
 
-`Tools/OPCUA-Dashboard` is a small Python web page that shows all of the above live over OPC UA (needs TwinCAT TF6100) and can start/stop the machine and drive the simulator. See its README.
+`Tools/OPCUA-Dashboard` is a small Python web page that shows all of the above live over OPC UA (needs TwinCAT TF6100) and can start/stop the machine and drive the simulator. See its README. The PLC project must have **Settings → Target files → TMC File** ticked, or the OPC UA server has no variables to publish.
 
 ### MQTT
 
