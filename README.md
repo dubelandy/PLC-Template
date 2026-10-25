@@ -107,7 +107,7 @@ IF dosingPid.sts.closedLoop AND dosingValve.sts.modeAuto THEN // program command
 END_IF
 
 // in the sequence: dosing at 0.25 x main flow
-dosingPid.Ratio(0.25);
+dosingPid.Ratio(0.25);           // or Setpoint(x), OpenLoop(x), Off()
 ```
 
 ## Writing new code

@@ -33,7 +33,10 @@ END_VAR
       <ST><![CDATA[ProcessInputs();
 StatusOut();]]></ST>
     </Implementation>
-    <Method Name="ProcessInputs" Id="{db0695a0-8697-47b7-8f03-6d408e3586e2}">
+    <Folder Name="Protected" Id="{26584797-f704-4b1b-bcda-dba4ff59755d}">
+      <Folder Name="Logic" Id="{02dbd774-b426-4d98-af7c-45980a2ab978}" />
+    </Folder>
+    <Method Name="ProcessInputs" Id="{db0695a0-8697-47b7-8f03-6d408e3586e2}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED ProcessInputs //Select signal source and debounce]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Select signal source
@@ -53,7 +56,7 @@ ELSIF offTimer.Q THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StatusOut" Id="{13f5efeb-d7f2-4489-bffe-4a6985d419d4}">
+    <Method Name="StatusOut" Id="{13f5efeb-d7f2-4489-bffe-4a6985d419d4}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
       <Implementation>
         <ST><![CDATA[rtSignal(CLK := sts.debouncedSignal);

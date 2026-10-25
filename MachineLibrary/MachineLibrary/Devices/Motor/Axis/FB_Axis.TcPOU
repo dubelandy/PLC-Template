@@ -251,7 +251,7 @@ END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="Device" Id="{6aaa61cd-4a83-4595-88cd-dc1f255369cf}" FolderPath="Protected\Logic\">
-      <Declaration><![CDATA[METHOD Device : BOOL
+      <Declaration><![CDATA[METHOD PROTECTED Device : BOOL
 VAR_INPUT
 END_VAR
 ]]></Declaration>

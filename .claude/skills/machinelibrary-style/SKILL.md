@@ -58,6 +58,26 @@ Devices/Actuator/
 
 Library top level: `_General`, `Devices`, `Module`, `Process`, `Utility`. Application: `POUs`, `Stations/<Name>`, `Communication/<Protocol>`.
 
+## Method folders inside a function block
+
+Every method lives in one of these folders inside the POU (TwinCAT: right-click the FB → Add → Folder). The folder decides the access specifier, so the folder tree reads as the block's public API on top and its internals below. `FB_Actuator2State` is the reference.
+
+| Folder | Access | What goes there | Examples |
+|---|---|---|---|
+| `Public\Commands` | `METHOD PUBLIC` | One method per command. Only stores parameters and sets `pcmd`. | `ToHome`, `ToWork`, `AllOff`, `Open`, `SetPosition`, `Ratio(value)` |
+| `Public\Control` | `METHOD PUBLIC` | Change a value or setting without commanding motion, or read status. Subfolders allowed (`Public\Control\Positions`). | `SetOutput`, `SetRatio`, `EnableSimulation`, `ReadStatus`, `SavePosition` |
+| `Protected\Logic` | `METHOD PROTECTED` | The cyclic methods called from the body, plus their helpers. | `Device`, `StatusIn`, `ProcessInputs`, `ProcessCommands`, `Functions`, `StateMachine`, `HandleFaults`, `ControlOutputs`, `StatusOut` |
+| `Protected\Commands` | `METHOD PROTECTED` | `Prv` handlers only: one per command plus `PrvReset` and `PrvSafe`. | `PrvHome`, `PrvWork`, `PrvAllOff`, `PrvOpen`, `PrvPosition`, `PrvReset`, `PrvSafe` |
+| `Protected\States` | `METHOD PROTECTED` | Modules and stations only: the `FB_Module` state overrides. | `Starting`, `Started`, `Stopping` |
+
+Rules:
+
+- **Every public command has a matching `Prv` handler.** `Open()` sets `pcmd := Open`; `ProcessCommands` routes the accepted command to `PrvOpen()`. Shared logic goes in one handler that the others call (`PrvOpen` → `PrvPosition(cfg.maxPosition)`).
+- **Name commands after the command enum**, so `E_XCommand.Ratio` ↔ `Ratio()` ↔ `PrvRatio()`.
+- **Parameters never reuse the method's name** (names are case-insensitive: `Ratio(ratio : LREAL)` does not compile). Use `value`, `position`, `output`.
+- `INTERNAL` is allowed where a method must be callable from elsewhere in the library but not from applications.
+- Inputs and utilities with no commands use only `Public\Control` and `Protected\Logic`.
+
 ## Declarations
 
 Order inside a function block:
@@ -116,6 +136,8 @@ StatusOut();       // derived status flags, echo bits
 Rules:
 
 - **Commands**: public methods (`ToHome()`, `Stop()`) only set `pcmd`. `ProcessCommands` accepts `ocmd` only in Manual and `pcmd` only in Auto; otherwise it sets `fault.ocmdNOK` / `fault.pcmdNOK`. Both are cleared at the end of every scan. Validation lives in `Prv<Command>` methods.
+- **Commands drive the state machine, feedback settles it.** A `Prv` handler checks interlocks/permissives, ignores the command if the device is already there, and puts the device in its moving state (`GoingToHome`, `Positioning`). `StateMachine` is a `CASE sts.state` that moves to the settled state (`AtHome`, `AtPosition`) when feedback confirms it, and resets faults on entering a settled state (`IF rtNewState THEN resetFault := TRUE`). Use a wider band to leave a settled state than to enter it, so a noisy signal can't make it flicker.
+- **ProcessCommands shape**: reset first, then `ocmd` (Manual) / `pcmd` (Auto), then the interlock check that calls `PrvSafe()`, then `CASE cmdReceived OF … Prv…() END_CASE`, then save last commands and clear `cmdReceived`, `pcmd`, `ocmd`, `ctrl.reset`.
 - **Interlocks vs permissives**: losing an interlock during motion triggers `PrvSafe()`; a permissive is only checked when a command starts.
 - **Simulation**: every device supports `ctrl.sim`. Outputs are forced off and feedback comes from timers (`cfg.homeNoFdbkTime`). The same timers cover devices configured without feedback.
 - **Mode**: never compute Auto/Manual yourself. `FB_Device` derives it from `ctrl.manualOvrde` and `parentCtrl.mode`. Callers pass `parentCtrl := childCtrl`.
@@ -173,7 +195,7 @@ Permissives();     // PermStartComplete, PermStopComplete, IntlkAuto bits
 StatusOut();       // stsX flags and timers
 ```
 
-- Override `Starting()` (homing), `Started()` (running sequence), `Stopping()` (go to safe position) and `Reset()`. Keep signatures identical to `FB_Module` (`METHOD PROTECTED Started : BOOL`, `METHOD Reset : BOOL`).
+- Override `Starting()` (homing), `Started()` (running sequence), `Stopping()` (go to safe position) and `Reset()`. Keep signatures identical to `FB_Module` (`METHOD PROTECTED Started : BOOL`, `METHOD Reset : BOOL`). Put the state overrides in `Protected\States`, `Reset` in `Public\Control`, and `Devices`/`Permissives`/`StatusOut` in `Protected\Logic`.
 - Running sequences are a `CASE` over an `E_XRunStep` enum with steps numbered 10, 20, 30.
 - Issue a device command only if it isn't already there or moving there: `IF NOT a.sts.atHome AND NOT a.sts.goingToHome THEN a.ToHome(); END_IF`.
 - Parent modules command child modules with `child.pcmd := E_ModuleCommand.Start` in `Starting()` and finish when `PermStartComplete` sees `child.sts.Started`.
@@ -195,6 +217,7 @@ StatusOut();       // stsX flags and timers
 
 - New files must be added to the project's `.plcproj` (`<Compile Include="...">` plus `<Folder Include="...">` for new folders), with backslash paths.
 - Every new object needs a fresh GUID in `Id="{...}"`. Object `Name`, file name and the name in the declaration must match.
+- Method folders are `<Folder Name="Public" Id="{...}"><Folder Name="Commands" Id="{...}" /></Folder>` elements right after the POU's `</Implementation>`, and each method carries `FolderPath="Public\Commands\"`.
 - Stale `<LineIds>` blocks can be deleted; TwinCAT regenerates them.
 - After changing the library, bump `ProjectVersion` in `MachineLibrary.plcproj` and reinstall it.
 
@@ -207,6 +230,8 @@ Copy-ready code for a new device and a new station: `references/templates.md`.
 - [ ] Names, abbreviations and folder layout follow the tables above
 - [ ] Every variable commented; OPC UA attributes on HMI variables
 - [ ] Enums are qualified_only/strict/to_string with `None := 0` for commands
+- [ ] Every method is in `Public\Commands`, `Public\Control`, `Protected\Logic`, `Protected\Commands` (or `Protected\States` in modules), with the matching access specifier
+- [ ] Every public command has a `Prv` handler; no parameter shares its method's name
 - [ ] Device body uses the standard call order with `Device()` right after `SUPER^()`
 - [ ] Commands go through `pcmd`/`ocmd` and are cleared every scan
 - [ ] Sim mode forces outputs off and simulates feedback

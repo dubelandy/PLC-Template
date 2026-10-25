@@ -58,7 +58,13 @@ Alarms();
 HandleFaults();
 StatusOut();]]></ST>
     </Implementation>
-    <Method Name="Alarms" Id="{b035433b-b3f6-4c0f-b42b-f43de2ad0b6d}">
+    <Folder Name="Protected" Id="{e6d3adef-74d3-4544-b864-38f0b4d11792}">
+      <Folder Name="Logic" Id="{866f89f2-2cb4-48e0-9b40-f59725b279c3}" />
+    </Folder>
+    <Folder Name="Public" Id="{6047f606-639d-472f-a3cf-6b24f66183f8}">
+      <Folder Name="Control" Id="{a664fe34-098d-4899-888a-a576d53e2775}" />
+    </Folder>
+    <Method Name="Alarms" Id="{b035433b-b3f6-4c0f-b42b-f43de2ad0b6d}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Alarms //limit alarms on the filtered value]]></Declaration>
       <Implementation>
         <ST><![CDATA[alarmLowLow(value := sts.value, limit := cfg.limits.LowLow, highAlarm := FALSE, enable := cfg.alarmEnable.lowLow,
@@ -71,13 +77,13 @@ alarmHighHigh(value := sts.value, limit := cfg.limits.HighHigh, highAlarm := TRU
 			deadband := cfg.alarmDeadband, delay := cfg.alarmDelay, latch := cfg.latchAlarms, reset := resetFault);]]></ST>
       </Implementation>
     </Method>
-    <Method Name="DisableSimulation" Id="{fce167ad-b754-4840-9015-d49e60f3d5f4}">
+    <Method Name="DisableSimulation" Id="{fce167ad-b754-4840-9015-d49e60f3d5f4}" FolderPath="Public\Control\">
       <Declaration><![CDATA[METHOD PUBLIC DisableSimulation]]></Declaration>
       <Implementation>
         <ST><![CDATA[ctrl.sim := FALSE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="EnableSimulation" Id="{ac4e78d9-666e-48a7-a321-8d117e3b0d10}">
+    <Method Name="EnableSimulation" Id="{ac4e78d9-666e-48a7-a321-8d117e3b0d10}" FolderPath="Public\Control\">
       <Declaration><![CDATA[METHOD PUBLIC EnableSimulation
 VAR_INPUT
 	value		: LREAL; //starting simulated value in engineering units
@@ -87,7 +93,7 @@ END_VAR]]></Declaration>
 ctrl.sim := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="HandleFaults" Id="{a7533e8f-6db2-47d8-93e2-2bb9565b55f3}">
+    <Method Name="HandleFaults" Id="{a7533e8f-6db2-47d8-93e2-2bb9565b55f3}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED HandleFaults]]></Declaration>
       <Implementation>
         <ST><![CDATA[badSignalTimer(IN := NOT ctrl.sim AND (inpError
@@ -123,7 +129,7 @@ END_IF
 fault.active := fault.id > 0;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ProcessInputs" Id="{70373f9a-2d38-4768-bc85-166dc20bb7c7}">
+    <Method Name="ProcessInputs" Id="{70373f9a-2d38-4768-bc85-166dc20bb7c7}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED ProcessInputs //scale, simulate and filter
 VAR
 	alpha : LREAL; //filter factor for this scan
@@ -158,13 +164,13 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Reset" Id="{e88c54c7-4d62-44ec-9e79-b020c71dd9a0}">
+    <Method Name="Reset" Id="{e88c54c7-4d62-44ec-9e79-b020c71dd9a0}" FolderPath="Public\Control\">
       <Declaration><![CDATA[METHOD PUBLIC Reset]]></Declaration>
       <Implementation>
         <ST><![CDATA[ctrl.reset := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StatusOut" Id="{0da38d58-1dc2-4f42-ad4b-82b52bdc9cc6}">
+    <Method Name="StatusOut" Id="{0da38d58-1dc2-4f42-ad4b-82b52bdc9cc6}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
       <Implementation>
         <ST><![CDATA[sts.lowLow			:= alarmLowLow.active;

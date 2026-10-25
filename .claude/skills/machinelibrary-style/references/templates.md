@@ -1,7 +1,7 @@
 # Templates
 
 Copy-ready code that follows the style guide. Both templates pass the repo's static checks against MachineLibrary.
-In TwinCAT, create the objects with the same names, paste each declaration and method, then rename `TemplateDevice` / `TemplateStation`.
+In TwinCAT, create the objects with the same names, add the method folders (`Public\Commands`, `Public\Control`, `Protected\Logic`, `Protected\Commands`, `Protected\States`), put each method in the folder shown next to its name, then rename `TemplateDevice` / `TemplateStation`.
 
 ## Device: `FB_TemplateDevice`
 
@@ -189,7 +189,7 @@ ControlOutputs();
 StatusOut();
 ```
 
-`ControlOutputs`
+`ControlOutputs` in `Protected\Logic`
 
 ```iecst
 METHOD PROTECTED ControlOutputs //Set physical outputs
@@ -200,7 +200,7 @@ ELSE
 END_IF
 ```
 
-`Device`
+`Device` in `Protected\Logic`
 
 ```iecst
 METHOD PROTECTED Device //map cfg to FB_Device and FB_Device to sts
@@ -219,7 +219,7 @@ sts.sim		   		 := ctrl.sim;
 sts.parentConfigured := parentConfigured;
 ```
 
-`HandleFaults`
+`HandleFaults` in `Protected\Logic`
 
 ```iecst
 METHOD PROTECTED HandleFaults
@@ -263,7 +263,7 @@ END_IF
 fault.active := fault.id > 0;
 ```
 
-`ProcessCommands`
+`ProcessCommands` in `Protected\Logic`
 
 ```iecst
 METHOD PROTECTED ProcessCommands
@@ -312,7 +312,7 @@ ocmd		:= E_TemplateDeviceCommand.None;
 ctrl.reset	:= FALSE;
 ```
 
-`ProcessInputs`
+`ProcessInputs` in `Protected\Logic`
 
 ```iecst
 METHOD PROTECTED ProcessInputs
@@ -331,7 +331,7 @@ ELSE
 END_IF
 ```
 
-`PrvReset`
+`PrvReset` in `Protected\Commands`
 
 ```iecst
 METHOD PROTECTED PrvReset //Reset the device
@@ -342,7 +342,7 @@ runIntlk.Reset();
 runPerm.Reset();
 ```
 
-`PrvStart`
+`PrvStart` in `Protected\Commands`
 
 ```iecst
 METHOD PROTECTED PrvStart
@@ -357,7 +357,7 @@ IF NOT (sts.running OR sts.starting) THEN // ignore command if already running
 END_IF
 ```
 
-`PrvStop`
+`PrvStop` in `Protected\Commands`
 
 ```iecst
 METHOD PROTECTED PrvStop
@@ -366,14 +366,14 @@ IF sts.running OR sts.starting THEN // stop has no permissives
 END_IF
 ```
 
-`Start`
+`Start` in `Public\Commands`
 
 ```iecst
 METHOD PUBLIC Start
 pcmd := E_TemplateDeviceCommand.Start;
 ```
 
-`StateMachine`
+`StateMachine` in `Protected\Logic`
 
 ```iecst
 METHOD PROTECTED StateMachine
@@ -408,7 +408,7 @@ startTimer(IN := sts.state = E_TemplateDeviceState.Starting);
 stopTimer(IN := sts.state = E_TemplateDeviceState.Stopping);
 ```
 
-`StatusIn`
+`StatusIn` in `Protected\Logic`
 
 ```iecst
 METHOD PROTECTED StatusIn
@@ -417,7 +417,7 @@ runIntlk(bypActive := sts.bypass, cfg := cfg.runIntlk);
 runPerm(bypActive := sts.bypass, cfg := cfg.runPerm);
 ```
 
-`StatusOut`
+`StatusOut` in `Protected\Logic`
 
 ```iecst
 METHOD PROTECTED StatusOut //Set output status information
@@ -431,7 +431,7 @@ sts.echoRunFdbk 	:= runFdbkProcessed;
 sts.echoRunOut 		:= outRun;
 ```
 
-`Stop`
+`Stop` in `Public\Commands`
 
 ```iecst
 METHOD PUBLIC Stop
@@ -499,7 +499,7 @@ Devices();
 Permissives();
 ```
 
-`Devices`
+`Devices` in `Protected\Logic`
 
 ```iecst
 METHOD PROTECTED Devices //call child devices
@@ -508,7 +508,7 @@ device(parentCtrl := childCtrl);
 inpChildFaulted := device.fault.active;
 ```
 
-`Permissives`
+`Permissives` in `Protected\Logic`
 
 ```iecst
 METHOD PROTECTED Permissives //set module permissives and interlocks
@@ -525,7 +525,7 @@ IntlkAuto.cfg.condText[0] := 'Device not faulted';
 IntlkAuto.perm.0 := NOT device.fault.active;
 ```
 
-`Reset`
+`Reset` in `Public\Control`
 
 ```iecst
 METHOD Reset : BOOL
@@ -533,7 +533,7 @@ device.Reset();
 Reset := TRUE;
 ```
 
-`Started`
+`Started` in `Protected\States`
 
 ```iecst
 METHOD PROTECTED Started : BOOL
@@ -553,7 +553,7 @@ CASE stsStation.runStep OF
 END_CASE
 ```
 
-`Starting`
+`Starting` in `Protected\States`
 
 ```iecst
 METHOD PROTECTED Starting : BOOL
@@ -564,7 +564,7 @@ END_IF
 stsStation.runStep := E_TemplateStationRunStep.Idle;
 ```
 
-`Stopping`
+`Stopping` in `Protected\States`
 
 ```iecst
 METHOD PROTECTED Stopping : BOOL

@@ -53,13 +53,20 @@ END_VAR
       <ST><![CDATA[StateMachine();
 StatusOut();]]></ST>
     </Implementation>
-    <Method Name="Abort" Id="{3744c5b7-6f8d-4438-b307-99d42d071f6c}">
+    <Folder Name="Protected" Id="{bc0a5542-24ed-4e3e-812f-f8855d2cad6b}">
+      <Folder Name="Logic" Id="{0f3ba988-1a4a-42af-9cad-0e9f94deb886}" />
+    </Folder>
+    <Folder Name="Public" Id="{23e76b28-7ab2-4ccb-a89e-eba743aee976}">
+      <Folder Name="Commands" Id="{38762df1-b7da-4d12-8e1a-fac1549bd8e7}" />
+      <Folder Name="Control" Id="{8e0f52cf-c998-4a8b-8b18-cec1ca0ea449}" />
+    </Folder>
+    <Method Name="Abort" Id="{3744c5b7-6f8d-4438-b307-99d42d071f6c}" FolderPath="Public\Commands\">
       <Declaration><![CDATA[METHOD PUBLIC Abort //abort the function if it is running]]></Declaration>
       <Implementation>
         <ST><![CDATA[abortRequest := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ClearParameters" Id="{6b3c977d-244d-4ff7-bfa9-0e81c4242037}">
+    <Method Name="ClearParameters" Id="{6b3c977d-244d-4ff7-bfa9-0e81c4242037}" FolderPath="Public\Control\">
       <Declaration><![CDATA[METHOD PUBLIC ClearParameters //clear all parameters
 VAR
 	i : INT;
@@ -72,13 +79,13 @@ END_VAR
 END_FOR]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Reset" Id="{d992ce48-3d78-4abf-97a3-c49a20eb7950}">
+    <Method Name="Reset" Id="{d992ce48-3d78-4abf-97a3-c49a20eb7950}" FolderPath="Public\Commands\">
       <Declaration><![CDATA[METHOD PUBLIC Reset //return to idle and clear errors]]></Declaration>
       <Implementation>
         <ST><![CDATA[resetRequest := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="SetParameter" Id="{24b72d73-7296-414c-a3f3-04b89375552f}">
+    <Method Name="SetParameter" Id="{24b72d73-7296-414c-a3f3-04b89375552f}" FolderPath="Public\Control\">
       <Declaration><![CDATA[METHOD PUBLIC SetParameter : BOOL //returns FALSE if index is out of range
 VAR_INPUT
 	index		: INT; //arrParam index
@@ -95,13 +102,13 @@ arrParam[index].value := value;
 SetParameter := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Start" Id="{562a0e96-1a44-4ca6-8136-49e9bfcd9b7b}">
+    <Method Name="Start" Id="{562a0e96-1a44-4ca6-8136-49e9bfcd9b7b}" FolderPath="Public\Commands\">
       <Declaration><![CDATA[METHOD PUBLIC Start //start the function (ignored while running)]]></Declaration>
       <Implementation>
         <ST><![CDATA[startRequest := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{f349b874-2908-43a5-8f9b-48b52466d1e5}">
+    <Method Name="StateMachine" Id="{f349b874-2908-43a5-8f9b-48b52466d1e5}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine]]></Declaration>
       <Implementation>
         <ST><![CDATA[timeoutTimer(IN := (state = E_SequencerFunctionState.Running) AND (timeoutPT > T#0S), PT := timeoutPT);
@@ -145,7 +152,7 @@ END_CASE
 startRequest := abortRequest := resetRequest := FALSE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StatusOut" Id="{e26eaa1c-84c0-4a13-a668-6ac6b8ab1261}">
+    <Method Name="StatusOut" Id="{e26eaa1c-84c0-4a13-a668-6ac6b8ab1261}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
       <Implementation>
         <ST><![CDATA[entry		:= (state = E_SequencerFunctionState.Running) AND (stateLastScan <> E_SequencerFunctionState.Running);

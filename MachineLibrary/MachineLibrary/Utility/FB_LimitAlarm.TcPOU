@@ -30,7 +30,10 @@ END_VAR
     <Implementation>
       <ST><![CDATA[Evaluate();]]></ST>
     </Implementation>
-    <Method Name="Evaluate" Id="{40fc6caa-278e-4531-b941-eb67b60b5ac4}">
+    <Folder Name="Protected" Id="{64e04b85-2af5-4e59-bd1f-4b66773f093e}">
+      <Folder Name="Logic" Id="{83f228a0-9d67-4dd5-a5b7-4109f83af035}" />
+    </Folder>
+    <Method Name="Evaluate" Id="{40fc6caa-278e-4531-b941-eb67b60b5ac4}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Evaluate]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Condition with hysteresis

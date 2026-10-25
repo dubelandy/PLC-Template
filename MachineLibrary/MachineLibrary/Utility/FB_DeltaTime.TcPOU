@@ -17,7 +17,10 @@ END_VAR
     <Implementation>
       <ST><![CDATA[Update();]]></ST>
     </Implementation>
-    <Method Name="Update" Id="{e236c7ba-3c0c-41f9-9a07-fbe7af51ff44}">
+    <Folder Name="Protected" Id="{b7158dc9-66ef-4a5f-93ba-7395cdd4af00}">
+      <Folder Name="Logic" Id="{b503138e-017b-4bca-8c54-22d85192c217}" />
+    </Folder>
+    <Method Name="Update" Id="{e236c7ba-3c0c-41f9-9a07-fbe7af51ff44}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Update
 VAR
 	now : ULINT; //current system time (100 ns units)

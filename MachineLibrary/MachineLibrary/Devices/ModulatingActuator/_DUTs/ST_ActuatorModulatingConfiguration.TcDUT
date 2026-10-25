@@ -11,6 +11,7 @@ STRUCT
 	safePosition		: LREAL := 0; //position on loss of interlock (0 = fail closed)
 	rampRate			: LREAL := 0; //output ramp in %/s, 0 = no ramp
 	positionTolerance	: LREAL := 2; //position within this many % of setpoint counts as reached
+	driftTolerance		: LREAL := 5; //once at position, drifting further than this % starts positioning again (keep above positionTolerance)
 	closedLimit			: LREAL := 1; //at or below this % the actuator reports closed
 	openLimit			: LREAL := 99; //at or above this % the actuator reports open
 	

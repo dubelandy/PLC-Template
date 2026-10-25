@@ -13,7 +13,8 @@
 					proportional to a main flow
 	
 	Device mode decides who sets the values: in Manual the operator (ocmd, opValues),
-	in Auto the program (pcmd, SetSetpoint, SetRatio, SetOutput, or the mode methods).
+	in Auto the program (Off(), OpenLoop(x), Setpoint(x), Ratio(x) to change mode,
+	SetOutput, SetSetpoint, SetRatio to change a value without changing mode).
 	
 	Bumpless: in Off and OpenLoop the integral tracks the output, and with
 	cfg.setpointTracksPv the setpoint follows the PV. Anti-windup stops integrating
@@ -91,17 +92,15 @@ HandleFaults();
 ControlOutputs();
 StatusOut();]]></ST>
     </Implementation>
-    <Method Name="Auto" Id="{6f7b12f7-ff57-4ec3-b9b2-bff1115c9a6c}">
-      <Declaration><![CDATA[METHOD PUBLIC Auto //program: closed loop on a setpoint
-VAR_INPUT
-	setpoint	: LREAL; //setpoint in PV units
-END_VAR]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[pSetpoint := setpoint;
-pcmd := E_PIDCommand.Setpoint;]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="ControlOutputs" Id="{568b6f2e-991b-4036-98bf-610feb1f91b8}">
+    <Folder Name="Protected" Id="{df9d7a5f-dca8-4f53-91b0-517d713c4c5e}">
+      <Folder Name="Commands" Id="{8fcef680-1800-4baf-a415-bf012222821a}" />
+      <Folder Name="Logic" Id="{c3db8777-1fb3-47e6-8373-d722144aa706}" />
+    </Folder>
+    <Folder Name="Public" Id="{a660de5a-cdd3-4117-aa5a-d90de0461f5e}">
+      <Folder Name="Commands" Id="{437152d1-5f8b-4d80-be40-f40f5c8cd146}" />
+      <Folder Name="Control" Id="{9db9fc39-7e11-444b-9b33-660d86c53f99}" />
+    </Folder>
+    <Method Name="ControlOutputs" Id="{568b6f2e-991b-4036-98bf-610feb1f91b8}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED ControlOutputs //PID calculation and output limits
 VAR
 	direction	: LREAL; //+1 reverse acting, -1 direct acting
@@ -190,7 +189,7 @@ END_IF
 sts.iTerm := integral;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Device" Id="{359421ee-ae5d-4589-b7e0-abe53108efba}">
+    <Method Name="Device" Id="{359421ee-ae5d-4589-b7e0-abe53108efba}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Device //map cfg to FB_Device and FB_Device to sts]]></Declaration>
       <Implementation>
         <ST><![CDATA[// to FB device
@@ -208,7 +207,7 @@ sts.sim		   		 := ctrl.sim;
 sts.parentConfigured := parentConfigured;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="HandleFaults" Id="{35e9c03b-52e6-4791-9977-6a2b6cdcffe3}">
+    <Method Name="HandleFaults" Id="{35e9c03b-52e6-4791-9977-6a2b6cdcffe3}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED HandleFaults]]></Declaration>
       <Implementation>
         <ST><![CDATA[fault.pvBad S= inpPvBad AND sts.closedLoop;
@@ -239,23 +238,13 @@ END_IF
 fault.active := fault.id > 0;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Manual" Id="{246b751e-40e9-4496-8ecc-3a25beacab5f}">
-      <Declaration><![CDATA[METHOD PUBLIC Manual //program: open loop at a fixed output
-VAR_INPUT
-	output		: LREAL; //output in %
-END_VAR]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[pOutput := output;
-pcmd := E_PIDCommand.OpenLoop;]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="Off" Id="{a15d9aad-794b-4db9-a2eb-520c09d45ef3}">
-      <Declaration><![CDATA[METHOD PUBLIC Off //program: loop off]]></Declaration>
+    <Method Name="Off" Id="{a15d9aad-794b-4db9-a2eb-520c09d45ef3}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC Off //loop off, output to cfg.outputOff]]></Declaration>
       <Implementation>
         <ST><![CDATA[pcmd := E_PIDCommand.Off;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ProcessCommands" Id="{16672a96-a407-4e2c-be5b-1023dfd456c0}">
+    <Method Name="ProcessCommands" Id="{16672a96-a407-4e2c-be5b-1023dfd456c0}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED ProcessCommands]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Check for new valid commands
@@ -295,13 +284,13 @@ sts.manualOutput	:= LIMIT(cfg.outputMin, sts.manualOutput, cfg.outputMax);
 
 CASE cmdReceived OF
 	E_PIDCommand.Off:
-		sts.loopMode := E_PIDLoopMode.Off;
+		PrvOff();
 	E_PIDCommand.OpenLoop:
-		sts.loopMode := E_PIDLoopMode.OpenLoop;
+		PrvOpenLoop();
 	E_PIDCommand.Setpoint:
-		PrvCloseLoop(E_PIDLoopMode.Setpoint);
+		PrvSetpoint();
 	E_PIDCommand.Ratio:
-		PrvCloseLoop(E_PIDLoopMode.Ratio);
+		PrvRatio();
 END_CASE
 
 //Save last commands
@@ -319,7 +308,7 @@ ocmd		:= E_PIDCommand.None;
 ctrl.reset	:= FALSE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ProcessInputs" Id="{a9dcf913-7ac9-4d5d-be38-92cd3150115f}">
+    <Method Name="ProcessInputs" Id="{a9dcf913-7ac9-4d5d-be38-92cd3150115f}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED ProcessInputs]]></Declaration>
       <Implementation>
         <ST><![CDATA[deltaTime();
@@ -328,36 +317,13 @@ sts.pv			:= pv;
 sts.wildValue	:= wildValue;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="PrvCloseLoop" Id="{03f419f4-dfa4-492c-92a3-27ade66e44b7}">
-      <Declaration><![CDATA[METHOD PROTECTED PrvCloseLoop
-VAR_INPUT
-	loopMode	: E_PIDLoopMode; //Setpoint or Ratio
-END_VAR]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[IF inpPvBad THEN // cannot close the loop on a bad PV
-	fault.pvBad S= TRUE;
-ELSE
-	sts.loopMode := loopMode;
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="PrvReset" Id="{56dc3802-ad3e-49f7-bf88-68657f64f0b5}">
+    <Method Name="PrvReset" Id="{56dc3802-ad3e-49f7-bf88-68657f64f0b5}" FolderPath="Protected\Commands\">
       <Declaration><![CDATA[METHOD PROTECTED PrvReset //Reset the loop]]></Declaration>
       <Implementation>
         <ST><![CDATA[resetFault S= TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Ratio" Id="{f9b4ba3f-72db-4120-a08f-b12f4a9b7deb}">
-      <Declaration><![CDATA[METHOD PUBLIC Ratio //program: closed loop on ratio x wildValue + cfg.ratioBias
-VAR_INPUT
-	ratio		: LREAL; //ratio
-END_VAR]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[pRatio := ratio;
-pcmd := E_PIDCommand.Ratio;]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="SetOutput" Id="{030395d2-e421-4926-9461-a1ab9df16968}">
+    <Method Name="SetOutput" Id="{030395d2-e421-4926-9461-a1ab9df16968}" FolderPath="Public\Control\">
       <Declaration><![CDATA[METHOD PUBLIC SetOutput //program: change the manual output without changing mode
 VAR_INPUT
 	output		: LREAL; //output in %
@@ -366,7 +332,7 @@ END_VAR]]></Declaration>
         <ST><![CDATA[pOutput := output;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="SetRatio" Id="{6fc2908a-ff22-4554-9d89-61e40629c84a}">
+    <Method Name="SetRatio" Id="{6fc2908a-ff22-4554-9d89-61e40629c84a}" FolderPath="Public\Control\">
       <Declaration><![CDATA[METHOD PUBLIC SetRatio //program: change the ratio without changing mode
 VAR_INPUT
 	ratio		: LREAL; //ratio
@@ -375,7 +341,7 @@ END_VAR]]></Declaration>
         <ST><![CDATA[pRatio := ratio;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="SetSetpoint" Id="{17329377-891f-47d0-a901-d0537959adf6}">
+    <Method Name="SetSetpoint" Id="{17329377-891f-47d0-a901-d0537959adf6}" FolderPath="Public\Control\">
       <Declaration><![CDATA[METHOD PUBLIC SetSetpoint //program: change the setpoint without changing mode
 VAR_INPUT
 	setpoint	: LREAL; //setpoint in PV units
@@ -384,7 +350,7 @@ END_VAR]]></Declaration>
         <ST><![CDATA[pSetpoint := setpoint;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{a3e7e3c1-3042-40c4-8ab9-adee7a2fbecc}">
+    <Method Name="StateMachine" Id="{a3e7e3c1-3042-40c4-8ab9-adee7a2fbecc}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine //active setpoint and error]]></Declaration>
       <Implementation>
         <ST><![CDATA[//A bad PV in closed loop holds the current output in OpenLoop
@@ -417,13 +383,75 @@ deviationAlarm(value := ABS(sts.error), limit := cfg.deviationLimit, highAlarm :
 			   delay := cfg.deviationDelay, latch := FALSE, reset := FALSE);]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StatusOut" Id="{757cfed1-89b5-4407-8ffe-70f651f49e19}">
+    <Method Name="StatusOut" Id="{757cfed1-89b5-4407-8ffe-70f651f49e19}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
       <Implementation>
         <ST><![CDATA[sts.saturatedHigh	:= sts.closedLoop AND sts.output >= cfg.outputMax;
 sts.saturatedLow	:= sts.closedLoop AND sts.output <= cfg.outputMin;
 sts.deviationAlarm	:= deviationAlarm.active;
 out					:= sts.output;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Setpoint" Id="{752fe3e6-8416-4b02-89de-3fd761e7e2e3}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC Setpoint //closed loop on a setpoint
+VAR_INPUT
+	value		: LREAL; //setpoint in PV units
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pSetpoint := value;
+pcmd := E_PIDCommand.Setpoint;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Ratio" Id="{1b5cc355-df22-4c92-89be-33f7d5aa0123}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC Ratio //closed loop on ratio x wildValue + cfg.ratioBias
+VAR_INPUT
+	value		: LREAL; //ratio
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pRatio := value;
+pcmd := E_PIDCommand.Ratio;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="OpenLoop" Id="{904d7c5f-542d-4d58-8c0f-1a78aa230b43}" FolderPath="Public\Commands\">
+      <Declaration><![CDATA[METHOD PUBLIC OpenLoop //open loop at a fixed output
+VAR_INPUT
+	value		: LREAL; //output in %
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pOutput := value;
+pcmd := E_PIDCommand.OpenLoop;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvOff" Id="{f11db683-15d0-4b32-80e6-4c8d8c965ac0}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvOff]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sts.loopMode := E_PIDLoopMode.Off;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvOpenLoop" Id="{48935ea2-7e3a-47a1-848d-9d52816a41fb}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvOpenLoop]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sts.loopMode := E_PIDLoopMode.OpenLoop;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvSetpoint" Id="{4f30a4fc-dcb7-4080-9ce3-349dcf2b3a27}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvSetpoint]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF inpPvBad THEN // cannot close the loop on a bad PV
+	fault.pvBad S= TRUE;
+ELSE
+	sts.loopMode := E_PIDLoopMode.Setpoint;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvRatio" Id="{a7dfa6a3-f805-49b6-a383-12f7ba9788aa}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvRatio]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF inpPvBad THEN // cannot close the loop on a bad PV
+	fault.pvBad S= TRUE;
+ELSE
+	sts.loopMode := E_PIDLoopMode.Ratio;
+END_IF]]></ST>
       </Implementation>
     </Method>
   </POU>

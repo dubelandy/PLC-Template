@@ -94,13 +94,20 @@ HandleFaults();
 ControlOutputs();
 StatusOut();]]></ST>
     </Implementation>
-    <Method Name="Close" Id="{7457a5e1-323b-4c95-bd9b-940ce4e85636}">
+    <Folder Name="Protected" Id="{0855584f-eb31-484c-a9db-066815d1c320}">
+      <Folder Name="Commands" Id="{2c5a4f3c-27fe-4985-b773-17fc81068d3c}" />
+      <Folder Name="Logic" Id="{31c0ab04-64de-4302-a17e-6b26b2e5d911}" />
+    </Folder>
+    <Folder Name="Public" Id="{f0711d00-e70e-47ef-aeb3-0bd7d98dbc27}">
+      <Folder Name="Commands" Id="{1ca77ccb-81b4-4c02-8673-f908cf8130ad}" />
+    </Folder>
+    <Method Name="Close" Id="{7457a5e1-323b-4c95-bd9b-940ce4e85636}" FolderPath="Public\Commands\">
       <Declaration><![CDATA[METHOD PUBLIC Close]]></Declaration>
       <Implementation>
         <ST><![CDATA[pcmd := E_ActuatorModulatingCommand.Close;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ControlOutputs" Id="{b8e8a569-0e3a-4b23-b043-4cf62bea2298}">
+    <Method Name="ControlOutputs" Id="{b8e8a569-0e3a-4b23-b043-4cf62bea2298}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED ControlOutputs //Set physical outputs]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF sts.sim THEN //do not command outputs when simulated
@@ -111,7 +118,7 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Device" Id="{3092cebe-13b6-47f2-8c55-5d92fe2a9813}">
+    <Method Name="Device" Id="{3092cebe-13b6-47f2-8c55-5d92fe2a9813}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Device //map cfg to FB_Device and FB_Device to sts]]></Declaration>
       <Implementation>
         <ST><![CDATA[// to FB device
@@ -129,7 +136,7 @@ sts.sim		   		 := ctrl.sim;
 sts.parentConfigured := parentConfigured;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Functions" Id="{9f0fabeb-8524-4bed-81d9-5743a0094e09}">
+    <Method Name="Functions" Id="{9f0fabeb-8524-4bed-81d9-5743a0094e09}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Functions
 VAR
 	i : INT;
@@ -181,7 +188,7 @@ IF func.Close.running THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="HandleFaults" Id="{3c664065-467f-45bf-af80-27a24b791d17}">
+    <Method Name="HandleFaults" Id="{3c664065-467f-45bf-af80-27a24b791d17}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED HandleFaults]]></Declaration>
       <Implementation>
         <ST><![CDATA[fault.positionTimeout S= positioningTimer.Q;
@@ -224,13 +231,13 @@ END_IF
 fault.active := fault.id > 0;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Open" Id="{53938b8c-a9be-4c81-8566-1bb197c18216}">
+    <Method Name="Open" Id="{53938b8c-a9be-4c81-8566-1bb197c18216}" FolderPath="Public\Commands\">
       <Declaration><![CDATA[METHOD PUBLIC Open]]></Declaration>
       <Implementation>
         <ST><![CDATA[pcmd := E_ActuatorModulatingCommand.Open;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ProcessCommands" Id="{a399af32-69a4-4773-8982-ea184bef2a85}">
+    <Method Name="ProcessCommands" Id="{a399af32-69a4-4773-8982-ea184bef2a85}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED ProcessCommands]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Check for new valid commands
@@ -258,11 +265,11 @@ IF NOT intlk.sts.ok AND sts.setpoint <> cfg.safePosition THEN
 	PrvSafe();
 END_IF
 
-CASE cmdReceived OF
+CASE cmdReceived OF 
 	E_ActuatorModulatingCommand.Close:
-		PrvPosition(cfg.minPosition);
+		PrvClose();
 	E_ActuatorModulatingCommand.Open:
-		PrvPosition(cfg.maxPosition);
+		PrvOpen();
 	E_ActuatorModulatingCommand.Position:
 		PrvPosition(targetReceived);
 END_CASE
@@ -282,7 +289,7 @@ ocmd		:= E_ActuatorModulatingCommand.None;
 ctrl.reset	:= FALSE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ProcessInputs" Id="{b1df521e-83fe-40ba-b7d8-2ff3f0869409}">
+    <Method Name="ProcessInputs" Id="{b1df521e-83fe-40ba-b7d8-2ff3f0869409}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED ProcessInputs]]></Declaration>
       <Implementation>
         <ST><![CDATA[deltaTime();
@@ -307,7 +314,7 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="PrvPosition" Id="{03aadde7-1384-4b87-aa0e-406e6569a9da}">
+    <Method Name="PrvPosition" Id="{03aadde7-1384-4b87-aa0e-406e6569a9da}" FolderPath="Protected\Commands\">
       <Declaration><![CDATA[METHOD PROTECTED PrvPosition
 VAR_INPUT
 	target		: LREAL; //requested position in %
@@ -318,18 +325,24 @@ END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[limited := LIMIT(cfg.minPosition, target, cfg.maxPosition);
 
+IF limited = sts.setpoint AND NOT sts.positioning THEN // ignore command if already there
+	RETURN;
+END_IF
+
 IF limited = cfg.safePosition THEN // going to the safe position is always allowed
 	sts.setpoint := limited;
+	sts.state := E_ActuatorModulatingState.Positioning;
 ELSIF NOT intlk.sts.ok THEN // check intlk before moving away from safe
 	fault.intlkNOK S= TRUE;
 ELSIF NOT perm.sts.ok AND sts.setpoint = cfg.safePosition THEN // perm only needed to leave the safe position
 	fault.permNOK S= TRUE;
 ELSE
 	sts.setpoint := limited;
+	sts.state := E_ActuatorModulatingState.Positioning;
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="PrvReset" Id="{b8966cc4-8c63-4b40-a6ac-aa5d2e75aab0}">
+    <Method Name="PrvReset" Id="{b8966cc4-8c63-4b40-a6ac-aa5d2e75aab0}" FolderPath="Protected\Commands\">
       <Declaration><![CDATA[METHOD PROTECTED PrvReset //Reset the device]]></Declaration>
       <Implementation>
         <ST><![CDATA[resetFault S= TRUE;
@@ -340,13 +353,14 @@ perm.Reset();
 positionFdbk.Reset();]]></ST>
       </Implementation>
     </Method>
-    <Method Name="PrvSafe" Id="{0a882f88-4765-4522-af42-64236a98b373}">
+    <Method Name="PrvSafe" Id="{0a882f88-4765-4522-af42-64236a98b373}" FolderPath="Protected\Commands\">
       <Declaration><![CDATA[METHOD PROTECTED PrvSafe]]></Declaration>
       <Implementation>
-        <ST><![CDATA[sts.setpoint := cfg.safePosition;]]></ST>
+        <ST><![CDATA[sts.setpoint := cfg.safePosition;
+sts.state := E_ActuatorModulatingState.Positioning;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="SetPosition" Id="{73824b49-af45-4633-9006-8801b339ddde}">
+    <Method Name="SetPosition" Id="{73824b49-af45-4633-9006-8801b339ddde}" FolderPath="Public\Commands\">
       <Declaration><![CDATA[METHOD PUBLIC SetPosition
 VAR_INPUT
 	position	: LREAL; //target position in %
@@ -356,7 +370,7 @@ END_VAR]]></Declaration>
 pcmd := E_ActuatorModulatingCommand.Position;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{00cc7950-6830-4a7e-b9f1-91197a22503b}">
+    <Method Name="StateMachine" Id="{00cc7950-6830-4a7e-b9f1-91197a22503b}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Ramp the output toward the setpoint
@@ -370,29 +384,38 @@ END_IF
 
 sts.positionError := sts.setpoint - sts.position;
 
-IF ABS(sts.positionError) > cfg.positionTolerance THEN
-	sts.state := E_ActuatorModulatingState.Positioning;
-ELSIF sts.position <= cfg.closedLimit THEN
-	sts.state := E_ActuatorModulatingState.Closed;
-ELSIF sts.position >= cfg.openLimit THEN
-	sts.state := E_ActuatorModulatingState.Open;
-ELSE
-	sts.state := E_ActuatorModulatingState.AtPosition;
-END_IF
+CASE sts.state OF
+	
+	E_ActuatorModulatingState.Positioning: //Check if we reached the setpoint
+		IF ABS(sts.positionError) <= cfg.positionTolerance AND sts.commandPosition = sts.setpoint THEN
+			sts.state := SettledState();
+			sts.timeToPosition := positioningTimer.ET;
+		END_IF
+		
+	E_ActuatorModulatingState.Closed,
+	E_ActuatorModulatingState.Open,
+	E_ActuatorModulatingState.AtPosition:
+		// If we got here based on a successful move (which is the only way to get here), reset faults
+		IF rtNewState THEN
+			resetFault := TRUE;
+		END_IF
+		// Drifted off the setpoint: correct it
+		IF ABS(sts.positionError) > MAX(cfg.driftTolerance, cfg.positionTolerance) THEN
+			sts.state := E_ActuatorModulatingState.Positioning;
+		ELSE
+			sts.state := SettledState();
+		END_IF
+		
+END_CASE
 
 rtNewState := sts.state <> stateLastScan;
-IF rtNewState AND stateLastScan = E_ActuatorModulatingState.Positioning THEN
-	// Reached the setpoint, which is the only way out of Positioning: reset faults
-	sts.timeToPosition := positioningTimer.ET;
-	resetFault := TRUE;
-END_IF
 stateLastScan := sts.state;
 
 // Monitoring timers
 positioningTimer(IN := sts.state = E_ActuatorModulatingState.Positioning, PT := cfg.failTimePositioning);]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StatusIn" Id="{d85b3c4b-6b37-4585-a33f-a44fe3de32c8}">
+    <Method Name="StatusIn" Id="{d85b3c4b-6b37-4585-a33f-a44fe3de32c8}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StatusIn]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Permissives and Interlocks
@@ -400,7 +423,7 @@ intlk(bypActive := sts.bypass, cfg := cfg.intlk);
 perm(bypActive := sts.bypass, cfg := cfg.perm);]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StatusOut" Id="{2af30c99-9d64-4d2a-a8a7-a5d847c8a7ea}">
+    <Method Name="StatusOut" Id="{2af30c99-9d64-4d2a-a8a7-a5d847c8a7ea}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
       <Implementation>
         <ST><![CDATA[sts.closed 		:= sts.state = E_ActuatorModulatingState.Closed;
@@ -411,6 +434,30 @@ sts.atPosition	:= NOT sts.positioning;
 sts.readyToMove	:= intlk.sts.ok AND perm.sts.ok;
 sts.safe		:= NOT intlk.sts.ok AND sts.setpoint = cfg.safePosition;
 sts.echoOutRaw	:= outRaw;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvClose" Id="{7f775c9b-d081-44a6-82c5-4ae4f2441703}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvClose]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[PrvPosition(cfg.minPosition);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvOpen" Id="{0fdbb7a4-f39e-4fc7-84bb-7a7ff0726101}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvOpen]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[PrvPosition(cfg.maxPosition);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SettledState" Id="{6cb47ca7-dd0f-4127-a7a5-fba4293f3b3e}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED SettledState : E_ActuatorModulatingState //state when at the setpoint]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF sts.position <= cfg.closedLimit THEN
+	SettledState := E_ActuatorModulatingState.Closed;
+ELSIF sts.position >= cfg.openLimit THEN
+	SettledState := E_ActuatorModulatingState.Open;
+ELSE
+	SettledState := E_ActuatorModulatingState.AtPosition;
+END_IF]]></ST>
       </Implementation>
     </Method>
   </POU>
