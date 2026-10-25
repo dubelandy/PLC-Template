@@ -24,3 +24,7 @@ _Libraries/
 
 # Runtime output
 *.log
+
+# OPC UA dashboard: client certificate/key generated on first run
+Tools/OPCUA-Dashboard/pki/
+__pycache__/

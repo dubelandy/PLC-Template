@@ -24,6 +24,7 @@ ExampleProject/
     Stations/ExampleStation/     FB_ExampleStation (two actuators)
     Communication/MQTT/          FB_MqttStatePublisher
 .claude/skills/                  Style guide for writing new MachineLibrary code
+Tools/OPCUA-Dashboard/           Web dashboard over OPC UA (TF6100) for the example machine
 ```
 
 ## Getting started
@@ -67,6 +68,10 @@ Each running cycle of the station is one `FB_TriggerTell` transaction (`FB_Examp
 | Rejected request | `softwareSim.cfg.sendInvalidRequest := TRUE` | Station aborts the transaction, `stsStation.jobsRejected` counts up, `lastRejectText` says why, `softwareSim.sts.aborts` counts up. |
 | Recipe value | `softwareSim.cfg.closeDwell := T#5S` | Actuators stay closed 5 s per cycle, `lastResponse.cycleTime` grows. |
 | Stop mid-transaction | `machine.ocmd := Stop` | Transaction aborted, actuators open, simulator resets to Idle. |
+
+### OPC UA dashboard
+
+`Tools/OPCUA-Dashboard` is a small Python web page that shows all of the above live over OPC UA (needs TwinCAT TF6100) and can start/stop the machine and drive the simulator. See its README.
 
 ### MQTT
 

@@ -1,0 +1,7 @@
+{
+  "endpoint": "opc.tcp://localhost:4840",
+  "security": "Basic256Sha256,SignAndEncrypt",
+  "plcRoot": "PLC1",
+  "pollIntervalMs": 250,
+  "httpPort": 8080
+}

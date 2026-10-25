@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PLC-Template Dashboard</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --text: #1d2330; --muted: #6b7385; --line: #e2e5eb;
+    --on: #1f9d55; --off: #c9ced8; --warn: #d97706; --bad: #dc2626; --accent: #2563eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14171d; --card: #1d2129; --text: #e6e9ef; --muted: #8a93a6; --line: #2c313c;
+            --off: #3a404d; --accent: #60a5fa; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+           background: var(--card); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  #conn { font-size: 12px; color: var(--muted); }
+  main { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+         gap: 12px; padding: 12px 16px; max-width: 1300px; margin: 0 auto; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+       margin: 0 0 10px; font-weight: 600; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0;
+         border-bottom: 1px dashed var(--line); }
+  .row:last-child { border-bottom: 0; }
+  .row span:first-child { color: var(--muted); }
+  .row span:last-child { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+  .big { font-size: 22px; font-weight: 600; margin: 2px 0 8px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px;
+          background: var(--off); color: var(--text); }
+  .pill.ok { background: var(--on); color: #fff; } .pill.bad { background: var(--bad); color: #fff; }
+  .pill.warn { background: var(--warn); color: #fff; }
+  button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--line);
+           background: var(--card); color: var(--text); cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .buttons { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .lamps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 6px 0 12px; }
+  .lamp { text-align: center; font-size: 12px; }
+  .lamp i { display: block; width: 28px; height: 28px; margin: 0 auto 4px; border-radius: 50%;
+            background: var(--off); transition: background .15s; }
+  .lamp.on i { background: var(--on); box-shadow: 0 0 10px var(--on); }
+  .lamp small { display: block; color: var(--muted); }
+  .steps { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .steps span { padding: 2px 7px; border-radius: 4px; font-size: 12px; background: var(--bg);
+                color: var(--muted); border: 1px solid var(--line); }
+  .steps span.cur { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  label.ctl { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; }
+  input[type=number] { width: 90px; font: inherit; padding: 3px 6px; border-radius: 4px;
+                       border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  #banner { display: none; margin: 12px 16px 0; padding: 10px 12px; border-radius: 6px;
+            background: var(--bad); color: #fff; }
+  #missing { display: none; color: var(--warn); font-size: 12px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>PLC-Template Example Machine</h1>
+  <span id="connPill" class="pill">…</span>
+  <span id="conn"></span>
+</header>
+<div id="banner"></div>
+
+<main>
+  <section>
+    <h2>Machine</h2>
+    <div class="big" id="m_state">–</div>
+    <div class="row"><span>Mode</span><span id="m_mode">–</span></div>
+    <div class="row"><span>Ready to start</span><span id="m_ready">–</span></div>
+    <div class="row"><span>Faulted</span><span id="m_fault">–</span></div>
+    <div class="buttons">
+      <button class="primary" onclick="cmd(1)">Start</button>
+      <button onclick="cmd(2)">Stop</button>
+      <button onclick="cmd(-1)">Reset</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Example station</h2>
+    <div class="big" id="s_step">–</div>
+    <div class="row"><span>Module state</span><span id="s_state">–</span></div>
+    <div class="row"><span>Job</span><span id="s_job">–</span></div>
+    <div class="row"><span>Cycles completed</span><span id="s_count">–</span></div>
+    <div class="row"><span>Last cycle time</span><span id="s_time">–</span></div>
+    <div class="row"><span>Jobs rejected</span><span id="s_rej">–</span></div>
+    <div class="row"><span>Last reject reason</span><span id="s_rejtxt">–</span></div>
+    <div class="row"><span>Comm error</span><span id="s_comm">–</span></div>
+  </section>
+
+  <section>
+    <h2>Actuators (home = open, work = closed)</h2>
+    <div class="cols">
+      <div>
+        <div class="big" id="a_state">–</div>
+        <div class="row"><span>Mode</span><span id="a_mode">–</span></div>
+        <div class="row"><span>Fault</span><span id="a_fault">–</span></div>
+      </div>
+      <div>
+        <div class="big" id="b_state">–</div>
+        <div class="row"><span>Mode</span><span id="b_mode">–</span></div>
+        <div class="row"><span>Fault</span><span id="b_fault">–</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wide">
+    <h2>Trigger / tell transaction</h2>
+    <div class="steps" id="t_steps"></div>
+    <div class="lamps">
+      <div class="lamp" id="h_attention"><i></i>attention<small>PLC → SW</small></div>
+      <div class="lamp" id="h_trigger"><i></i>trigger<small>SW → PLC</small></div>
+      <div class="lamp" id="h_trigger_ack"><i></i>trigger_ack<small>PLC → SW</small></div>
+      <div class="lamp" id="h_tell"><i></i>tell<small>PLC → SW</small></div>
+      <div class="lamp" id="h_tell_ack"><i></i>tell_ack<small>SW → PLC</small></div>
+    </div>
+    <div class="cols">
+      <div>
+        <div class="row"><span>Request cycleId</span><span id="t_rq_id">–</span></div>
+        <div class="row"><span>Request closeDwell</span><span id="t_rq_dw">–</span></div>
+      </div>
+      <div>
+        <div class="row"><span>Response cycleId</span><span id="t_rs_id">–</span></div>
+        <div class="row"><span>Response cycleTime</span><span id="t_rs_t">–</span></div>
+        <div class="row"><span>Response ok</span><span id="t_rs_ok">–</span></div>
+      </div>
+      <div>
+        <div class="row"><span>Error</span><span id="t_err">–</span></div>
+        <div class="row"><span>Error text</span><span id="t_errtxt">–</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wide">
+    <h2>Software simulator</h2>
+    <div class="cols">
+      <div>
+        <div class="big" id="sim_step">–</div>
+        <div class="row"><span>Requests sent</span><span id="sim_sent">–</span></div>
+        <div class="row"><span>Responses received</span><span id="sim_recv">–</span></div>
+        <div class="row"><span>Aborted by PLC</span><span id="sim_abort">–</span></div>
+      </div>
+      <div>
+        <div class="row"><span>Last response cycleId</span><span id="sim_lr_id">–</span></div>
+        <div class="row"><span>Last response cycleTime</span><span id="sim_lr_t">–</span></div>
+        <div class="row"><span>Last response ok</span><span id="sim_lr_ok">–</span></div>
+      </div>
+      <div>
+        <label class="ctl">Enabled <input type="checkbox" id="c_enable" onchange="setCfg('enable', this.checked)"></label>
+        <label class="ctl">Freeze (test timeout) <input type="checkbox" id="c_freeze" onchange="setCfg('freeze', this.checked)"></label>
+        <label class="ctl">Send invalid request <input type="checkbox" id="c_invalid" onchange="setCfg('sendInvalidRequest', this.checked)"></label>
+        <label class="ctl">closeDwell (ms)
+          <span><input type="number" id="c_dwell" min="0" step="100"> <button onclick="setDwell()">Set</button></span>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section class="wide" id="missingBox" style="display:none">
+    <h2>Not found on the OPC UA server</h2>
+    <div id="missing"></div>
+  </section>
+</main>
+
+<script>
+const M = "MAIN.machine", ST = M + ".exampleStation", TR = ST + ".transaction", SIM = "MAIN.softwareSim";
+
+const ENUM = {
+  moduleState: {0: "Unknown", 1: "Starting", 2: "Started", 4: "Stopping", 8: "Stopped"},
+  moduleMode: {0: "Manual", 1: "Automatic", 2: "Local control", 3: "Dry cycle"},
+  runStep: {0: "Idle", 10: "Request job", 20: "Wait for job", 30: "Wait working", 40: "Close",
+            50: "Hold closed", 60: "Open", 70: "Report", 80: "Wait report ack", 90: "Dwell"},
+  tt: ["Idle", "Attention", "Attention_OK", "Request_Start", "Request_ACK", "Working",
+       "Response_Start", "Response_ACK", "Response_Done", "Completed"],
+  simStep: {0: "Idle", 10: "Send trigger", 20: "Wait trigger_ack", 30: "Drop trigger",
+            40: "Wait tell", 50: "Send tell_ack", 60: "Wait tell drop", 70: "Drop tell_ack"},
+  actuator: {0: "All off", 1: "Open", 2: "Closed", 3: "Opening…", 4: "Closing…"},
+  sysMode: {0: "Idle", 1: "Auto", 2: "Manual", 3: "Semi-auto", 4: "Step"},
+};
+
+let V = {};
+const $ = id => document.getElementById(id);
+const v = p => V[p];
+const en = (map, x) => x === undefined || x === null ? "–" : (map[x] ?? x);
+const ms = x => x === undefined || x === null ? "–" : (Number(x) / 1000).toFixed(2) + " s";
+const num = x => x === undefined || x === null ? "–" : x;
+const txt = x => x ? x : "–";
+function set(id, text) { const e = $(id); if (e.textContent !== String(text)) e.textContent = text; }
+function flag(id, on, goodWhenOn = false) {
+  const e = $(id);
+  if (on === undefined || on === null) { e.innerHTML = "–"; return; }
+  const cls = on ? (goodWhenOn ? "ok" : "bad") : "";
+  e.innerHTML = `<span class="pill ${cls}">${on ? "Yes" : "No"}</span>`;
+}
+
+ENUM.tt.forEach((s, i) => { const e = document.createElement("span"); e.id = "tt" + i; e.textContent = s; $("t_steps").append(e); });
+
+function render(d) {
+  V = d.values || {};
+  $("connPill").className = "pill " + (d.connected ? "ok" : "bad");
+  $("connPill").textContent = d.connected ? "Connected" : "Disconnected";
+  set("conn", d.endpoint);
+  $("banner").style.display = d.connected ? "none" : "block";
+  $("banner").textContent = d.error ? "OPC UA: " + d.error : "";
+
+  set("m_state", en(ENUM.moduleState, v(M + ".sts.State")));
+  set("m_mode", en(ENUM.moduleMode, v(M + ".sts.Mode")));
+  flag("m_ready", v(M + ".sts.ReadyToStart"), true);
+  flag("m_fault", v(M + ".sts.Faulted"));
+
+  set("s_step", en(ENUM.runStep, v(ST + ".stsStation.runStep")));
+  set("s_state", en(ENUM.moduleState, v(ST + ".sts.State")));
+  const jid = v(ST + ".stsStation.job.cycleId");
+  set("s_job", jid ? `#${jid}, closeDwell ${ms(v(ST + ".stsStation.job.closeDwell"))}` : "–");
+  set("s_count", num(v(ST + ".stsStation.cycleCount")));
+  set("s_time", ms(v(ST + ".stsStation.lastCycleTime")));
+  set("s_rej", num(v(ST + ".stsStation.jobsRejected")));
+  set("s_rejtxt", txt(v(ST + ".stsStation.lastRejectText")));
+  flag("s_comm", v(ST + ".stsStation.commError"));
+
+  for (const [k, a] of [["a", "actuatorA"], ["b", "actuatorB"]]) {
+    set(k + "_state", "Actuator " + a.slice(-1) + ": " + en(ENUM.actuator, v(`${ST}.${a}.sts.state`)));
+    set(k + "_mode", en(ENUM.sysMode, v(`${ST}.${a}.sts.mode`)));
+    const f = v(`${ST}.${a}.fault.active`);
+    $(k + "_fault").innerHTML = f ? `<span class="pill bad">${v(`${ST}.${a}.fault.text`) || "Fault"}</span>`
+                                  : (f === false ? '<span class="pill">None</span>' : "–");
+  }
+
+  const tts = v(TR + ".sts.state");
+  ENUM.tt.forEach((_, i) => $("tt" + i).classList.toggle("cur", i === tts));
+  for (const b of ["attention", "trigger", "trigger_ack", "tell", "tell_ack"])
+    $("h_" + b).classList.toggle("on", !!v(`${TR}.handshake.${b}`));
+  set("t_rq_id", num(v(TR + ".request.cycleId")));
+  set("t_rq_dw", ms(v(TR + ".request.closeDwell")));
+  set("t_rs_id", num(v(TR + ".response.cycleId")));
+  set("t_rs_t", ms(v(TR + ".response.cycleTime")));
+  flag("t_rs_ok", v(TR + ".response.ok"), true);
+  flag("t_err", v(TR + ".sts.bError"));
+  set("t_errtxt", txt(v(TR + ".sts.errorID")));
+
+  set("sim_step", en(ENUM.simStep, v(SIM + ".sts.step")));
+  set("sim_sent", num(v(SIM + ".sts.requestsSent")));
+  set("sim_recv", num(v(SIM + ".sts.responsesReceived")));
+  set("sim_abort", num(v(SIM + ".sts.aborts")));
+  set("sim_lr_id", num(v(SIM + ".sts.lastResponse.cycleId")));
+  set("sim_lr_t", ms(v(SIM + ".sts.lastResponse.cycleTime")));
+  flag("sim_lr_ok", v(SIM + ".sts.lastResponse.ok"), true);
+  for (const [id, k] of [["c_enable", "enable"], ["c_freeze", "freeze"], ["c_invalid", "sendInvalidRequest"]])
+    if (document.activeElement !== $(id)) $(id).checked = !!v(`${SIM}.cfg.${k}`);
+  if (document.activeElement !== $("c_dwell") && v(SIM + ".cfg.closeDwell") !== undefined)
+    $("c_dwell").value = v(SIM + ".cfg.closeDwell");
+
+  const miss = d.missing || [];
+  $("missingBox").style.display = miss.length ? "block" : "none";
+  $("missing").style.display = miss.length ? "block" : "none";
+  $("missing").textContent = miss.join("\n") +
+    (miss.length ? "\n\nAdd {attribute 'OPC.UA.DA' := '1'} to these (and each parent), then activate again." : "");
+}
+
+async function poll() {
+  try { render(await (await fetch("/api/state")).json()); }
+  catch (e) { render({connected: false, error: "Dashboard app is not running", values: V}); }
+  setTimeout(poll, 300);
+}
+
+async function write(path, value) {
+  const r = await fetch("/api/write", {method: "POST", headers: {"Content-Type": "application/json"},
+                                       body: JSON.stringify({path, value})});
+  const d = await r.json();
+  if (!d.ok) alert("Write failed: " + d.error);
+}
+const cmd = c => write(M + ".ocmd", c);
+const setCfg = (k, val) => write(`${SIM}.cfg.${k}`, val);
+const setDwell = () => setCfg("closeDwell", Number($("c_dwell").value));
+
+poll();
+</script>
+</body>
+</html>
