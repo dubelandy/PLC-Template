@@ -22,11 +22,22 @@ from pathlib import Path
 from aiohttp import web
 from asyncua import Client, ua
 from asyncua.crypto.cert_gen import setup_self_signed_certificate
+from asyncua.ua import uaerrors
 from cryptography.x509.oid import ExtendedKeyUsageOID
 
 HERE = Path(__file__).resolve().parent
 CONFIG = json.loads((HERE / "config.json").read_text())
 log = logging.getLogger("dashboard")
+
+# Server refused the login: retrying with the same user name and password can't succeed.
+AUTH_ERRORS = (uaerrors.BadUserAccessDenied, uaerrors.BadIdentityTokenInvalid,
+               uaerrors.BadIdentityTokenRejected, uaerrors.BadUserSignatureInvalid)
+# Server doesn't trust the dashboard's certificate yet: retrying is right, once it's trusted it connects.
+CERT_ERRORS = (uaerrors.BadSecurityChecksFailed, uaerrors.BadCertificateUntrusted)
+
+
+class LoginRejected(Exception):
+    pass
 
 M = "MAIN.machine"
 ST = f"{M}.exampleStation"
@@ -67,8 +78,9 @@ WRITABLE = {
 class Plc:
     """OPC UA connection, tag resolution and polling."""
 
-    def __init__(self, user, password):
+    def __init__(self, user, password, ask_login=None):
         self.user, self.password = user, password
+        self.ask_login = ask_login  # called to get a new login after a rejected one (None = give up)
         self.client = None
         self.connected = False
         self.error = "Connecting..."
@@ -91,6 +103,22 @@ class Plc:
                     await asyncio.sleep(CONFIG["pollIntervalMs"] / 1000)
             except asyncio.CancelledError:
                 raise
+            except AUTH_ERRORS as e:
+                await self._disconnect()
+                self.connected = False
+                self.error = f"Login rejected for user '{self.user or 'anonymous'}' ({type(e).__name__})"
+                log.error("%s", self.error)
+                if self.ask_login is None:
+                    raise LoginRejected(self.error) from e
+                self.user, self.password = await asyncio.to_thread(self.ask_login)
+                continue
+            except CERT_ERRORS as e:
+                self.connected = False
+                self.error = (f"{type(e).__name__}: the server does not trust the dashboard certificate yet. "
+                              f"Trust 'PLC-Template Dashboard' in the OPC UA Configurator (see README).")
+                log.warning("%s Retrying in 5 s", self.error)
+                await self._disconnect()
+                await asyncio.sleep(5)
             except Exception as e:  # keep the dashboard up and retry
                 self.connected, self.error = False, f"{type(e).__name__}: {e}"
                 log.warning("OPC UA: %s, retrying in 3 s", self.error)
@@ -198,6 +226,14 @@ class Plc:
         await node.write_value(ua.DataValue(ua.Variant(value, vtype)))
 
 
+def ask_login():
+    print("\nOPC UA login (the account set up when the TF6100 server was initialized).")
+    print("Windows accounts: try just the user name, then COMPUTERNAME\\user. Ctrl+C to quit.")
+    user = input("User (blank for anonymous): ").strip() or None
+    password = getpass.getpass("Password: ") if user else None
+    return user, password
+
+
 def get_ci(obj, name):
     """Case-insensitive attribute lookup on a decoded structure."""
     if obj is None:
@@ -253,13 +289,12 @@ def make_app(plc):
 async def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
     logging.getLogger("asyncua").setLevel(logging.ERROR)
+    interactive = sys.stdin.isatty()
     user = os.environ.get("OPCUA_USER")
     password = os.environ.get("OPCUA_PASSWORD")
-    if user is None and sys.stdin.isatty():
-        user = input("OPC UA user (Windows user name, blank for anonymous): ").strip() or None
-        if user:
-            password = getpass.getpass("Password: ")
-    plc = Plc(user, password)
+    if user is None and interactive:
+        user, password = ask_login()
+    plc = Plc(user, password, ask_login if interactive else None)
 
     runner = web.AppRunner(make_app(plc))
     await runner.setup()
@@ -274,3 +309,6 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
+    except LoginRejected as e:
+        print(f"\n{e}. Check OPCUA_USER / OPCUA_PASSWORD and run again.")
+        sys.exit(1)

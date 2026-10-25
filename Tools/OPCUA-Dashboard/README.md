@@ -20,6 +20,8 @@ A small web page that shows the example machine live over OPC UA (TwinCAT TF6100
 3. Enter the OPC UA login when asked: the Windows user name and password you used to initialize the TF6100 server. Leave the user blank for anonymous.
 4. Open http://localhost:8080.
 
+**Which login?** Use exactly what you typed when you connected with the OPC UA Configurator. For a Windows account that's usually your Windows user name (try `Andy Dubel`, then `COMPUTERNAME\Andy Dubel`, or your sign-in email if you log in to Windows with a Microsoft/work account) and your Windows password. If the login is rejected, the dashboard asks again; Ctrl+C quits.
+
 To skip the prompt, set `OPCUA_USER` and `OPCUA_PASSWORD` in the command prompt before running (`set OPCUA_USER=...`). The password is never saved to disk.
 
 ## First connection: trust the dashboard's certificate
