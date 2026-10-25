@@ -27,4 +27,5 @@ _Libraries/
 
 # OPC UA dashboard: client certificate/key generated on first run
 Tools/OPCUA-Dashboard/pki/
+Tools/OPCUA-Dashboard/opcua-tree.txt
 __pycache__/

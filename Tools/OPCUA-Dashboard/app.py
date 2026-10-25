@@ -5,6 +5,7 @@ Reads the example machine's status from the TwinCAT OPC UA server (TF6100) and s
 a small web page at http://localhost:8080. Only the variables in WRITABLE can be written.
 
 Run:  python app.py
+      python app.py --browse   writes what the server publishes to opcua-tree.txt and exits
 Login: set OPCUA_USER / OPCUA_PASSWORD, or you'll be asked at startup.
 """
 import asyncio
@@ -261,6 +262,55 @@ def to_json(v):
 
 
 # ---------------------------------------------------------------------- web server
+async def browse(plc, out_file, max_depth=12):
+    """Write the server's tree below the PLC node, to compare with TAGS."""
+    while True:
+        try:
+            await plc._connect()
+            break
+        except AUTH_ERRORS as e:
+            print(f"Login rejected ({type(e).__name__})")
+            await plc._disconnect()
+            if plc.ask_login is None:
+                raise LoginRejected("Login rejected") from e
+            plc.user, plc.password = plc.ask_login()
+    lines = [f"# {CONFIG['endpoint']}  root: Objects/{CONFIG['plcRoot']}"]
+    count = 0
+
+    async def walk(node, path, depth):
+        nonlocal count
+        for c in await node.get_children():
+            name = (await c.read_browse_name()).Name
+            cls = await c.read_node_class()
+            info = cls.name
+            if cls == ua.NodeClass.Variable:
+                try:
+                    info += f" {(await c.read_data_type_as_variant_type()).name}"
+                except Exception:
+                    info += " ?"
+            p = f"{path}.{name}" if path else name
+            lines.append(f"{'  ' * depth}{name}  [{info}]  {p}  ({c.nodeid.to_string()})")
+            count += 1
+            if depth < max_depth and cls in (ua.NodeClass.Object, ua.NodeClass.Variable):
+                await walk(c, p, depth + 1)
+
+    try:
+        root = await plc._child(plc.client.nodes.objects, CONFIG["plcRoot"])
+        if root is None:
+            names = [(await c.read_browse_name()).Name for c in await plc.client.nodes.objects.get_children()]
+            lines.append(f"!! No '{CONFIG['plcRoot']}' under Objects. Objects contains: {names}")
+        else:
+            await walk(root, "", 0)
+        await plc._resolve()
+        lines.append("")
+        lines.append(f"# Dashboard tags not found ({len(plc.missing)}):")
+        lines += [f"#   {m}" for m in plc.missing]
+    finally:
+        out_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        await plc._disconnect()
+    print(f"Wrote {count} nodes to {out_file}, {len(plc.missing)} dashboard tags not found")
+
+
 def make_app(plc):
     app = web.Application()
 
@@ -295,6 +345,9 @@ async def main():
     if user is None and interactive:
         user, password = ask_login()
     plc = Plc(user, password, ask_login if interactive else None)
+    if "--browse" in sys.argv:
+        await browse(plc, HERE / "opcua-tree.txt")
+        return
 
     runner = web.AppRunner(make_app(plc))
     await runner.setup()
