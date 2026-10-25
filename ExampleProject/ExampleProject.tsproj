@@ -17,8 +17,8 @@
 			</Tasks>
 		</System>
 		<Plc>
-			<Project GUID="{AF76FED0-7B27-4FED-8B3D-AB1A345D1FC8}" Name="ExamplePLC" PrjFilePath="ExamplePLC\ExamplePLC.plcproj" TmcFilePath="ExamplePLC\ExamplePLC.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="ExamplePLC\ExamplePLC.tmc" TmcHash="{E187003E-F294-22E9-2D28-F4338EC4BB07}">
+			<Project GUID="{AF76FED0-7B27-4FED-8B3D-AB1A345D1FC8}" Name="ExamplePLC" PrjFilePath="ExamplePLC\ExamplePLC.plcproj" TmcFilePath="ExamplePLC\ExamplePLC.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" CopyTmcToTarget="true" CopyTpyToTarget="false" SymbolicMapping="true">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="ExamplePLC\ExamplePLC.tmc" TmcHash="{EBD3CFBE-EE4D-28FF-9F9A-CF4F1A514879}">
 					<Name>ExamplePLC Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Vars VarGrpType="1">
