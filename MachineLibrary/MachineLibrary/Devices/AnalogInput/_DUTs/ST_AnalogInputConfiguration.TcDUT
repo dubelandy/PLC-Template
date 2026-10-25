@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AnalogInputConfiguration" Id="{c7d59c10-a7fd-47c9-a90a-538628bb04dd}">
+    <Declaration><![CDATA[TYPE ST_AnalogInputConfiguration :
+STRUCT
+	inputId				: T_DeviceNameString; //input id shown in texts
+	units				: STRING(16); //engineering units for the HMI, e.g. 'degC', 'bar', 'l/min'
+	
+	//Scaling (raw counts to engineering units)
+	rawMin				: LREAL := 0; //raw value at euMin (EL30xx 4-20 mA / 0-10 V: 0)
+	rawMax				: LREAL := 32767; //raw value at euMax (EL30xx: 32767)
+	euMin				: LREAL := 0; //engineering value at rawMin
+	euMax				: LREAL := 100; //engineering value at rawMax
+	clamp				: BOOL := TRUE; //limit the value to euMin..euMax
+	filterTime			: TIME := T#0S; //first-order filter time constant, T#0S = no filter
+	
+	//Bad signal detection
+	rawTolerance		: LREAL := 1000; //raw counts allowed outside rawMin..rawMax before the signal is bad
+	badSignalDelay		: TIME := T#1S; //bad signal must be present this long before it faults
+	
+	//Alarms
+	limits				: ST_AnalogSetpoints := (LowLow := 5, Low := 10, High := 90, HighHigh := 95); //alarm limits in engineering units
+	alarmEnable			: ST_AnalogAlarmEnables; //which alarms are active (all off by default)
+	alarmDeadband		: LREAL := 1; //hysteresis in engineering units
+	alarmDelay			: TIME := T#2S; //limit must be exceeded this long before alarming
+	latchAlarms			: BOOL; //alarms stay on until reset
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

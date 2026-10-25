@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_ActuatorModulatingConfiguration" Id="{48161cda-c396-4be8-9d90-6b998dff4597}">
+    <Declaration><![CDATA[TYPE ST_ActuatorModulatingConfiguration :
+STRUCT
+	actuatorId			: T_DeviceNameString; //actuator id shown in texts
+	
+	//Range and movement (positions in %, 0 = closed, 100 = open)
+	minPosition			: LREAL := 0; //lowest position that can be commanded (Close goes here)
+	maxPosition			: LREAL := 100; //highest position that can be commanded (Open goes here)
+	safePosition		: LREAL := 0; //position on loss of interlock (0 = fail closed)
+	rampRate			: LREAL := 0; //output ramp in %/s, 0 = no ramp
+	positionTolerance	: LREAL := 2; //position within this many % of setpoint counts as reached
+	closedLimit			: LREAL := 1; //at or below this % the actuator reports closed
+	openLimit			: LREAL := 99; //at or above this % the actuator reports open
+	
+	//Output scaling
+	outRawAtClosed		: LREAL := 0; //raw output at 0 % (EL40xx 4-20 mA / 0-10 V: 0)
+	outRawAtOpen		: LREAL := 32767; //raw output at 100 % (EL40xx: 32767). Swap the two for reverse acting
+	
+	//Feedback configuration
+	positionFdbk		: ST_AnalogInputConfiguration := (inputId := 'Position', units := '%', euMin := 0, euMax := 100); //position feedback configuration
+	noFdbk				: BOOL; //no position feedback, position is simulated from strokeTime
+	strokeTime			: TIME := T#10S; //full stroke time used for simulation or no feedback
+	
+	//Permissive/interlock configuration
+	intlk				: ST_PermissiveConfiguration; //losing these moves the actuator to safePosition
+	perm				: ST_PermissiveConfiguration; //required to move away from safePosition
+	
+	//Configure monitoring timers
+	failTimePositioning	: TIME := T#30S; //positioning longer than this faults
+	opTimeout			: TIME := T#300S; //how long operator override stays on without commands
+	opTimeoutEnable		: BOOL := TRUE;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

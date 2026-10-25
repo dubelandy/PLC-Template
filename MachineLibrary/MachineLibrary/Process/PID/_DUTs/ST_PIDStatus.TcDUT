@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_PIDStatus" Id="{41ea92ee-cd08-4dc6-8ed7-82a7c4960bdc}">
+    <Declaration><![CDATA[TYPE ST_PIDStatus EXTENDS ST_DeviceStatus :
+STRUCT
+	loopMode			: E_PIDLoopMode := E_PIDLoopMode.Off; //current loop mode
+	closedLoop			: BOOL; //loop mode is Setpoint or Ratio
+	
+	pv					: LREAL; //process value
+	setpoint			: LREAL; //active setpoint (local or ratio)
+	localSetpoint		: LREAL; //setpoint used in Setpoint mode
+	ratio				: LREAL; //ratio used in Ratio mode
+	wildValue			: LREAL; //wild (uncontrolled) value used in Ratio mode
+	error				: LREAL; //setpoint - PV
+	
+	output				: LREAL; //controller output in %
+	manualOutput		: LREAL; //output used in OpenLoop mode
+	pTerm				: LREAL; //proportional part of the output
+	iTerm				: LREAL; //integral part of the output
+	dTerm				: LREAL; //derivative part of the output
+	saturatedHigh		: BOOL; //output at outputMax
+	saturatedLow		: BOOL; //output at outputMin
+	
+	deviationAlarm		: BOOL; //|setpoint - PV| above deviationLimit for deviationDelay
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

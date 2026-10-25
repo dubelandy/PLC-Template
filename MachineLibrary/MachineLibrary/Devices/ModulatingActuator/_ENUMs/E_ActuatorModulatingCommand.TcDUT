@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_ActuatorModulatingCommand" Id="{4755cde8-08b0-4427-a3fb-90496f236db4}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_ActuatorModulatingCommand :
+(
+	None		:= 0, //no command
+	Close		:= 1, //go to cfg.minPosition
+	Open		:= 2, //go to cfg.maxPosition
+	Position	:= 3 //go to the requested position (opPosition or SetPosition)
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

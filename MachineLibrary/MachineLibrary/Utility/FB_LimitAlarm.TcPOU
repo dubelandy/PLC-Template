@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_LimitAlarm" Id="{15488189-7294-462f-928a-2f67960bcc3c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_LimitAlarm
+(*
+	One high or low limit alarm with deadband, on-delay and optional latching.
+	High alarm: on when value >= limit for delay, off when value < limit - deadband.
+	Low alarm:  on when value <= limit for delay, off when value > limit + deadband.
+	A latched alarm stays on until reset is TRUE and the condition has cleared.
+*)
+VAR_INPUT
+	value				: LREAL; //value to check
+	limit				: LREAL; //alarm limit
+	highAlarm			: BOOL; //TRUE = high alarm, FALSE = low alarm
+	enable				: BOOL; //alarm is enabled
+	deadband			: LREAL; //hysteresis before the condition clears
+	delay				: TIME; //condition must be present this long before the alarm turns on
+	latch				: BOOL; //alarm stays on until reset
+	reset				: BOOL; //reset a latched alarm (only clears once the condition is gone)
+END_VAR
+VAR_OUTPUT
+	active				: BOOL; //alarm is on
+	condition			: BOOL; //limit currently exceeded (before delay and latch)
+END_VAR
+VAR
+	//Timers
+	delayTimer			: TON; //on-delay
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[Evaluate();]]></ST>
+    </Implementation>
+    <Method Name="Evaluate" Id="{40fc6caa-278e-4531-b941-eb67b60b5ac4}">
+      <Declaration><![CDATA[METHOD PROTECTED Evaluate]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Condition with hysteresis
+IF highAlarm THEN
+	IF value >= limit THEN
+		condition := TRUE;
+	ELSIF value < limit - deadband THEN
+		condition := FALSE;
+	END_IF
+ELSE
+	IF value <= limit THEN
+		condition := TRUE;
+	ELSIF value > limit + deadband THEN
+		condition := FALSE;
+	END_IF
+END_IF
+condition := condition AND enable;
+
+delayTimer(IN := condition, PT := delay);
+
+IF latch THEN
+	active S= delayTimer.Q;
+	active R= reset AND NOT condition;
+ELSE
+	active := delayTimer.Q;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -18,7 +18,7 @@
     <LibraryReferences>{281383dd-322d-4a7c-9da0-90330d29b7eb}</LibraryReferences>
     <Company>PLC-Template</Company>
     <Title>MachineLibrary</Title>
-    <ProjectVersion>1.0.0.0</ProjectVersion>
+    <ProjectVersion>1.1.0.0</ProjectVersion>
     <DefaultNamespace>MachineLibrary</DefaultNamespace>
     <Author>Andy Dubel</Author>
     <Description>Reusable machine building blocks: devices (actuators, motors, inputs), modules, permissives, sequencer functions and utilities.</Description>
@@ -245,6 +245,78 @@
     <Compile Include="Utility\RTO.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Devices\AnalogInput\_DUTs\ST_AnalogAlarmEnables.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\AnalogInput\_DUTs\ST_AnalogInputConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\AnalogInput\_DUTs\ST_AnalogInputControl.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\AnalogInput\_DUTs\ST_AnalogInputFault.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\AnalogInput\_DUTs\ST_AnalogInputStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\AnalogInput\FB_AnalogInput.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\ModulatingActuator\_DUTs\ST_ActuatorModulatingConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\ModulatingActuator\_DUTs\ST_ActuatorModulatingFault.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\ModulatingActuator\_DUTs\ST_ActuatorModulatingFunctions.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\ModulatingActuator\_DUTs\ST_ActuatorModulatingStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\ModulatingActuator\_ENUMs\E_ActuatorModulatingCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\ModulatingActuator\_ENUMs\E_ActuatorModulatingFunctionParam.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\ModulatingActuator\_ENUMs\E_ActuatorModulatingState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Devices\ModulatingActuator\FB_ActuatorModulating.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\PID\_DUTs\ST_PIDConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\PID\_DUTs\ST_PIDFault.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\PID\_DUTs\ST_PIDOperatorValues.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\PID\_DUTs\ST_PIDStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\PID\_ENUMs\E_PIDCommand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\PID\_ENUMs\E_PIDLoopMode.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Process\PID\FB_PID.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Utility\F_ScaleLinear.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Utility\FB_DeltaTime.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Utility\FB_LimitAlarm.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="_General" />
@@ -288,6 +360,14 @@
     <Folder Include="Process\TriggerTell\_DUTs" />
     <Folder Include="Process\TriggerTell\_ENUMs" />
     <Folder Include="Utility" />
+    <Folder Include="Devices\AnalogInput" />
+    <Folder Include="Devices\AnalogInput\_DUTs" />
+    <Folder Include="Devices\ModulatingActuator" />
+    <Folder Include="Devices\ModulatingActuator\_DUTs" />
+    <Folder Include="Devices\ModulatingActuator\_ENUMs" />
+    <Folder Include="Process\PID" />
+    <Folder Include="Process\PID\_DUTs" />
+    <Folder Include="Process\PID\_ENUMs" />
   </ItemGroup>
   <ItemGroup>
     <PlaceholderReference Include="Tc2_Standard">

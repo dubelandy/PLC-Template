@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AnalogInputStatus" Id="{f8ac8a14-bbdc-4cb4-8791-bf73671da9e3}">
+    <Declaration><![CDATA[TYPE ST_AnalogInputStatus :
+STRUCT
+	value				: LREAL; //scaled, filtered value in engineering units, use this in logic
+	valueUnfiltered		: LREAL; //scaled value before the filter
+	raw					: LREAL; //raw input counts
+	units				: STRING(16); //copy of cfg.units for the HMI
+	
+	lowLow				: BOOL; //low-low alarm
+	low					: BOOL; //low warning
+	high				: BOOL; //high warning
+	highHigh			: BOOL; //high-high alarm
+	alarmActive			: BOOL; //low-low or high-high alarm on
+	warningActive		: BOOL; //low or high warning on
+	
+	sim					: BOOL; //in simulation
+	valid				: BOOL; //value comes from a good signal (or simulation)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

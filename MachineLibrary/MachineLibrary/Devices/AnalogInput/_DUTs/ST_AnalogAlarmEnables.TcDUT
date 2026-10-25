@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AnalogAlarmEnables" Id="{c57a44f0-de65-45df-ae42-938e71640188}">
+    <Declaration><![CDATA[TYPE ST_AnalogAlarmEnables :
+STRUCT
+	lowLow				: BOOL; //enable low-low alarm
+	low					: BOOL; //enable low warning
+	high				: BOOL; //enable high warning
+	highHigh			: BOOL; //enable high-high alarm
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

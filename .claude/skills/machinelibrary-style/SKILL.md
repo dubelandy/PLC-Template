@@ -18,6 +18,7 @@ Code in `MachineLibrary/` is a reusable TwinCAT 3 library (namespace `MachineLib
 | Thing | Pattern | Example |
 |---|---|---|
 | Function block | `FB_` + PascalCase | `FB_Actuator2State`, `FB_ExampleStation` |
+| Function | `F_` + PascalCase | `F_ScaleLinear` |
 | Interface | `I_` | `I_SpeedController` |
 | Struct | `ST_` | `ST_Actuator2StateStatus` |
 | Enum | `E_` | `E_ActuatorCommand` |
@@ -118,6 +119,9 @@ Rules:
 - **Interlocks vs permissives**: losing an interlock during motion triggers `PrvSafe()`; a permissive is only checked when a command starts.
 - **Simulation**: every device supports `ctrl.sim`. Outputs are forced off and feedback comes from timers (`cfg.homeNoFdbkTime`). The same timers cover devices configured without feedback.
 - **Mode**: never compute Auto/Manual yourself. `FB_Device` derives it from `ctrl.manualOvrde` and `parentCtrl.mode`. Callers pass `parentCtrl := childCtrl`.
+- **Analog command values** (positions, setpoints, ratios) follow the same Manual/Auto rule as commands. The operator writes `opX` (e.g. `opPosition`, `opValues.setpoint`) and issues `ocmd`; the program calls a method (`SetPosition(x)`, `Ratio(r)`) that stores `pX` and sets `pcmd`. Where values stay live between commands (like `FB_PID`), the side not in control is copied from the side in control every scan so switching mode never bumps.
+- **Inheritance**: extend `FB_Device` directly when a device's states differ from an existing device's. Don't extend a sibling device and fight its state machine (`FB_ActuatorModulating` extends `FB_Device`, not `FB_ActuatorAnalog`). Reuse through composition instead (`positionFdbk : FB_AnalogInput`).
+- **Inputs** (`FB_DigitalInput`, `FB_AnalogInput`) are not devices: they have no commands or Auto/Manual, so they don't extend `FB_Device`. They still use `cfg`, `ctrl` (sim, reset), `sts`, `fault`, and the HandleFaults pattern.
 
 ## Faults
 
@@ -180,7 +184,10 @@ StatusOut();       // stsX flags and timers
 - Tabs for indentation; align `:=` in blocks of related assignments.
 - One responsibility per method; the body only calls methods.
 - Comments explain *why* or the rule being enforced, not the syntax.
-- No magic numbers in logic: put them in `cfg` with a default, or in a `GVL_Lib_*Constants`.
+- No magic numbers in logic: put them in `cfg` with a default, or in a `GVL_Lib_*Constants` (FB-local `VAR CONSTANT` is fine for internal tolerances).
+- Time-based math (filters, ramps, integrals, simulated travel) uses an `FB_DeltaTime` instance for the scan time, never an assumed task cycle.
+- Use `F_ScaleLinear` for range conversion and `FB_LimitAlarm` for any limit alarm instead of writing them again.
+- Floating point: compare against limits with a small band, or snap to the limit after `LIMIT()`, so status bits like "at max" still turn on after rounding.
 - No hard-coded paths, hostnames, credentials or user names in library code; in the example they go in a `cfg` struct with a comment.
 - Delete experiments, test variables and commented-out code before committing.
 

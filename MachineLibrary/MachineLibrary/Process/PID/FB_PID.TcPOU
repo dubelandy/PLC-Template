@@ -1,0 +1,430 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_PID" Id="{c0565bc6-ce91-4676-8689-a6a4bae45924}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PID EXTENDS FB_Device
+(*
+	PID controller with ratio mode, for flow, level, pressure and temperature loops.
+	
+	Loop modes (E_PIDLoopMode), selected with ocmd/pcmd:
+		Off			output = cfg.outputOff
+		OpenLoop	output = manual output
+		Setpoint	PID on the local setpoint
+		Ratio		PID on setpoint = ratio x wildValue + cfg.ratioBias, e.g. dosing flow
+					proportional to a main flow
+	
+	Device mode decides who sets the values: in Manual the operator (ocmd, opValues),
+	in Auto the program (pcmd, SetSetpoint, SetRatio, SetOutput, or the mode methods).
+	
+	Bumpless: in Off and OpenLoop the integral tracks the output, and with
+	cfg.setpointTracksPv the setpoint follows the PV. Anti-windup stops integrating
+	while the output is limited. Derivative acts on the PV, filtered.
+	If inpPvBad is TRUE in closed loop, the output is held and the loop faults.
+*)
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg					: ST_PIDConfiguration; //configuration
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	ocmd				: E_PIDCommand; //operator command
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	opValues			: ST_PIDOperatorValues; //operator setpoint, ratio and manual output (Manual mode)
+	
+	(* External inputs
+	----------------------------------------------------------------------------------------------------*)
+	pv					: LREAL; //process value, e.g. FB_AnalogInput.sts.value
+	wildValue			: LREAL; //wild (uncontrolled) value for Ratio mode, e.g. main flow
+	inpPvBad			: BOOL; //PV signal is bad, e.g. NOT FB_AnalogInput.sts.valid
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	out					: LREAL; //controller output in %, e.g. to FB_ActuatorModulating.SetPosition
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts					: ST_PIDStatus;
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	fault				: ST_PIDFault;
+END_VAR
+VAR
+	//Command processing
+	pcmd				: E_PIDCommand; //program command
+	pcmdLast			: E_PIDCommand;
+	ocmdLast			: E_PIDCommand;
+	cmdReceived			: E_PIDCommand; //command accepted this scan
+	pSetpoint			: LREAL; //program setpoint
+	pRatio				: LREAL; //program ratio
+	pOutput				: LREAL; //program manual output
+	
+	//Controller state
+	integral			: LREAL; //integral term in % output
+	pvLast				: LREAL; //PV on the previous scan, for the derivative
+	pvSlopeFiltered		: LREAL; //filtered dPV/dt
+	firstScan			: BOOL := TRUE; //no derivative on the first scan
+	
+	//Alarms
+	deviationAlarm		: FB_LimitAlarm; //|error| above deviationLimit
+	
+	//Timers
+	deltaTime			: FB_DeltaTime; //scan time for the controller
+	
+	resetFault			: BOOL;
+END_VAR
+VAR CONSTANT
+	LIMIT_BAND			: LREAL := 1E-6; //output within this of a limit counts as at the limit (floating point rounding)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+Device();
+ProcessInputs();
+ProcessCommands();
+StateMachine();
+HandleFaults();
+ControlOutputs();
+StatusOut();]]></ST>
+    </Implementation>
+    <Method Name="Auto" Id="{6f7b12f7-ff57-4ec3-b9b2-bff1115c9a6c}">
+      <Declaration><![CDATA[METHOD PUBLIC Auto //program: closed loop on a setpoint
+VAR_INPUT
+	setpoint	: LREAL; //setpoint in PV units
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pSetpoint := setpoint;
+pcmd := E_PIDCommand.Setpoint;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ControlOutputs" Id="{568b6f2e-991b-4036-98bf-610feb1f91b8}">
+      <Declaration><![CDATA[METHOD PROTECTED ControlOutputs //PID calculation and output limits
+VAR
+	direction	: LREAL; //+1 reverse acting, -1 direct acting
+	target		: LREAL; //output before the rate limit
+	pvSlope		: LREAL; //unfiltered dPV/dt
+	tiSec		: LREAL; //integral time in s
+	tdSec		: LREAL; //derivative time in s
+	tfSec		: LREAL; //derivative filter in s
+	dt			: LREAL; //scan time in s
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[dt		:= deltaTime.dt;
+tiSec	:= TIME_TO_LREAL(cfg.ti) / 1000.0;
+tdSec	:= TIME_TO_LREAL(cfg.td) / 1000.0;
+tfSec	:= TIME_TO_LREAL(cfg.tdFilter) / 1000.0;
+direction := SEL(cfg.directActing, 1.0, -1.0);
+
+//Derivative on the PV (not the error) so setpoint changes don't kick the output
+IF firstScan OR dt <= 0 THEN
+	pvSlope := 0;
+	firstScan := FALSE;
+ELSE
+	pvSlope := (sts.pv - pvLast) / dt;
+END_IF
+pvLast := sts.pv;
+IF tfSec > 0 THEN
+	pvSlopeFiltered := pvSlopeFiltered + dt / (tfSec + dt) * (pvSlope - pvSlopeFiltered);
+ELSE
+	pvSlopeFiltered := pvSlope;
+END_IF
+
+sts.pTerm := direction * cfg.kp * sts.error;
+sts.dTerm := -direction * cfg.kp * tdSec * pvSlopeFiltered;
+
+CASE sts.loopMode OF
+	
+	E_PIDLoopMode.Setpoint, E_PIDLoopMode.Ratio:
+		//Anti-windup: only integrate when it moves the output away from a limit it is not at
+		IF tiSec > 0 AND NOT ((sts.output >= cfg.outputMax - LIMIT_BAND AND direction * sts.error > 0)
+							 OR (sts.output <= cfg.outputMin + LIMIT_BAND AND direction * sts.error < 0)) THEN
+			integral := integral + direction * cfg.kp * sts.error * dt / tiSec;
+		END_IF
+		IF tiSec <= 0 THEN
+			integral := 0;
+		END_IF
+		integral := LIMIT(cfg.outputMin - sts.pTerm - sts.dTerm, integral, cfg.outputMax - sts.pTerm - sts.dTerm);
+		target := sts.pTerm + integral + sts.dTerm;
+		
+	E_PIDLoopMode.OpenLoop:
+		target := sts.manualOutput;
+		
+ELSE // Off
+	target := cfg.outputOff;
+	
+END_CASE
+
+target := LIMIT(cfg.outputMin, target, cfg.outputMax);
+//Snap to the limit so it is exact after rounding
+IF target >= cfg.outputMax - LIMIT_BAND THEN
+	target := cfg.outputMax;
+ELSIF target <= cfg.outputMin + LIMIT_BAND THEN
+	target := cfg.outputMin;
+END_IF
+IF sts.loopMode = E_PIDLoopMode.Off THEN
+	target := cfg.outputOff; // outputOff may be outside the control range
+END_IF
+
+//Rate limit
+IF cfg.outputRateLimit > 0 AND sts.closedLoop THEN
+	sts.output := sts.output + LIMIT(-cfg.outputRateLimit * dt, target - sts.output, cfg.outputRateLimit * dt);
+ELSE
+	sts.output := target;
+END_IF
+
+//Bumpless transfer: outside closed loop the integral tracks the output
+IF NOT sts.closedLoop THEN
+	integral := sts.output - sts.pTerm - sts.dTerm;
+	IF sts.loopMode = E_PIDLoopMode.OpenLoop THEN
+		pOutput := opValues.output := sts.manualOutput;
+	END_IF
+ELSE
+	//Manual output follows the loop so switching to OpenLoop does not bump
+	pOutput := opValues.output := sts.manualOutput := sts.output;
+END_IF
+sts.iTerm := integral;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Device" Id="{359421ee-ae5d-4589-b7e0-abe53108efba}">
+      <Declaration><![CDATA[METHOD PROTECTED Device //map cfg to FB_Device and FB_Device to sts]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// to FB device
+opTimeout  			 := cfg.opTimeout;
+opTimeoutEnable 	 := cfg.opTimeoutEnable;
+opActivity 			 := ocmd <> E_PIDCommand.None;
+
+// from FB device
+sts.mode	   		 := mode;
+sts.modeAuto   		 := sts.mode = E_SystemMode.Auto;
+sts.modeManual 		 := sts.mode = E_SystemMode.Manual;
+sts.manualOvrde		 := ctrl.manualOvrde;
+sts.bypass 	   		 := ctrl.bypass;
+sts.sim		   		 := ctrl.sim;
+sts.parentConfigured := parentConfigured;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="HandleFaults" Id="{35e9c03b-52e6-4791-9977-6a2b6cdcffe3}">
+      <Declaration><![CDATA[METHOD PROTECTED HandleFaults]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fault.pvBad S= inpPvBad AND sts.closedLoop;
+//fault.ocmdNOK; // Set in ProcessCommands
+//fault.pcmdNOK; // Set in ProcessCommands
+
+(* ----- Handle Reset ----- *)
+IF resetFault THEN
+	fault.ocmdNOK R= TRUE;
+	fault.pcmdNOK R= TRUE;
+	fault.pvBad R= NOT inpPvBad; // only clears once the PV is good again
+END_IF
+resetFault := FALSE;
+
+(* ----- Map Fault Id ----- *)
+fault.id.0 := fault.ocmdNOK;
+fault.id.1 := fault.pcmdNOK;
+fault.id.2 := fault.pvBad;
+
+(* ----- Map Fault Text ----- *)
+IF fault.ocmdNOK THEN		fault.text := 'Operator command in Auto is not allowed';
+ELSIF fault.pcmdNOK THEN	fault.text := 'Program command in Manual is not allowed';
+ELSIF fault.pvBad THEN		fault.text := CONCAT(cfg.loopId, ' PV bad, output held');
+ELSE fault.text := '';
+END_IF
+
+(* ----- Set Active ----- *)
+fault.active := fault.id > 0;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Manual" Id="{246b751e-40e9-4496-8ecc-3a25beacab5f}">
+      <Declaration><![CDATA[METHOD PUBLIC Manual //program: open loop at a fixed output
+VAR_INPUT
+	output		: LREAL; //output in %
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pOutput := output;
+pcmd := E_PIDCommand.OpenLoop;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Off" Id="{a15d9aad-794b-4db9-a2eb-520c09d45ef3}">
+      <Declaration><![CDATA[METHOD PUBLIC Off //program: loop off]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_PIDCommand.Off;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ProcessCommands" Id="{16672a96-a407-4e2c-be5b-1023dfd456c0}">
+      <Declaration><![CDATA[METHOD PROTECTED ProcessCommands]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Check for new valid commands
+IF ctrl.reset THEN
+	PrvReset();
+ELSIF ocmd <> E_PIDCommand.None THEN
+	IF sts.modeManual THEN
+		cmdReceived := ocmd;
+	ELSE
+		fault.ocmdNOK := TRUE;
+	END_IF
+ELSIF pcmd <> E_PIDCommand.None THEN
+	IF sts.modeAuto THEN
+		cmdReceived := pcmd;
+	ELSE
+		fault.pcmdNOK := TRUE;
+	END_IF
+END_IF
+
+//Values: the operator owns them in Manual, the program in Auto. The other side is
+//kept equal, so switching mode does not change anything.
+IF sts.modeManual THEN
+	pSetpoint			:= opValues.setpoint;
+	pRatio				:= opValues.ratio;
+	pOutput				:= opValues.output;
+ELSE
+	opValues.setpoint	:= pSetpoint;
+	opValues.ratio		:= pRatio;
+	opValues.output		:= pOutput;
+END_IF
+sts.localSetpoint	:= pSetpoint;
+sts.ratio			:= pRatio;
+sts.manualOutput	:= pOutput;
+sts.localSetpoint	:= LIMIT(cfg.setpointMin, sts.localSetpoint, cfg.setpointMax);
+sts.ratio			:= LIMIT(cfg.ratioMin, sts.ratio, cfg.ratioMax);
+sts.manualOutput	:= LIMIT(cfg.outputMin, sts.manualOutput, cfg.outputMax);
+
+CASE cmdReceived OF
+	E_PIDCommand.Off:
+		sts.loopMode := E_PIDLoopMode.Off;
+	E_PIDCommand.OpenLoop:
+		sts.loopMode := E_PIDLoopMode.OpenLoop;
+	E_PIDCommand.Setpoint:
+		PrvCloseLoop(E_PIDLoopMode.Setpoint);
+	E_PIDCommand.Ratio:
+		PrvCloseLoop(E_PIDLoopMode.Ratio);
+END_CASE
+
+//Save last commands
+IF pcmd <> E_PIDCommand.None THEN
+	pcmdLast := pcmd;
+END_IF
+IF ocmd <> E_PIDCommand.None THEN
+	ocmdLast := ocmd;
+END_IF
+
+//Clear commands every scan
+cmdReceived	:= E_PIDCommand.None;
+pcmd		:= E_PIDCommand.None;
+ocmd		:= E_PIDCommand.None;
+ctrl.reset	:= FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ProcessInputs" Id="{a9dcf913-7ac9-4d5d-be38-92cd3150115f}">
+      <Declaration><![CDATA[METHOD PROTECTED ProcessInputs]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[deltaTime();
+
+sts.pv			:= pv;
+sts.wildValue	:= wildValue;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvCloseLoop" Id="{03f419f4-dfa4-492c-92a3-27ade66e44b7}">
+      <Declaration><![CDATA[METHOD PROTECTED PrvCloseLoop
+VAR_INPUT
+	loopMode	: E_PIDLoopMode; //Setpoint or Ratio
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF inpPvBad THEN // cannot close the loop on a bad PV
+	fault.pvBad S= TRUE;
+ELSE
+	sts.loopMode := loopMode;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvReset" Id="{56dc3802-ad3e-49f7-bf88-68657f64f0b5}">
+      <Declaration><![CDATA[METHOD PROTECTED PrvReset //Reset the loop]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[resetFault S= TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Ratio" Id="{f9b4ba3f-72db-4120-a08f-b12f4a9b7deb}">
+      <Declaration><![CDATA[METHOD PUBLIC Ratio //program: closed loop on ratio x wildValue + cfg.ratioBias
+VAR_INPUT
+	ratio		: LREAL; //ratio
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pRatio := ratio;
+pcmd := E_PIDCommand.Ratio;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetOutput" Id="{030395d2-e421-4926-9461-a1ab9df16968}">
+      <Declaration><![CDATA[METHOD PUBLIC SetOutput //program: change the manual output without changing mode
+VAR_INPUT
+	output		: LREAL; //output in %
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pOutput := output;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetRatio" Id="{6fc2908a-ff22-4554-9d89-61e40629c84a}">
+      <Declaration><![CDATA[METHOD PUBLIC SetRatio //program: change the ratio without changing mode
+VAR_INPUT
+	ratio		: LREAL; //ratio
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pRatio := ratio;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetSetpoint" Id="{17329377-891f-47d0-a901-d0537959adf6}">
+      <Declaration><![CDATA[METHOD PUBLIC SetSetpoint //program: change the setpoint without changing mode
+VAR_INPUT
+	setpoint	: LREAL; //setpoint in PV units
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pSetpoint := setpoint;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{a3e7e3c1-3042-40c4-8ab9-adee7a2fbecc}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine //active setpoint and error]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//A bad PV in closed loop holds the current output in OpenLoop
+IF inpPvBad AND sts.closedLoop THEN
+	fault.pvBad S= TRUE;
+	pOutput := opValues.output := sts.output;
+	sts.manualOutput := sts.output;
+	sts.loopMode := E_PIDLoopMode.OpenLoop;
+END_IF
+
+sts.closedLoop := sts.loopMode = E_PIDLoopMode.Setpoint OR sts.loopMode = E_PIDLoopMode.Ratio;
+
+CASE sts.loopMode OF
+	E_PIDLoopMode.Ratio:
+		sts.setpoint := LIMIT(cfg.setpointMin, sts.ratio * sts.wildValue + cfg.ratioBias, cfg.setpointMax);
+	E_PIDLoopMode.Setpoint:
+		sts.setpoint := sts.localSetpoint;
+ELSE
+	//Open loop: setpoint follows the PV so closing the loop does not bump
+	IF cfg.setpointTracksPv THEN
+		pSetpoint := opValues.setpoint := sts.localSetpoint := LIMIT(cfg.setpointMin, sts.pv, cfg.setpointMax);
+	END_IF
+	sts.setpoint := sts.localSetpoint;
+END_CASE
+
+sts.error := sts.setpoint - sts.pv;
+
+deviationAlarm(value := ABS(sts.error), limit := cfg.deviationLimit, highAlarm := TRUE,
+			   enable := cfg.deviationEnable AND sts.closedLoop, deadband := cfg.deviationLimit * 0.1,
+			   delay := cfg.deviationDelay, latch := FALSE, reset := FALSE);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusOut" Id="{757cfed1-89b5-4407-8ffe-70f651f49e19}">
+      <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sts.saturatedHigh	:= sts.closedLoop AND sts.output >= cfg.outputMax;
+sts.saturatedLow	:= sts.closedLoop AND sts.output <= cfg.outputMin;
+sts.deviationAlarm	:= deviationAlarm.active;
+out					:= sts.output;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

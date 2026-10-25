@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_PIDCommand" Id="{8f4d9b8f-e3eb-403d-a033-bf462009bb6b}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_PIDCommand :
+(
+	None		:= 0, //no command
+	Off			:= 1, //output to cfg.outputOff, controller off
+	OpenLoop	:= 2, //output held at the manual output value
+	Setpoint	:= 3, //closed loop on the setpoint
+	Ratio		:= 4 //closed loop on ratio x wildValue + cfg.ratioBias
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,417 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_ActuatorModulating" Id="{43507db8-010e-47b6-b5b4-a9b43a020762}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ActuatorModulating EXTENDS FB_Device
+(*
+	Continuous-position actuator: control valve, damper, any 0-100 % analog-positioned device.
+	0 % = closed, 100 % = open. The output ramps to the setpoint at cfg.rampRate and is
+	scaled to raw counts for an analog output terminal.
+	
+	Interlocks: losing them moves the actuator to cfg.safePosition. Permissives are required
+	to move away from the safe position.
+	
+	Feedback: position comes from positionFdbk (FB_AnalogInput). In simulation, or with
+	cfg.noFdbk, the position follows the output at the speed set by cfg.strokeTime.
+	Simulation holds the physical output at 0.
+*)
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg					: ST_ActuatorModulatingConfiguration; //configuration
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	ocmd				: E_ActuatorModulatingCommand; //operator command
+	{attribute 'OPC.UA.DA' := '1'}
+	opPosition			: LREAL; //operator target position in %, used with ocmd Position
+	
+	func				: ST_ActuatorModulatingFunctions; //functions
+	
+	(* Interlocks/Permissives
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	intlk				: FB_Permissive; //losing these moves the actuator to safePosition
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	perm				: FB_Permissive; //required to move away from safePosition
+	
+	(* External inputs
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	positionFdbk		: FB_AnalogInput; //position feedback, link positionFdbk.inpRaw
+END_VAR
+VAR_OUTPUT
+	outRaw		AT %Q*	: INT; //analog output to the actuator, link to the terminal's Value
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts					: ST_ActuatorModulatingStatus;
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	fault				: ST_ActuatorModulatingFault;
+END_VAR
+VAR
+	//Command processing
+	pcmd				: E_ActuatorModulatingCommand; //program command
+	pPosition			: LREAL; //program target position in %, used with pcmd Position
+	pcmdLast			: E_ActuatorModulatingCommand;
+	ocmdLast			: E_ActuatorModulatingCommand;
+	cmdReceived			: E_ActuatorModulatingCommand; //command accepted this scan
+	targetReceived		: LREAL; //target position that came with cmdReceived
+	funcTarget			: LREAL; //target of the running ToPosition function
+	
+	//state variables for tracking
+	stateLastScan		: E_ActuatorModulatingState; //state on last scan
+	simPosition			: LREAL; //simulated position in %
+	
+	//Oneshot triggers
+	rtNewState			: BOOL; //just entered new state
+	
+	//Timers
+	deltaTime			: FB_DeltaTime; //scan time for ramp and simulation
+	positioningTimer	: TON; //time spent positioning
+	
+	resetFault			: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+Device();
+StatusIn();
+ProcessInputs();
+ProcessCommands();
+Functions();
+StateMachine();
+HandleFaults();
+ControlOutputs();
+StatusOut();]]></ST>
+    </Implementation>
+    <Method Name="Close" Id="{7457a5e1-323b-4c95-bd9b-940ce4e85636}">
+      <Declaration><![CDATA[METHOD PUBLIC Close]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_ActuatorModulatingCommand.Close;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ControlOutputs" Id="{b8e8a569-0e3a-4b23-b043-4cf62bea2298}">
+      <Declaration><![CDATA[METHOD PROTECTED ControlOutputs //Set physical outputs]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF sts.sim THEN //do not command outputs when simulated
+	outRaw := 0;
+ELSE
+	outRaw := LREAL_TO_INT(F_ScaleLinear(value := sts.commandPosition, inMin := 0, inMax := 100,
+										outMin := cfg.outRawAtClosed, outMax := cfg.outRawAtOpen, clamp := TRUE));
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Device" Id="{3092cebe-13b6-47f2-8c55-5d92fe2a9813}">
+      <Declaration><![CDATA[METHOD PROTECTED Device //map cfg to FB_Device and FB_Device to sts]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// to FB device
+opTimeout  			 := cfg.opTimeout;
+opTimeoutEnable 	 := cfg.opTimeoutEnable;
+opActivity 			 := ocmd <> E_ActuatorModulatingCommand.None;
+
+// from FB device
+sts.mode	   		 := mode;
+sts.modeAuto   		 := sts.mode = E_SystemMode.Auto;
+sts.modeManual 		 := sts.mode = E_SystemMode.Manual;
+sts.manualOvrde		 := ctrl.manualOvrde;
+sts.bypass 	   		 := ctrl.bypass;
+sts.sim		   		 := ctrl.sim;
+sts.parentConfigured := parentConfigured;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Functions" Id="{9f0fabeb-8524-4bed-81d9-5743a0094e09}">
+      <Declaration><![CDATA[METHOD PROTECTED Functions
+VAR
+	i : INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[func.ToPosition(hmiTextStatic := CONCAT(cfg.actuatorId, ' to position'), timeoutPT := cfg.failTimePositioning);
+func.ToPosition.permComplete.cfg.condText[0] := CONCAT(cfg.actuatorId, ' at position');
+IF func.ToPosition.entry THEN
+	funcTarget := sts.setpoint; // no Position parameter = stay where it is
+	FOR i := GVL_Lib_SequencerConstants.MIN_PARAMETERS TO GVL_Lib_SequencerConstants.MAX_PARAMETERS DO
+		IF func.ToPosition.arrParam[i].typeEnum = E_ActuatorModulatingFunctionParam.Position THEN
+			funcTarget := func.ToPosition.arrParam[i].value;
+		END_IF
+	END_FOR
+	SetPosition(funcTarget);
+END_IF
+IF func.ToPosition.running THEN
+	func.ToPosition.permComplete.perm.0 := sts.atPosition AND ABS(sts.setpoint - LIMIT(cfg.minPosition, funcTarget, cfg.maxPosition)) < 0.001;
+	IF NOT func.ToPosition.permComplete.perm.0 AND ABS(sts.setpoint - funcTarget) >= 0.001 AND NOT fault.active THEN
+		SetPosition(funcTarget); // continue calling if didn't work at first
+	END_IF
+	func.ToPosition.inpError := fault.active;
+	func.ToPosition.inpErrorText := fault.text;
+END_IF
+
+
+func.Open(hmiTextStatic := CONCAT(cfg.actuatorId, ' open'), timeoutPT := cfg.failTimePositioning);
+func.Open.permComplete.cfg.condText[0] := CONCAT(cfg.actuatorId, ' open');
+func.Open.permComplete.perm.0 := sts.atPosition AND sts.setpoint = cfg.maxPosition;
+IF func.Open.entry OR (func.Open.running AND sts.setpoint <> cfg.maxPosition AND NOT fault.active) THEN
+	Open();
+END_IF
+IF func.Open.running THEN
+	func.Open.inpError := fault.active;
+	func.Open.inpErrorText := fault.text;
+END_IF
+
+
+func.Close(hmiTextStatic := CONCAT(cfg.actuatorId, ' close'), timeoutPT := cfg.failTimePositioning);
+func.Close.permComplete.cfg.condText[0] := CONCAT(cfg.actuatorId, ' closed');
+func.Close.permComplete.perm.0 := sts.atPosition AND sts.setpoint = cfg.minPosition;
+IF func.Close.entry OR (func.Close.running AND sts.setpoint <> cfg.minPosition AND NOT fault.active) THEN
+	Close();
+END_IF
+IF func.Close.running THEN
+	func.Close.inpError := fault.active;
+	func.Close.inpErrorText := fault.text;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="HandleFaults" Id="{3c664065-467f-45bf-af80-27a24b791d17}">
+      <Declaration><![CDATA[METHOD PROTECTED HandleFaults]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fault.positionTimeout S= positioningTimer.Q;
+fault.feedbackFault S= positionFdbk.fault.active AND NOT (cfg.noFdbk OR sts.sim);
+//fault.intlkNOK; // Set in ProcessCommands and PrvPosition
+//fault.permNOK; // Set in PrvPosition
+//fault.ocmdNOK; // Set in ProcessCommands
+//fault.pcmdNOK; // Set in ProcessCommands
+
+(* ----- Handle Reset ----- *)
+IF resetFault THEN
+	fault.feedbackFault R= TRUE;
+	fault.intlkNOK R= TRUE;
+	fault.ocmdNOK R= TRUE;
+	fault.pcmdNOK R= TRUE;
+	fault.permNOK R= TRUE;
+	fault.positionTimeout R= TRUE;
+END_IF
+resetFault := FALSE;
+
+(* ----- Map Fault Id ----- *)
+fault.id.0 := fault.feedbackFault;
+fault.id.1 := fault.intlkNOK;
+fault.id.2 := fault.ocmdNOK;
+fault.id.3 := fault.pcmdNOK;
+fault.id.4 := fault.permNOK;
+fault.id.5 := fault.positionTimeout;
+
+(* ----- Map Fault Text ----- *)
+IF fault.feedbackFault THEN		fault.text := CONCAT(cfg.actuatorId, ' position feedback fault');
+ELSIF fault.intlkNOK THEN		fault.text := CONCAT(cfg.actuatorId, ' interlocks not OK');
+ELSIF fault.ocmdNOK THEN		fault.text := 'Operator command in Auto is not allowed';
+ELSIF fault.pcmdNOK THEN		fault.text := 'Program command in Manual is not allowed';
+ELSIF fault.permNOK THEN		fault.text := CONCAT(cfg.actuatorId, ' permissives not OK');
+ELSIF fault.positionTimeout THEN	fault.text := CONCAT(cfg.actuatorId, ' did not reach position');
+ELSE fault.text := '';
+END_IF
+
+(* ----- Set Active ----- *)
+fault.active := fault.id > 0;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Open" Id="{53938b8c-a9be-4c81-8566-1bb197c18216}">
+      <Declaration><![CDATA[METHOD PUBLIC Open]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pcmd := E_ActuatorModulatingCommand.Open;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ProcessCommands" Id="{a399af32-69a4-4773-8982-ea184bef2a85}">
+      <Declaration><![CDATA[METHOD PROTECTED ProcessCommands]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Check for new valid commands
+IF ctrl.reset THEN
+	PrvReset();
+ELSIF ocmd <> E_ActuatorModulatingCommand.None THEN
+	IF sts.modeManual THEN
+		cmdReceived := ocmd;
+		targetReceived := opPosition;
+	ELSE
+		fault.ocmdNOK := TRUE;
+	END_IF
+ELSIF pcmd <> E_ActuatorModulatingCommand.None THEN
+	IF sts.modeAuto THEN
+		cmdReceived := pcmd;
+		targetReceived := pPosition;
+	ELSE
+		fault.pcmdNOK := TRUE;
+	END_IF
+END_IF
+
+//Losing interlocks away from the safe position moves the actuator there
+IF NOT intlk.sts.ok AND sts.setpoint <> cfg.safePosition THEN
+	fault.intlkNOK S= TRUE;
+	PrvSafe();
+END_IF
+
+CASE cmdReceived OF
+	E_ActuatorModulatingCommand.Close:
+		PrvPosition(cfg.minPosition);
+	E_ActuatorModulatingCommand.Open:
+		PrvPosition(cfg.maxPosition);
+	E_ActuatorModulatingCommand.Position:
+		PrvPosition(targetReceived);
+END_CASE
+
+//Save last commands
+IF pcmd <> E_ActuatorModulatingCommand.None THEN
+	pcmdLast := pcmd;
+END_IF
+IF ocmd <> E_ActuatorModulatingCommand.None THEN
+	ocmdLast := ocmd;
+END_IF
+
+//Clear commands every scan
+cmdReceived	:= E_ActuatorModulatingCommand.None;
+pcmd		:= E_ActuatorModulatingCommand.None;
+ocmd		:= E_ActuatorModulatingCommand.None;
+ctrl.reset	:= FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ProcessInputs" Id="{b1df521e-83fe-40ba-b7d8-2ff3f0869409}">
+      <Declaration><![CDATA[METHOD PROTECTED ProcessInputs]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[deltaTime();
+
+//Call input FBs
+positionFdbk(cfg := cfg.positionFdbk);
+
+//Use the simulated position when simulated or without feedback. Otherwise the simulated
+//position tracks the real one, so switching to simulation does not jump.
+IF cfg.noFdbk OR sts.sim THEN
+	IF cfg.strokeTime > T#0S THEN
+		simPosition := simPosition + LIMIT(-100.0 * deltaTime.dt / (TIME_TO_LREAL(cfg.strokeTime) / 1000.0),
+										   sts.commandPosition - simPosition,
+										   100.0 * deltaTime.dt / (TIME_TO_LREAL(cfg.strokeTime) / 1000.0));
+	ELSE
+		simPosition := sts.commandPosition;
+	END_IF
+	sts.position := simPosition;
+ELSE
+	sts.position := positionFdbk.sts.value;
+	simPosition := sts.position;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvPosition" Id="{03aadde7-1384-4b87-aa0e-406e6569a9da}">
+      <Declaration><![CDATA[METHOD PROTECTED PrvPosition
+VAR_INPUT
+	target		: LREAL; //requested position in %
+END_VAR
+VAR
+	limited		: LREAL; //target within minPosition..maxPosition
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[limited := LIMIT(cfg.minPosition, target, cfg.maxPosition);
+
+IF limited = cfg.safePosition THEN // going to the safe position is always allowed
+	sts.setpoint := limited;
+ELSIF NOT intlk.sts.ok THEN // check intlk before moving away from safe
+	fault.intlkNOK S= TRUE;
+ELSIF NOT perm.sts.ok AND sts.setpoint = cfg.safePosition THEN // perm only needed to leave the safe position
+	fault.permNOK S= TRUE;
+ELSE
+	sts.setpoint := limited;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvReset" Id="{b8966cc4-8c63-4b40-a6ac-aa5d2e75aab0}">
+      <Declaration><![CDATA[METHOD PROTECTED PrvReset //Reset the device]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[resetFault S= TRUE;
+
+//Reset permissives/interlocks and feedback
+intlk.Reset();
+perm.Reset();
+positionFdbk.Reset();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvSafe" Id="{0a882f88-4765-4522-af42-64236a98b373}">
+      <Declaration><![CDATA[METHOD PROTECTED PrvSafe]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sts.setpoint := cfg.safePosition;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetPosition" Id="{73824b49-af45-4633-9006-8801b339ddde}">
+      <Declaration><![CDATA[METHOD PUBLIC SetPosition
+VAR_INPUT
+	position	: LREAL; //target position in %
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pPosition := position;
+pcmd := E_ActuatorModulatingCommand.Position;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{00cc7950-6830-4a7e-b9f1-91197a22503b}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Ramp the output toward the setpoint
+IF cfg.rampRate > 0 THEN
+	sts.commandPosition := sts.commandPosition + LIMIT(-cfg.rampRate * deltaTime.dt,
+													   sts.setpoint - sts.commandPosition,
+													   cfg.rampRate * deltaTime.dt);
+ELSE
+	sts.commandPosition := sts.setpoint;
+END_IF
+
+sts.positionError := sts.setpoint - sts.position;
+
+IF ABS(sts.positionError) > cfg.positionTolerance THEN
+	sts.state := E_ActuatorModulatingState.Positioning;
+ELSIF sts.position <= cfg.closedLimit THEN
+	sts.state := E_ActuatorModulatingState.Closed;
+ELSIF sts.position >= cfg.openLimit THEN
+	sts.state := E_ActuatorModulatingState.Open;
+ELSE
+	sts.state := E_ActuatorModulatingState.AtPosition;
+END_IF
+
+rtNewState := sts.state <> stateLastScan;
+IF rtNewState AND stateLastScan = E_ActuatorModulatingState.Positioning THEN
+	// Reached the setpoint, which is the only way out of Positioning: reset faults
+	sts.timeToPosition := positioningTimer.ET;
+	resetFault := TRUE;
+END_IF
+stateLastScan := sts.state;
+
+// Monitoring timers
+positioningTimer(IN := sts.state = E_ActuatorModulatingState.Positioning, PT := cfg.failTimePositioning);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusIn" Id="{d85b3c4b-6b37-4585-a33f-a44fe3de32c8}">
+      <Declaration><![CDATA[METHOD PROTECTED StatusIn]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Permissives and Interlocks
+intlk(bypActive := sts.bypass, cfg := cfg.intlk);
+perm(bypActive := sts.bypass, cfg := cfg.perm);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusOut" Id="{2af30c99-9d64-4d2a-a8a7-a5d847c8a7ea}">
+      <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sts.closed 		:= sts.state = E_ActuatorModulatingState.Closed;
+sts.open 		:= sts.state = E_ActuatorModulatingState.Open;
+sts.positioning	:= sts.state = E_ActuatorModulatingState.Positioning;
+sts.atPosition	:= NOT sts.positioning;
+
+sts.readyToMove	:= intlk.sts.ok AND perm.sts.ok;
+sts.safe		:= NOT intlk.sts.ok AND sts.setpoint = cfg.safePosition;
+sts.echoOutRaw	:= outRaw;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

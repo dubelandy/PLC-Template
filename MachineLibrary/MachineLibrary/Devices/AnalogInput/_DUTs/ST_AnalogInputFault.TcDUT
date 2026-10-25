@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AnalogInputFault" Id="{423608fb-d6c5-435d-8a7a-5b946c275be9}">
+    <Declaration><![CDATA[TYPE ST_AnalogInputFault :
+STRUCT
+	(* General error info
+	----------------------------------------------------------------------------------------------------*)
+	active				: BOOL;
+	id					: UDINT;
+	text				: T_MaxString;
+	
+	(* Signal error
+	----------------------------------------------------------------------------------------------------*)
+	inputError			: BOOL; //terminal reports an error (inpError)
+	overRange			: BOOL; //raw value above rawMax + rawTolerance
+	underRange			: BOOL; //raw value below rawMin - rawTolerance (e.g. broken 4-20 mA wire)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="F_ScaleLinear" Id="{197dd5eb-bcb4-425c-813d-be5f359862ba}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION F_ScaleLinear : LREAL //linear scaling from one range to another
+VAR_INPUT
+	value		: LREAL; //value to scale
+	inMin		: LREAL; //input range low
+	inMax		: LREAL; //input range high
+	outMin		: LREAL; //output range low
+	outMax		: LREAL; //output range high
+	clamp		: BOOL; //limit the result to the output range
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF inMax = inMin THEN //avoid divide by zero, return the low end of the output range
+	F_ScaleLinear := outMin;
+	RETURN;
+END_IF
+
+F_ScaleLinear := outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
+
+IF clamp THEN
+	F_ScaleLinear := LIMIT(MIN(outMin, outMax), F_ScaleLinear, MAX(outMin, outMax));
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

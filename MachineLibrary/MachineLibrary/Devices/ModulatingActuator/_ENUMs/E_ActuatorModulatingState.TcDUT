@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_ActuatorModulatingState" Id="{0fde29fa-af56-42f5-beff-1a5060f18fad}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_ActuatorModulatingState :
+(
+	Closed		:= 0, //at setpoint, position at or below cfg.closedLimit
+	Open		:= 1, //at setpoint, position at or above cfg.openLimit
+	AtPosition	:= 2, //at setpoint, somewhere in between
+	Positioning	:= 3 //moving toward the setpoint
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

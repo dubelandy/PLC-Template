@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_ActuatorModulatingStatus" Id="{4b39e57e-7dbc-4cab-9844-3f7e993f5ba9}">
+    <Declaration><![CDATA[TYPE ST_ActuatorModulatingStatus EXTENDS ST_DeviceStatus :
+STRUCT
+	state				: E_ActuatorModulatingState := E_ActuatorModulatingState.Closed; //actuator state
+	closed				: BOOL; //at setpoint and closed
+	open				: BOOL; //at setpoint and open
+	atPosition			: BOOL; //at setpoint (closed, open or in between)
+	positioning			: BOOL; //moving toward the setpoint
+	
+	setpoint			: LREAL; //requested position in %
+	commandPosition		: LREAL; //output position in % after the ramp
+	position			: LREAL; //actual position in % (feedback or simulated)
+	positionError		: LREAL; //setpoint - position
+	
+	readyToMove			: BOOL; //interlocks and permissives are good
+	safe				: BOOL; //held at safePosition because interlocks are not OK
+	echoOutRaw			: INT; //raw output for the HMI
+	timeToPosition		: TIME; //duration of the last positioning move
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

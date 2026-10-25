@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_ActuatorModulatingFault" Id="{ae4d40e9-ca50-4df0-bfbb-a237adf165a3}">
+    <Declaration><![CDATA[TYPE ST_ActuatorModulatingFault :
+STRUCT
+	(* General error info
+	----------------------------------------------------------------------------------------------------*)
+	active				: BOOL;
+	id					: UDINT;
+	text				: T_MaxString;
+	
+	(* Motion error
+	----------------------------------------------------------------------------------------------------*)
+	positionTimeout		: BOOL; //setpoint not reached within failTimePositioning
+	feedbackFault		: BOOL; //position feedback signal is bad
+	
+	(* Programming error
+	----------------------------------------------------------------------------------------------------*)
+	intlkNOK			: BOOL; //interlocks not OK
+	permNOK				: BOOL; //permissives not OK
+	ocmdNOK				: BOOL; //operator command in Auto is not allowed
+	pcmdNOK				: BOOL; //program command in Manual is not allowed
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

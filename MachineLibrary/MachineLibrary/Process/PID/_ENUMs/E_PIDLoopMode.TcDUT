@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_PIDLoopMode" Id="{5a65d57c-30ae-4f24-9733-54316f9f323c}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_PIDLoopMode :
+(
+	Off			:= 0, //output at cfg.outputOff
+	OpenLoop	:= 1, //output set directly (manual output)
+	Setpoint	:= 2, //PID on the setpoint
+	Ratio		:= 3 //PID on ratio x wildValue + cfg.ratioBias
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

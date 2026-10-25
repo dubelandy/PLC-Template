@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_PIDConfiguration" Id="{469b3cbf-224a-4989-bf73-e8814eb09c79}">
+    <Declaration><![CDATA[TYPE ST_PIDConfiguration :
+STRUCT
+	loopId				: T_DeviceNameString; //loop id shown in texts
+	
+	//Tuning (ISA form: out = kp * (e + 1/ti * integral(e) + td * de/dt))
+	kp					: LREAL := 1; //proportional gain (% output per unit of error)
+	ti					: TIME := T#10S; //integral time, T#0S = no integral
+	td					: TIME := T#0S; //derivative time, T#0S = no derivative
+	tdFilter			: TIME := T#1S; //derivative filter time constant
+	directActing		: BOOL; //FALSE: output rises when PV is below setpoint (heating). TRUE: output rises when PV is above setpoint (cooling)
+	
+	//Limits
+	outputMin			: LREAL := 0; //output low limit in %
+	outputMax			: LREAL := 100; //output high limit in %
+	outputOff			: LREAL := 0; //output when the loop is Off
+	outputRateLimit		: LREAL := 0; //max output change in %/s, 0 = no limit
+	setpointMin			: LREAL := 0; //setpoint low limit in PV units
+	setpointMax			: LREAL := 100; //setpoint high limit in PV units
+	
+	//Ratio mode: setpoint = ratio x wildValue + ratioBias
+	ratioMin			: LREAL := 0; //ratio low limit
+	ratioMax			: LREAL := 10; //ratio high limit
+	ratioBias			: LREAL := 0; //added to ratio x wildValue
+	
+	//Behavior
+	setpointTracksPv	: BOOL := TRUE; //in Off/OpenLoop the setpoint follows the PV, so closing the loop does not bump
+	
+	//Deviation alarm
+	deviationLimit		: LREAL := 10; //|setpoint - PV| above this alarms (PV units)
+	deviationDelay		: TIME := T#30S; //deviation must last this long before alarming
+	deviationEnable		: BOOL; //enable the deviation alarm
+	
+	opTimeout			: TIME := T#300S; //how long operator override stays on without commands
+	opTimeoutEnable		: BOOL := TRUE;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

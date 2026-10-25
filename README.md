@@ -83,12 +83,32 @@ Remote `START`/`STOP`/`RESET` commands on `plc-template/example/cmd` are **off b
 
 | Area | Blocks |
 |---|---|
-| Devices | `FB_Device` (base: Auto/Manual, override, bypass, sim, parent control), `FB_Actuator2State`, `FB_ActuatorAnalog`, `FB_DigitalInput`, `FB_Axis` (NC axis), `FB_VFD` (CiA402 / Schneider IO) |
+| Devices | `FB_Device` (base: Auto/Manual, override, bypass, sim, parent control), `FB_Actuator2State`, `FB_ActuatorAnalog` (two fixed analog values), `FB_ActuatorModulating` (continuous 0-100 % valve/damper with ramp, safe position, position feedback), `FB_DigitalInput`, `FB_AnalogInput` (scaling, filter, LL/L/H/HH alarms, bad-signal detection, sim value), `FB_Axis` (NC axis), `FB_VFD` (CiA402 / Schneider IO) |
 | Module | `FB_Module` (abstract Stopped/Starting/Started/Stopping state machine, passes mode to children through `childCtrl`) |
-| Process | `FB_Permissive` (16-bit permissive/interlock with bypass), `FB_SequencerFunction` (start/complete/timeout wrapper around a device action), `FB_TriggerTell` (handshake), `ST_ParentChildControl` |
-| Utility | `RTO` retentive timer |
+| Process | `FB_Permissive` (16-bit permissive/interlock with bypass), `FB_SequencerFunction` (start/complete/timeout wrapper around a device action), `FB_TriggerTell` (handshake), `FB_PID` (Off/OpenLoop/Setpoint/Ratio, anti-windup, bumpless), `ST_ParentChildControl` |
+| Utility | `RTO` retentive timer, `F_ScaleLinear`, `FB_DeltaTime` (scan time for time-based math), `FB_LimitAlarm` (high/low alarm with deadband, delay, latch) |
 
-Library dependencies: Tc2_Standard, Tc2_System, Tc2_Utilities, Tc2_MC2, Tc2_MC2_Drive.
+Library dependencies: Tc2_Standard, Tc2_System, Tc2_Utilities, Tc2_MC2, Tc2_MC2_Drive. `FB_PID` is self-contained, so it does not need the licensed TF4100 Controller Toolbox.
+
+### Wiring a control loop
+
+```
+flowMain    : FB_AnalogInput;          // wild flow
+flowDosing  : FB_AnalogInput;          // controlled flow (PV)
+dosingPid   : FB_PID;
+dosingValve : FB_ActuatorModulating;
+
+flowMain(); flowDosing();
+dosingPid(pv := flowDosing.sts.value, wildValue := flowMain.sts.value,
+          inpPvBad := NOT flowDosing.sts.valid, parentCtrl := childCtrl);
+dosingValve(parentCtrl := childCtrl);
+IF dosingPid.sts.closedLoop AND dosingValve.sts.modeAuto THEN // program commands only in Auto
+	dosingValve.SetPosition(dosingPid.out);
+END_IF
+
+// in the sequence: dosing at 0.25 x main flow
+dosingPid.Ratio(0.25);
+```
 
 ## Writing new code
 

@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_DeltaTime" Id="{13b6bf83-6c01-4540-b1bd-4c7d86ecca35}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DeltaTime
+(*
+	Time since this instance was last called, in seconds. Call once per scan.
+	Used by filters, ramps and controllers so they work at any task cycle time.
+	Returns 0 on the first call.
+*)
+VAR_OUTPUT
+	dt					: LREAL; //seconds since the previous call
+END_VAR
+VAR
+	lastTime			: ULINT; //system time of the previous call (100 ns units)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[Update();]]></ST>
+    </Implementation>
+    <Method Name="Update" Id="{e236c7ba-3c0c-41f9-9a07-fbe7af51ff44}">
+      <Declaration><![CDATA[METHOD PROTECTED Update
+VAR
+	now : ULINT; //current system time (100 ns units)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[now := F_GetSystemTime();
+IF lastTime = 0 OR now < lastTime THEN
+	dt := 0;
+ELSE
+	dt := ULINT_TO_LREAL(now - lastTime) * 1E-7;
+END_IF
+lastTime := now;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

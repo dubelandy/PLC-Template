@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_PIDFault" Id="{9fa75e8f-8372-4bff-ab6e-ce5535acee84}">
+    <Declaration><![CDATA[TYPE ST_PIDFault :
+STRUCT
+	(* General error info
+	----------------------------------------------------------------------------------------------------*)
+	active				: BOOL;
+	id					: UDINT;
+	text				: T_MaxString;
+	
+	(* Process error
+	----------------------------------------------------------------------------------------------------*)
+	pvBad				: BOOL; //PV signal bad while in closed loop, output held
+	
+	(* Programming error
+	----------------------------------------------------------------------------------------------------*)
+	ocmdNOK				: BOOL; //operator command in Auto is not allowed
+	pcmdNOK				: BOOL; //program command in Manual is not allowed
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

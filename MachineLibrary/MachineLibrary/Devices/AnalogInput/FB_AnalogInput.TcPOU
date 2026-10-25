@@ -1,0 +1,183 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_AnalogInput" Id="{704f71ff-09a4-4bad-a8c9-82d9e6354283}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_AnalogInput
+(*
+	Analog input for levels, temperatures, pressures and flows.
+	Scales raw counts to engineering units, filters, and raises low-low/low/high/high-high
+	alarms with deadband and delay. A raw value outside the expected range, or the terminal's
+	error bit, is a bad signal: the value holds its last good reading and the input faults.
+	
+	Simulation: set ctrl.sim and write ctrl.simValue (engineering units), e.g. from an HMI or
+	test tool over OPC UA. Alarms and filtering work the same in simulation.
+*)
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg					: ST_AnalogInputConfiguration; //configuration
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	ctrl				: ST_AnalogInputControl; //HMI control: simulation and reset
+	
+	(* External inputs
+	----------------------------------------------------------------------------------------------------*)
+	inpRaw		AT %I*	: INT; //raw value, link to the terminal's Value
+	inpError	AT %I*	: BOOL; //optional, link to the terminal's Error status bit
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts					: ST_AnalogInputStatus;
+	
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	fault				: ST_AnalogInputFault;
+END_VAR
+VAR
+	//Alarms
+	alarmLowLow			: FB_LimitAlarm;
+	alarmLow			: FB_LimitAlarm;
+	alarmHigh			: FB_LimitAlarm;
+	alarmHighHigh		: FB_LimitAlarm;
+	
+	//Filter
+	deltaTime			: FB_DeltaTime; //scan time for the filter
+	filterInit			: BOOL := TRUE; //start the filter at the first value instead of 0
+	
+	//Timers
+	badSignalTimer		: TON; //bad signal on-delay
+	
+	resetFault			: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[ProcessInputs();
+Alarms();
+HandleFaults();
+StatusOut();]]></ST>
+    </Implementation>
+    <Method Name="Alarms" Id="{b035433b-b3f6-4c0f-b42b-f43de2ad0b6d}">
+      <Declaration><![CDATA[METHOD PROTECTED Alarms //limit alarms on the filtered value]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[alarmLowLow(value := sts.value, limit := cfg.limits.LowLow, highAlarm := FALSE, enable := cfg.alarmEnable.lowLow,
+			deadband := cfg.alarmDeadband, delay := cfg.alarmDelay, latch := cfg.latchAlarms, reset := resetFault);
+alarmLow(value := sts.value, limit := cfg.limits.Low, highAlarm := FALSE, enable := cfg.alarmEnable.low,
+			deadband := cfg.alarmDeadband, delay := cfg.alarmDelay, latch := cfg.latchAlarms, reset := resetFault);
+alarmHigh(value := sts.value, limit := cfg.limits.High, highAlarm := TRUE, enable := cfg.alarmEnable.high,
+			deadband := cfg.alarmDeadband, delay := cfg.alarmDelay, latch := cfg.latchAlarms, reset := resetFault);
+alarmHighHigh(value := sts.value, limit := cfg.limits.HighHigh, highAlarm := TRUE, enable := cfg.alarmEnable.highHigh,
+			deadband := cfg.alarmDeadband, delay := cfg.alarmDelay, latch := cfg.latchAlarms, reset := resetFault);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DisableSimulation" Id="{fce167ad-b754-4840-9015-d49e60f3d5f4}">
+      <Declaration><![CDATA[METHOD PUBLIC DisableSimulation]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.sim := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EnableSimulation" Id="{ac4e78d9-666e-48a7-a321-8d117e3b0d10}">
+      <Declaration><![CDATA[METHOD PUBLIC EnableSimulation
+VAR_INPUT
+	value		: LREAL; //starting simulated value in engineering units
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.simValue := value;
+ctrl.sim := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="HandleFaults" Id="{a7533e8f-6db2-47d8-93e2-2bb9565b55f3}">
+      <Declaration><![CDATA[METHOD PROTECTED HandleFaults]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[badSignalTimer(IN := NOT ctrl.sim AND (inpError
+						OR sts.raw > cfg.rawMax + cfg.rawTolerance
+						OR sts.raw < cfg.rawMin - cfg.rawTolerance),
+			   PT := cfg.badSignalDelay);
+fault.inputError S= badSignalTimer.Q AND inpError;
+fault.overRange S= badSignalTimer.Q AND sts.raw > cfg.rawMax + cfg.rawTolerance;
+fault.underRange S= badSignalTimer.Q AND sts.raw < cfg.rawMin - cfg.rawTolerance;
+
+(* ----- Handle Reset ----- *)
+//Signal faults clear on reset only once the signal is good again
+IF resetFault AND NOT badSignalTimer.Q THEN
+	fault.inputError R= TRUE;
+	fault.overRange R= TRUE;
+	fault.underRange R= TRUE;
+END_IF
+resetFault := FALSE;
+
+(* ----- Map Fault Id ----- *)
+fault.id.0 := fault.inputError;
+fault.id.1 := fault.overRange;
+fault.id.2 := fault.underRange;
+
+(* ----- Map Fault Text ----- *)
+IF fault.inputError THEN		fault.text := CONCAT(cfg.inputId, ' input error');
+ELSIF fault.overRange THEN		fault.text := CONCAT(cfg.inputId, ' over range');
+ELSIF fault.underRange THEN		fault.text := CONCAT(cfg.inputId, ' under range (wire break?)');
+ELSE fault.text := '';
+END_IF
+
+(* ----- Set Active ----- *)
+fault.active := fault.id > 0;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ProcessInputs" Id="{70373f9a-2d38-4768-bc85-166dc20bb7c7}">
+      <Declaration><![CDATA[METHOD PROTECTED ProcessInputs //scale, simulate and filter
+VAR
+	alpha : LREAL; //filter factor for this scan
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF ctrl.reset THEN
+	resetFault := TRUE;
+	ctrl.reset := FALSE;
+END_IF
+
+deltaTime();
+sts.raw := INT_TO_LREAL(inpRaw);
+
+//Select source. A bad signal holds the last good value.
+IF ctrl.sim THEN
+	sts.valueUnfiltered := ctrl.simValue;
+ELSIF NOT (inpError
+		OR sts.raw > cfg.rawMax + cfg.rawTolerance
+		OR sts.raw < cfg.rawMin - cfg.rawTolerance) THEN
+	sts.valueUnfiltered := F_ScaleLinear(value := sts.raw, inMin := cfg.rawMin, inMax := cfg.rawMax,
+										outMin := cfg.euMin, outMax := cfg.euMax, clamp := cfg.clamp);
+END_IF
+
+//First-order filter: value moves toward the input with time constant filterTime
+IF filterInit OR cfg.filterTime <= T#0S THEN
+	sts.value := sts.valueUnfiltered;
+	filterInit := FALSE;
+ELSE
+	alpha := deltaTime.dt / (TIME_TO_LREAL(cfg.filterTime) / 1000.0 + deltaTime.dt);
+	sts.value := sts.value + alpha * (sts.valueUnfiltered - sts.value);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{e88c54c7-4d62-44ec-9e79-b020c71dd9a0}">
+      <Declaration><![CDATA[METHOD PUBLIC Reset]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ctrl.reset := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusOut" Id="{0da38d58-1dc2-4f42-ad4b-82b52bdc9cc6}">
+      <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sts.lowLow			:= alarmLowLow.active;
+sts.low				:= alarmLow.active;
+sts.high			:= alarmHigh.active;
+sts.highHigh		:= alarmHighHigh.active;
+sts.alarmActive		:= sts.lowLow OR sts.highHigh;
+sts.warningActive	:= sts.low OR sts.high;
+
+sts.sim				:= ctrl.sim;
+sts.valid			:= ctrl.sim OR NOT badSignalTimer.IN;
+sts.units			:= cfg.units;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>
