@@ -19,19 +19,15 @@ VAR_INPUT
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	fwdIntlk			: FB_Permissive; //Interlocks to stop/prevent forward motion
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	fwdPerm				: FB_Permissive; //Permissives to start forward motion
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	revIntlk			: FB_Permissive; //Interlocks to stop/prevent reverse motion
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	revPerm				: FB_Permissive; //Permissives to start reverse motion
 	
 	(* External inputs

@@ -24,16 +24,13 @@ VAR_INPUT
 	(* Devices
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	actuatorA			: FB_Actuator2State := (cfg := (actuatorId := 'Actuator A', homeNoFdbk := TRUE, workNoFdbk := TRUE));
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	actuatorB			: FB_Actuator2State := (cfg := (actuatorId := 'Actuator B', homeNoFdbk := TRUE, workNoFdbk := TRUE));
 	
 	(* Communication
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	transaction			: FB_ExampleTransaction := (cfg := (commTimeout := T#10S)); //job request/response with the software
 END_VAR
 VAR_OUTPUT

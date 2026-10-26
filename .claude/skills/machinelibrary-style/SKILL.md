@@ -111,7 +111,9 @@ END_VAR
   (* Interlocks/Permissives
   ----------------------------------------------------------------------------------------------------*)
   ```
-- **OPC UA**: anything the HMI reads or writes gets `{attribute 'OPC.UA.DA' := '1'}`. Add `{attribute 'OPC.UA.DA.StructuredType' := '1'}` for structs/FBs, and `{attribute 'OPC.UA.DA.Access' := '1'}` when it is read-only (`sts`, `fault`, permissives).
+- **OPC UA**: anything the HMI reads or writes gets `{attribute 'OPC.UA.DA' := '1'}`, and `{attribute 'OPC.UA.DA.Access' := '1'}` when it is read-only (`sts`, `fault`, permissives).
+  - `{attribute 'OPC.UA.DA.StructuredType' := '1'}` goes on **struct** variables only (`cfg`, `sts`, `fault`, `ctrl`). Never on function block instances: the server tries to build one OPC UA type for the whole FB and fails with "CreateStructureType … exceeds valid size". FB instances are published as folders of their members without it.
+  - Internal FB instances that hold pointers or interfaces (e.g. Tc3_IotBase MQTT clients) get `{attribute 'OPC.UA.DA' := '0'}` so the server doesn't try to publish them ("Unsupported datatype … UXINT").
 - **Enums** always have `{attribute 'qualified_only'}`, `{attribute 'strict'}`, `{attribute 'to_string'}`, explicit values, and a comment per value. Command enums start with `None := 0`.
 - Status structs of devices `EXTENDS ST_DeviceStatus`. Modules keep their own status in `stsX` because `FB_Module` already owns `sts`.
 - Don't name a type the same as one in a referenced Beckhoff library (e.g. `ST_AxisStatus` exists in Tc2_MC2, so ours is `ST_AxisDeviceStatus`).

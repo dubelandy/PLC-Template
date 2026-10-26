@@ -132,11 +132,9 @@ VAR_INPUT
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	runIntlk			: FB_Permissive; //interlocks that stop/prevent running
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	runPerm				: FB_Permissive; //permissives required to start
 	
 	(* External inputs
@@ -481,7 +479,6 @@ VAR_INPUT
 	(* Devices
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	device				: FB_TemplateDevice := (cfg := (deviceId := 'Device 1', noFdbk := TRUE));
 END_VAR
 VAR_OUTPUT

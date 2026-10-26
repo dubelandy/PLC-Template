@@ -10,10 +10,8 @@ VAR_INPUT
 	(* Stations
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	exampleStation		: FB_ExampleStation;
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	dosingStation		: FB_DosingStation; //ratio control loop example
 	
 	(* Communication
@@ -23,7 +21,8 @@ VAR_INPUT
 	cfgMqtt				: ST_MqttConfiguration; //MQTT configuration
 END_VAR
 VAR
-	mqtt				: FB_MqttStatePublisher;
+	{attribute 'OPC.UA.DA' := '0'} // internal MQTT client holds pointers OPC UA can't publish; status is in cfgMqtt/dashboard
+	mqtt				: FB_MqttStatePublisher; //MQTT state publisher
 END_VAR
 ]]></Declaration>
     <Implementation>

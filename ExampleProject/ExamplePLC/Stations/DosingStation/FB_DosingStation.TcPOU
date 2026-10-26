@@ -28,16 +28,12 @@ VAR_INPUT
 	(* Devices
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	flowMain			: FB_AnalogInput := (cfg := (inputId := 'Main flow', units := 'l/min', euMax := 400, filterTime := T#500MS, limits := (LowLow := 50, Low := 100, High := 350, HighHigh := 380), alarmEnable := (lowLow := TRUE, low := TRUE, high := TRUE, highHigh := TRUE)));
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	flowDosing			: FB_AnalogInput := (cfg := (inputId := 'Dosing flow', units := 'l/min', euMax := 100, filterTime := T#500MS));
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	dosingPid			: FB_PID := (cfg := (loopId := 'Dosing', kp := 1.5, ti := T#3S, setpointMax := 100, ratioMax := 1, deviationEnable := TRUE, deviationLimit := 10));
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	dosingValve			: FB_ActuatorModulating := (cfg := (actuatorId := 'Dosing valve', noFdbk := TRUE, strokeTime := T#10S, failTimePositioning := T#30S));
 END_VAR
 VAR_OUTPUT

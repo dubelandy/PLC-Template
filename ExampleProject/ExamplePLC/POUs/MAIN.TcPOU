@@ -4,16 +4,13 @@
     <Declaration><![CDATA[PROGRAM MAIN
 VAR
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	machine		: FB_Machine; //top-level module, start/stop with machine.ocmd
 	
 	(* Test harness
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	softwareSim	: FB_ExampleSoftwareSim; //plays the software side of the station's trigger/tell
 	{attribute 'OPC.UA.DA' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	dosingSim	: FB_DosingProcessSim; //simulates the dosing station's flows
 END_VAR
 ]]></Declaration>

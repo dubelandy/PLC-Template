@@ -17,19 +17,15 @@ VAR_INPUT
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}	
 	workIntlk				: FB_Permissive; //Interlocks to prevent motion towards work
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}	
 	workPerm				: FB_Permissive; //Permissives to prevent start of motion towards work
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	homeIntlk				: FB_Permissive; //Interlocks to prevent motion towards home
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	homePerm				: FB_Permissive; //Permissives to prevent start of motion towards home
 	
 	(* External inputs

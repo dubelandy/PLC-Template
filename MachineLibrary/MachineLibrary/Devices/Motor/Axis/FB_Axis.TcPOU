@@ -22,19 +22,15 @@ VAR_INPUT
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	fwdIntlk		: FB_Permissive;	
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	fwdPerm			: FB_Permissive; 
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	revIntlk		: FB_Permissive; 
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	revPerm			: FB_Permissive; 
 	
 	(* External inputs

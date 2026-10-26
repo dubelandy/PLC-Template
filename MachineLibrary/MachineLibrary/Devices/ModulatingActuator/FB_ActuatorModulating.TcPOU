@@ -30,18 +30,15 @@ VAR_INPUT
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	intlk				: FB_Permissive; //losing these moves the actuator to safePosition
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	perm				: FB_Permissive; //required to move away from safePosition
 	
 	(* External inputs
 	----------------------------------------------------------------------------------------------------*)
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.Access' := '1'}
-	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	positionFdbk		: FB_AnalogInput; //position feedback, link positionFdbk.inpRaw
 END_VAR
 VAR_OUTPUT
