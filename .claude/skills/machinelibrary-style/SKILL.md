@@ -219,7 +219,7 @@ StatusOut();       // stsX flags and timers
 - Every new object needs a fresh GUID in `Id="{...}"`. Object `Name`, file name and the name in the declaration must match.
 - Method folders are `<Folder Name="Public" Id="{...}"><Folder Name="Commands" Id="{...}" /></Folder>` elements right after the POU's `</Implementation>`, and each method carries `FolderPath="Public\Commands\"`.
 - Stale `<LineIds>` blocks can be deleted; TwinCAT regenerates them.
-- After changing the library, bump `ProjectVersion` in `MachineLibrary.plcproj` and reinstall it.
+- After changing the library, bump `ProjectVersion` in `MachineLibrary.plcproj` and reinstall it. Bump on every change that will be installed, even small ones: the open solution keeps the installed version's file locked, so installing the same version again fails with "being used by another process".
 
 ## Templates
 

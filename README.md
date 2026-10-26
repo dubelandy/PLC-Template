@@ -40,7 +40,7 @@ Only activate ExampleProject. MachineLibrary is a library and has nothing to run
 
 Both projects run real-time on an isolated core (core 19 of 20, set in each `.tsproj` under SYSTEM → Real-Time). If your PC has a different core count, change it there before activating. Never run real-time on a core shared with Windows on a laptop: it can crash the PC.
 
-After changing the library, bump `ProjectVersion` in the library properties and install it again.
+After changing the library, bump `ProjectVersion` in the library properties and install it again. Always use a new version number: TwinCAT keeps the installed version's file open while the solution is open, so reinstalling the same version fails with "The process cannot access the file … because it is being used by another process".
 
 ## The example machine
 
