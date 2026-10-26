@@ -63,7 +63,10 @@ Connection();
 Publish();
 Subscribe();]]></ST>
     </Implementation>
-    <Method Name="Connection" Id="{660b978b-e2fa-4419-b410-49ca8e38d057}">
+    <Folder Name="Protected" Id="{56a753b0-18bd-4520-aac6-08fd767b3d43}">
+      <Folder Name="Logic" Id="{1255de8a-ff73-420b-b205-094ba04e24cb}" />
+    </Folder>
+    <Method Name="Connection" Id="{660b978b-e2fa-4419-b410-49ca8e38d057}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Connection //keep the client connected (must run every scan)]]></Declaration>
       <Implementation>
         <ST><![CDATA[client.Execute(bConnect := TRUE);
@@ -73,7 +76,7 @@ sts.error 		:= client.bError;
 sts.errorCode 	:= client.hrErrorCode;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Init" Id="{7a96b654-6646-479a-b904-1f1a95b12a04}">
+    <Method Name="Init" Id="{7a96b654-6646-479a-b904-1f1a95b12a04}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Init : BOOL]]></Declaration>
       <Implementation>
         <ST><![CDATA[client.sHostName 		:= cfg.hostName;
@@ -82,7 +85,7 @@ client.ipMessageQueue 	:= queue; //route received messages into the queue
 Init := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Publish" Id="{b68a4eed-13d5-4774-8043-4bb6f68e1d07}">
+    <Method Name="Publish" Id="{b68a4eed-13d5-4774-8043-4bb6f68e1d07}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Publish //publish on state change and every publishInterval]]></Declaration>
       <Implementation>
         <ST><![CDATA[publishTimer(IN := sts.connected AND NOT publishTimer.Q, PT := cfg.publishInterval);
@@ -115,7 +118,7 @@ IF publishRequest AND sts.connected THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Subscribe" Id="{d0792e11-57a8-4057-8145-9cd66e36b136}">
+    <Method Name="Subscribe" Id="{d0792e11-57a8-4057-8145-9cd66e36b136}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Subscribe //receive remote commands]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF NOT cfg.enableRemoteCommands THEN

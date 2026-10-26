@@ -56,7 +56,14 @@ Devices();
 Permissives();
 StatusOut();]]></ST>
     </Implementation>
-    <Method Name="CloseAll" Id="{8e52d248-87df-4c42-99f6-9d9c54f47983}">
+    <Folder Name="Protected" Id="{e23fc091-61a6-4328-b2d5-222d594dc1f8}">
+      <Folder Name="Logic" Id="{eae64112-d142-48a0-b521-dc602e636cee}" />
+      <Folder Name="States" Id="{78beda1c-b282-44b8-97c0-52fabcb170bf}" />
+    </Folder>
+    <Folder Name="Public" Id="{a38f987d-ca93-474e-ab80-c214117163e7}">
+      <Folder Name="Control" Id="{945794ed-2e4e-4654-93eb-8e546ac0d6eb}" />
+    </Folder>
+    <Method Name="CloseAll" Id="{8e52d248-87df-4c42-99f6-9d9c54f47983}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED CloseAll //command all actuators to work (closed)]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF NOT actuatorA.sts.atWork AND NOT actuatorA.sts.goingToWork THEN
@@ -67,7 +74,7 @@ IF NOT actuatorB.sts.atWork AND NOT actuatorB.sts.goingToWork THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Devices" Id="{f44671b1-c0e4-43be-93bd-be3677fe4079}">
+    <Method Name="Devices" Id="{f44671b1-c0e4-43be-93bd-be3677fe4079}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Devices //call child devices]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Devices follow this module's mode through childCtrl
@@ -79,7 +86,7 @@ transaction();
 inpChildFaulted := actuatorA.fault.active OR actuatorB.fault.active;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="OpenAll" Id="{1e08200a-bb87-4855-85ad-e602e4fc47d6}">
+    <Method Name="OpenAll" Id="{1e08200a-bb87-4855-85ad-e602e4fc47d6}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED OpenAll //command all actuators to home (open)]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF NOT actuatorA.sts.atHome AND NOT actuatorA.sts.goingToHome THEN
@@ -90,7 +97,7 @@ IF NOT actuatorB.sts.atHome AND NOT actuatorB.sts.goingToHome THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Permissives" Id="{d88cb704-047f-4a29-9dd2-a0bdee56da70}">
+    <Method Name="Permissives" Id="{d88cb704-047f-4a29-9dd2-a0bdee56da70}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Permissives //set module permissives and interlocks]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Homing is complete when all actuators are open
@@ -112,8 +119,8 @@ IntlkAuto.perm.0 := NOT actuatorA.fault.active;
 IntlkAuto.perm.1 := NOT actuatorB.fault.active;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Reset" Id="{23c61360-e642-4960-8caa-c42cb99c1793}">
-      <Declaration><![CDATA[METHOD Reset : BOOL]]></Declaration>
+    <Method Name="Reset" Id="{23c61360-e642-4960-8caa-c42cb99c1793}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC Reset : BOOL]]></Declaration>
       <Implementation>
         <ST><![CDATA[actuatorA.Reset();
 actuatorB.Reset();
@@ -121,7 +128,7 @@ transaction.Reset();
 Reset := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Started" Id="{766cf290-1a71-461d-81fe-613336b7212d}">
+    <Method Name="Started" Id="{766cf290-1a71-461d-81fe-613336b7212d}" FolderPath="Protected\States\">
       <Declaration><![CDATA[METHOD PROTECTED Started : BOOL]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Running sequence: one trigger/tell transaction per close/open cycle
@@ -193,7 +200,7 @@ CASE stsStation.runStep OF
 END_CASE]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Starting" Id="{3fe50c0b-caad-4b2b-8963-ca5f99eef799}">
+    <Method Name="Starting" Id="{3fe50c0b-caad-4b2b-8963-ca5f99eef799}" FolderPath="Protected\States\">
       <Declaration><![CDATA[METHOD PROTECTED Starting : BOOL]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Homing: open all actuators, no transaction open
@@ -202,7 +209,7 @@ AbortTransaction();
 stsStation.runStep := E_ExampleStationRunStep.Idle;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StatusOut" Id="{9145cda4-cd6c-47f3-90f1-a708e1e13d88}">
+    <Method Name="StatusOut" Id="{9145cda4-cd6c-47f3-90f1-a708e1e13d88}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
       <Implementation>
         <ST><![CDATA[stsStation.allOpen 	:= actuatorA.sts.atHome AND actuatorB.sts.atHome;
@@ -218,7 +225,7 @@ cycleTimer(IN := stsStation.runStep = E_ExampleStationRunStep.Close
 			OR stsStation.runStep = E_ExampleStationRunStep.Open);]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Stopping" Id="{51f6e602-e616-41ff-b9af-086d08317e64}">
+    <Method Name="Stopping" Id="{51f6e602-e616-41ff-b9af-086d08317e64}" FolderPath="Protected\States\">
       <Declaration><![CDATA[METHOD PROTECTED Stopping : BOOL]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Finish in the safe position: all actuators open, transaction closed
@@ -227,7 +234,7 @@ AbortTransaction();
 stsStation.runStep := E_ExampleStationRunStep.Idle;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AbortTransaction" Id="{0f8ac1c9-2c94-41b9-873e-b37a0981dad2}">
+    <Method Name="AbortTransaction" Id="{0f8ac1c9-2c94-41b9-873e-b37a0981dad2}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED AbortTransaction //cancel an open transaction]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF transaction.sts.bBusy THEN
@@ -235,7 +242,7 @@ stsStation.runStep := E_ExampleStationRunStep.Idle;]]></ST>
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ValidateJob" Id="{8c3e32c7-7e51-442c-ad45-d75788e1cd57}">
+    <Method Name="ValidateJob" Id="{8c3e32c7-7e51-442c-ad45-d75788e1cd57}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED ValidateJob : BOOL //TRUE if the request can be worked on, sets lastRejectText otherwise
 VAR_INPUT
 	job			: ST_ExampleRequest;

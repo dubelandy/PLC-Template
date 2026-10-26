@@ -21,7 +21,9 @@ ExampleProject/
   ExampleProject.tsproj
   ExamplePLC/                    PLC application, references MachineLibrary
     POUs/                        MAIN, FB_Machine
-    Stations/ExampleStation/     FB_ExampleStation (two actuators)
+    Stations/ExampleStation/     FB_ExampleStation (two actuators, trigger/tell)
+    Stations/DosingStation/      FB_DosingStation (analog inputs, PID ratio control, modulating valve)
+    Simulation/                  Test harnesses: software side of trigger/tell, dosing process
     Communication/MQTT/          FB_MqttStatePublisher
 .claude/skills/                  Style guide for writing new MachineLibrary code
 Tools/OPCUA-Dashboard/           Web dashboard over OPC UA (TF6100) for the example machine
@@ -42,7 +44,7 @@ After changing the library, bump `ProjectVersion` in the library properties and 
 
 ## The example machine
 
-`MAIN` calls `machine : FB_Machine`, which owns one station, `exampleStation : FB_ExampleStation`, with two `FB_Actuator2State` instances (home = open, work = closed).
+`MAIN` calls `machine : FB_Machine`, which owns two stations: `exampleStation : FB_ExampleStation`, with two `FB_Actuator2State` instances (home = open, work = closed), and `dosingStation : FB_DosingStation`, a ratio control loop (see below). Start/Stop/Reset on the machine applies to both.
 
 | Machine command (`machine.ocmd`) | What happens |
 |---|---|
@@ -68,6 +70,33 @@ Each running cycle of the station is one `FB_TriggerTell` transaction (`FB_Examp
 | Rejected request | `softwareSim.cfg.sendInvalidRequest := TRUE` | Station aborts the transaction, `stsStation.jobsRejected` counts up, `lastRejectText` says why, `softwareSim.sts.aborts` counts up. |
 | Recipe value | `softwareSim.cfg.closeDwell := T#5S` | Actuators stay closed 5 s per cycle, `lastResponse.cycleTime` grows. |
 | Stop mid-transaction | `machine.ocmd := Stop` | Transaction aborted, actuators open, simulator resets to Idle. |
+
+### Dosing station: analog input, PID, modulating valve
+
+`FB_DosingStation` doses a flow in proportion to a main flow, the typical use of ratio control:
+
+```
+flowMain (FB_AnalogInput) ──wildValue──┐
+                                       ├─> dosingPid (FB_PID, Ratio) ──SetPosition──> dosingValve (FB_ActuatorModulating)
+flowDosing (FB_AnalogInput) ──pv───────┘                                                 │
+      ▲                                                                                  │
+      └──────────────────────── MAIN.dosingSim (process simulation) <────── position ───┘
+```
+
+| State | What happens |
+|---|---|
+| Starting | PID off, valve closed |
+| Started | PID in Ratio mode: dosing setpoint = `cfg.ratio` (0.2) × main flow |
+| Stopping | PID off, valve closed |
+
+The main flow's low-low alarm (50 l/min) is the valve's interlock: losing it closes the valve, faults it, and stops the station. `MAIN.dosingSim` swings the main flow around 200 l/min and makes the dosing flow follow the valve position, so it runs without hardware. For real I/O, link `flowMain.inpRaw`, `flowDosing.inpRaw` and `dosingValve.outRaw`, configure the valve's position feedback (or keep `noFdbk`), and set `dosingSim.cfg.enable := FALSE`.
+
+| Try | Set | Expect |
+|---|---|---|
+| Ratio change | `dosingStation.cfg.ratio := 0.3` | Dosing setpoint and flow step up within a few seconds |
+| Constant main flow | `dosingSim.cfg.mainFlowSwing := 0` | Dosing flow settles exactly on ratio × main flow |
+| Low-flow interlock | `dosingSim.cfg.mainFlowBase := 40`, `mainFlowSwing := 0` | Main flow low-low, valve closes and faults, station and machine stop. Restore the flow, then Reset |
+| Operator control | Stop the machine, then `dosingStation.dosingValve.opPosition := 30` and `ocmd := Position` | Valve moves to 30 % (Manual mode) |
 
 ### OPC UA dashboard
 

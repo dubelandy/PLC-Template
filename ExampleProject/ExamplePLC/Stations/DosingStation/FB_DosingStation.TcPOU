@@ -1,0 +1,176 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_DosingStation" Id="{a02417a1-2157-4d85-a155-f3698927d4bb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DosingStation EXTENDS FB_Module
+(*
+	Example of a ratio control loop built from MachineLibrary blocks:
+	
+		flowMain (FB_AnalogInput)	main flow, the "wild" flow nobody controls
+		flowDosing (FB_AnalogInput)	dosing flow, the process value
+		dosingPid (FB_PID)			Ratio mode: dosing setpoint = cfg.ratio x main flow
+		dosingValve					FB_ActuatorModulating driven by the PID output
+	
+	Starting	: PID off, valve closed
+	Started		: PID in Ratio mode at cfg.ratio
+	Stopping	: PID off, valve closed
+	Interlock	: main flow low-low closes the valve (dosing into no flow is unsafe)
+	
+	No hardware needed: the valve has no position feedback (simulated stroke) and
+	MAIN.dosingSim writes both flows into the analog inputs' simulation values.
+	For real I/O, link flowMain.inpRaw, flowDosing.inpRaw and dosingValve.outRaw,
+	and turn off MAIN.dosingSim.
+*)
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg					: ST_DosingStationConfiguration; //configuration
+	
+	(* Devices
+	----------------------------------------------------------------------------------------------------*)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	flowMain			: FB_AnalogInput := (cfg := (inputId := 'Main flow', units := 'l/min', euMax := 400, filterTime := T#500MS, limits := (LowLow := 50, Low := 100, High := 350, HighHigh := 380), alarmEnable := (lowLow := TRUE, low := TRUE, high := TRUE, highHigh := TRUE)));
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	flowDosing			: FB_AnalogInput := (cfg := (inputId := 'Dosing flow', units := 'l/min', euMax := 100, filterTime := T#500MS));
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	dosingPid			: FB_PID := (cfg := (loopId := 'Dosing', kp := 1.5, ti := T#3S, setpointMax := 100, ratioMax := 1, deviationEnable := TRUE, deviationLimit := 10));
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	dosingValve			: FB_ActuatorModulating := (cfg := (actuatorId := 'Dosing valve', noFdbk := TRUE, strokeTime := T#10S, failTimePositioning := T#30S));
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	stsStation			: ST_DosingStationStatus; //station specific status (module status is in sts)
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+Devices();
+Permissives();
+StatusOut();]]></ST>
+    </Implementation>
+    <Folder Name="Protected" Id="{6808780e-ba2a-4104-b61a-f85e7fbf1e24}">
+      <Folder Name="Logic" Id="{264d44de-0610-404c-bf89-d9e4e6d7d784}" />
+      <Folder Name="States" Id="{87dd20cf-6b29-4c94-87fb-fc3e5e28091c}" />
+    </Folder>
+    <Folder Name="Public" Id="{fc1298c6-3d99-403f-9a28-5969d5543ddb}">
+      <Folder Name="Control" Id="{0cf04362-95a0-4663-b8bc-1213ed2c452c}" />
+    </Folder>
+    <Method Name="Devices" Id="{6644d3b3-7b66-4d84-a82c-4c48c55237e4}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED Devices //call child devices and connect the loop]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Inputs first, so the PID sees this scan's values
+flowMain();
+flowDosing();
+
+dosingPid(pv		:= flowDosing.sts.value,
+		  wildValue	:= flowMain.sts.value,
+		  inpPvBad	:= NOT flowDosing.sts.valid,
+		  parentCtrl := childCtrl);
+
+//Dosing into a low main flow is not allowed: losing this closes the valve
+dosingValve.intlk.cfg.condText[0] := 'Main flow not low-low';
+dosingValve.intlk.perm.0 := NOT flowMain.sts.lowLow;
+dosingValve(parentCtrl := childCtrl);
+
+//PID output to the valve (program commands are only accepted in Auto)
+IF dosingPid.sts.closedLoop AND dosingValve.sts.modeAuto THEN
+	dosingValve.SetPosition(dosingPid.out);
+END_IF
+
+//Report child faults to the module
+inpChildFaulted := dosingValve.fault.active OR dosingPid.fault.active
+				OR flowMain.fault.active OR flowDosing.fault.active;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Permissives" Id="{1088c8bd-1d95-4f4d-87f7-26e6b42f75d1}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED Permissives //set module permissives and interlocks]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Homing is complete when the valve is closed and the loop is off
+PermStartComplete.cfg.condText[0] := 'Dosing valve closed';
+PermStartComplete.cfg.condText[1] := 'Dosing loop off';
+PermStartComplete.perm.0 := dosingValve.sts.closed;
+PermStartComplete.perm.1 := dosingPid.sts.loopMode = E_PIDLoopMode.Off;
+
+//Stopping is complete when the valve is closed, or faulted so it cannot move
+PermStopComplete.cfg.condText[0] := 'Dosing valve closed or faulted';
+PermStopComplete.perm.0 := dosingValve.sts.closed OR dosingValve.fault.active;
+
+//Faults stop the station
+IntlkAuto.cfg.condText[0] := 'Dosing valve not faulted';
+IntlkAuto.cfg.condText[1] := 'Dosing loop not faulted';
+IntlkAuto.cfg.condText[2] := 'Flow signals good';
+IntlkAuto.perm.0 := NOT dosingValve.fault.active;
+IntlkAuto.perm.1 := NOT dosingPid.fault.active;
+IntlkAuto.perm.2 := NOT (flowMain.fault.active OR flowDosing.fault.active);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{20bb33a1-6101-4ce6-bc6b-f098fd49befa}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC Reset : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[flowMain.Reset();
+flowDosing.Reset();
+dosingPid.Reset();
+dosingValve.Reset();
+Reset := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Started" Id="{28335f4d-bc85-4e58-9986-206600a08278}" FolderPath="Protected\States\">
+      <Declaration><![CDATA[METHOD PROTECTED Started : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Running: ratio control. Re-issued when the ratio changes.
+IF dosingPid.sts.loopMode <> E_PIDLoopMode.Ratio OR dosingPid.sts.ratio <> cfg.ratio THEN
+	dosingPid.Ratio(cfg.ratio);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Starting" Id="{cc58c349-b422-4272-ab3e-e0eafb1547c0}" FolderPath="Protected\States\">
+      <Declaration><![CDATA[METHOD PROTECTED Starting : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Homing: loop off, valve closed
+SafeState();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Stopping" Id="{16f3014b-719f-4824-a0a7-b8b8a29dba8f}" FolderPath="Protected\States\">
+      <Declaration><![CDATA[METHOD PROTECTED Stopping : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//Finish in the safe state: loop off, valve closed
+SafeState();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SafeState" Id="{9f1edb8f-e39c-4659-88d6-b71a43028333}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED SafeState //loop off and valve closed]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF dosingPid.sts.loopMode <> E_PIDLoopMode.Off THEN
+	dosingPid.Off();
+END_IF
+IF NOT dosingValve.sts.closed AND dosingValve.sts.setpoint <> dosingValve.cfg.minPosition THEN
+	dosingValve.Close();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StatusOut" Id="{784e5a1f-c553-437e-8e2b-12e4c9b71a8d}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED StatusOut //Set output status information]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[stsStation.dosing			:= dosingPid.sts.loopMode = E_PIDLoopMode.Ratio;
+stsStation.mainFlow			:= flowMain.sts.value;
+stsStation.dosingFlow		:= flowDosing.sts.value;
+stsStation.dosingSetpoint	:= dosingPid.sts.setpoint;
+stsStation.valvePosition	:= dosingValve.sts.position;
+stsStation.mainFlowLow		:= flowMain.sts.lowLow;
+IF flowMain.sts.value > 0 THEN
+	stsStation.ratioActual := flowDosing.sts.value / flowMain.sts.value;
+ELSE
+	stsStation.ratioActual := 0;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

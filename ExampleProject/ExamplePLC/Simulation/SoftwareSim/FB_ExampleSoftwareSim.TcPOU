@@ -43,7 +43,10 @@ END_IF
 HandleAbort();
 StateMachine();]]></ST>
     </Implementation>
-    <Method Name="HandleAbort" Id="{23f5d6fa-e27e-4ede-9fa2-128a03d5ee4c}">
+    <Folder Name="Protected" Id="{048bcc27-caa2-47e1-97d7-eebe21b010b3}">
+      <Folder Name="Logic" Id="{533baa29-1b95-4543-803c-e89b860f6164}" />
+    </Folder>
+    <Method Name="HandleAbort" Id="{23f5d6fa-e27e-4ede-9fa2-128a03d5ee4c}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED HandleAbort //PLC aborted mid-transaction: drop our bits and start over]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF transaction.sts.Idle AND sts.step >= E_ExampleSoftwareSimStep.WaitTriggerAck THEN
@@ -54,7 +57,7 @@ StateMachine();]]></ST>
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{52f149d0-a3e7-4d41-a718-feffc5c6e35a}">
+    <Method Name="StateMachine" Id="{52f149d0-a3e7-4d41-a718-feffc5c6e35a}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Restart the delay on every step change, hold it while frozen

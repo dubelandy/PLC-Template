@@ -44,6 +44,8 @@ M = "MAIN.machine"
 ST = f"{M}.exampleStation"
 TR = f"{ST}.transaction"
 SIM = "MAIN.softwareSim"
+DS = f"{M}.dosingStation"
+DSIM = "MAIN.dosingSim"
 
 # Every PLC variable the page shows (paths below the PLC root node, e.g. PLC1).
 TAGS = [
@@ -66,6 +68,17 @@ TAGS = [
     f"{SIM}.sts.lastResponse.cycleId", f"{SIM}.sts.lastResponse.cycleTime", f"{SIM}.sts.lastResponse.ok",
     f"{SIM}.cfg.enable", f"{SIM}.cfg.freeze", f"{SIM}.cfg.sendInvalidRequest", f"{SIM}.cfg.closeDwell",
 ]
+# Dosing station (analog inputs, PID, modulating valve)
+TAGS += [
+    f"{DS}.sts.State", f"{DS}.cfg.ratio",
+    f"{DS}.stsStation.mainFlow", f"{DS}.stsStation.dosingFlow", f"{DS}.stsStation.dosingSetpoint",
+    f"{DS}.stsStation.ratioActual", f"{DS}.stsStation.valvePosition", f"{DS}.stsStation.mainFlowLow",
+    f"{DS}.flowMain.sts.low", f"{DS}.flowMain.sts.high", f"{DS}.flowMain.sts.highHigh",
+    f"{DS}.dosingPid.sts.loopMode", f"{DS}.dosingPid.sts.output", f"{DS}.dosingPid.sts.deviationAlarm",
+    f"{DS}.dosingPid.fault.text", f"{DS}.dosingValve.sts.state", f"{DS}.dosingValve.sts.setpoint",
+    f"{DS}.dosingValve.fault.active", f"{DS}.dosingValve.fault.text",
+    f"{DSIM}.cfg.mainFlowBase", f"{DSIM}.cfg.mainFlowSwing",
+]
 for a in ("actuatorA", "actuatorB"):
     TAGS += [f"{ST}.{a}.sts.state", f"{ST}.{a}.sts.mode", f"{ST}.{a}.fault.active", f"{ST}.{a}.fault.text"]
 
@@ -73,6 +86,7 @@ for a in ("actuatorA", "actuatorB"):
 WRITABLE = {
     f"{M}.ocmd",
     f"{SIM}.cfg.enable", f"{SIM}.cfg.freeze", f"{SIM}.cfg.sendInvalidRequest", f"{SIM}.cfg.closeDwell",
+    f"{DS}.cfg.ratio", f"{DSIM}.cfg.mainFlowBase", f"{DSIM}.cfg.mainFlowSwing",
 }
 
 

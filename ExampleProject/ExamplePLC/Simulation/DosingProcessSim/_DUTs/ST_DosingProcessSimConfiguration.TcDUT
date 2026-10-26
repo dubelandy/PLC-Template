@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_DosingProcessSimConfiguration" Id="{16718ade-ebd6-4346-af51-adce03efcd4f}">
+    <Declaration><![CDATA[TYPE ST_DosingProcessSimConfiguration :
+STRUCT
+	enable				: BOOL := TRUE; //simulate the flows (turn off when real I/O is linked)
+	mainFlowBase		: LREAL := 200; //average main flow in l/min (set below 50 to test the low-low interlock)
+	mainFlowSwing		: LREAL := 50; //main flow varies +/- this much in l/min
+	swingPeriod			: TIME := T#60S; //period of the main flow variation, T#0S = constant
+	maxDosingFlow		: LREAL := 80; //dosing flow at 100 % valve in l/min
+	processLag			: TIME := T#2S; //time constant from valve position to dosing flow
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

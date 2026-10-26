@@ -3,7 +3,7 @@
   <POU Name="FB_Machine" Id="{fd543e1c-2eca-4831-ae5c-5f1ac010e45e}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_Machine EXTENDS FB_Module
 (*
-	Top-level module. Starting/stopping the machine starts/stops its stations.
+	Top-level module. Starting/stopping the machine starts/stops both stations.
 	Start/stop/reset from the HMI with ocmd, or over MQTT (see cfgMqtt.enableRemoteCommands).
 *)
 VAR_INPUT
@@ -12,6 +12,9 @@ VAR_INPUT
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	exampleStation		: FB_ExampleStation;
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	dosingStation		: FB_DosingStation; //ratio control loop example
 	
 	(* Communication
 	----------------------------------------------------------------------------------------------------*)
@@ -30,7 +33,14 @@ Stations();
 Permissives();
 Communication();]]></ST>
     </Implementation>
-    <Method Name="Communication" Id="{e2b37e0b-5eb1-4160-9702-ac335e75a9a8}">
+    <Folder Name="Protected" Id="{58843e9d-4289-4344-8d11-03266e1b722a}">
+      <Folder Name="Logic" Id="{3f3dc444-fa34-4e97-be9c-d57c389576f9}" />
+      <Folder Name="States" Id="{b6dfe07d-6d5d-45af-b0bd-12d2473dfa3a}" />
+    </Folder>
+    <Folder Name="Public" Id="{a4c667e2-6e19-4bc0-b242-943d38308146}">
+      <Folder Name="Control" Id="{5ed18d35-54a8-436a-91d5-f96cb2f8da01}" />
+    </Folder>
+    <Method Name="Communication" Id="{e2b37e0b-5eb1-4160-9702-ac335e75a9a8}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Communication]]></Declaration>
       <Implementation>
         <ST><![CDATA[mqtt(cfg 			:= cfgMqtt,
@@ -43,53 +53,63 @@ IF mqtt.cmd <> E_ModuleCommand.None THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Permissives" Id="{1d31ecc1-e23a-4b40-80b2-f8cf2e2bed17}">
+    <Method Name="Permissives" Id="{1d31ecc1-e23a-4b40-80b2-f8cf2e2bed17}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Permissives //set module permissives and interlocks]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Started once every station is running
 PermStartComplete.cfg.condText[0] := 'Example station started';
+PermStartComplete.cfg.condText[1] := 'Dosing station started';
 PermStartComplete.perm.0 := exampleStation.sts.Started;
+PermStartComplete.perm.1 := dosingStation.sts.Started;
 
 //Stopped once every station is stopped
 PermStopComplete.cfg.condText[0] := 'Example station stopped';
+PermStopComplete.cfg.condText[1] := 'Dosing station stopped';
 PermStopComplete.perm.0 := exampleStation.sts.Stopped;
+PermStopComplete.perm.1 := dosingStation.sts.Stopped;
 
 //A faulted station stops the machine
 IntlkAuto.cfg.condText[0] := 'Example station not faulted';
-IntlkAuto.perm.0 := NOT exampleStation.sts.Faulted;]]></ST>
+IntlkAuto.cfg.condText[1] := 'Dosing station not faulted';
+IntlkAuto.perm.0 := NOT exampleStation.sts.Faulted;
+IntlkAuto.perm.1 := NOT dosingStation.sts.Faulted;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Reset" Id="{cb192e32-b467-40eb-bce0-ecf1ba70a10f}">
-      <Declaration><![CDATA[METHOD Reset : BOOL]]></Declaration>
+    <Method Name="Reset" Id="{cb192e32-b467-40eb-bce0-ecf1ba70a10f}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC Reset : BOOL]]></Declaration>
       <Implementation>
         <ST><![CDATA[exampleStation.cmdReset := TRUE;
+dosingStation.cmdReset := TRUE;
 Reset := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Started" Id="{6572cca9-89d7-4580-ba96-befb8e702fef}">
+    <Method Name="Started" Id="{6572cca9-89d7-4580-ba96-befb8e702fef}" FolderPath="Protected\States\">
       <Declaration><![CDATA[METHOD PROTECTED Started : BOOL]]></Declaration>
       <Implementation>
         <ST><![CDATA[//Stations run their own sequences while the machine is started]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Starting" Id="{a1a124df-8592-4282-a52c-e0737dc46e9e}">
+    <Method Name="Starting" Id="{a1a124df-8592-4282-a52c-e0737dc46e9e}" FolderPath="Protected\States\">
       <Declaration><![CDATA[METHOD PROTECTED Starting : BOOL]]></Declaration>
       <Implementation>
-        <ST><![CDATA[exampleStation.pcmd := E_ModuleCommand.Start;]]></ST>
+        <ST><![CDATA[exampleStation.pcmd := E_ModuleCommand.Start;
+dosingStation.pcmd := E_ModuleCommand.Start;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Stations" Id="{28a083f7-7251-46a3-abba-099a8be6f6ae}">
+    <Method Name="Stations" Id="{28a083f7-7251-46a3-abba-099a8be6f6ae}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Stations //call child modules]]></Declaration>
       <Implementation>
         <ST><![CDATA[exampleStation();
+dosingStation();
 
-inpChildFaulted := exampleStation.sts.Faulted;]]></ST>
+inpChildFaulted := exampleStation.sts.Faulted OR dosingStation.sts.Faulted;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Stopping" Id="{daf1d2a3-6b3e-4e18-a0d6-7c6c58ffd8ee}">
+    <Method Name="Stopping" Id="{daf1d2a3-6b3e-4e18-a0d6-7c6c58ffd8ee}" FolderPath="Protected\States\">
       <Declaration><![CDATA[METHOD PROTECTED Stopping : BOOL]]></Declaration>
       <Implementation>
-        <ST><![CDATA[exampleStation.pcmd := E_ModuleCommand.Stop;]]></ST>
+        <ST><![CDATA[exampleStation.pcmd := E_ModuleCommand.Stop;
+dosingStation.pcmd := E_ModuleCommand.Stop;]]></ST>
       </Implementation>
     </Method>
   </POU>

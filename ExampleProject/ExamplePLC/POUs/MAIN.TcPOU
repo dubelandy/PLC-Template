@@ -12,13 +12,19 @@ VAR
 	{attribute 'OPC.UA.DA' := '1'}
 	{attribute 'OPC.UA.DA.StructuredType' := '1'}
 	softwareSim	: FB_ExampleSoftwareSim; //plays the software side of the station's trigger/tell
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	dosingSim	: FB_DosingProcessSim; //simulates the dosing station's flows
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[machine();
 
 //Outside world: answers the example station's job requests
-softwareSim(transaction := machine.exampleStation.transaction);]]></ST>
+softwareSim(transaction := machine.exampleStation.transaction);
+
+//Process simulation for the dosing station (turn off with dosingSim.cfg.enable when I/O is linked)
+dosingSim(station := machine.dosingStation);]]></ST>
     </Implementation>
   </POU>
 </TcPlcObject>

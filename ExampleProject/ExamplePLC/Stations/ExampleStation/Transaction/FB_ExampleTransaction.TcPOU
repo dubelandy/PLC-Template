@@ -43,8 +43,11 @@ SUPER^();
 
 handshake := stHandshake;]]></ST>
     </Implementation>
-    <Method Name="Response_Cleanup" Id="{6ea7eef6-c3db-4806-a507-0b222caaeeae}">
-      <Declaration><![CDATA[METHOD Response_Cleanup : BOOL //clear the response once the software acknowledged it
+    <Folder Name="Public" Id="{d152bf4e-9de7-4ebb-8fa2-fbf551466b99}">
+      <Folder Name="Control" Id="{2d519d8a-fd83-42aa-86f0-3fb6a79cf06a}" />
+    </Folder>
+    <Method Name="Response_Cleanup" Id="{6ea7eef6-c3db-4806-a507-0b222caaeeae}" FolderPath="Public\Control\">
+      <Declaration><![CDATA[METHOD PUBLIC Response_Cleanup : BOOL //clear the response once the software acknowledged it
 VAR
 	emptyResponse : ST_ExampleResponse;
 END_VAR
@@ -55,7 +58,7 @@ response := emptyResponse;
 Response_Cleanup := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="WriteTellAck" Id="{c1de2856-ecbd-4184-a87d-66d4336aed34}">
+    <Method Name="WriteTellAck" Id="{c1de2856-ecbd-4184-a87d-66d4336aed34}" FolderPath="Public\Control\">
       <Declaration><![CDATA[METHOD PUBLIC WriteTellAck //software side: set or clear tell_ack
 VAR_INPUT
 	value		: BOOL;
@@ -64,7 +67,7 @@ END_VAR]]></Declaration>
         <ST><![CDATA[stHandshake.tell_ack := value;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="WriteTrigger" Id="{e5b6a375-7f80-4a3b-b055-517d3a3b6eb4}">
+    <Method Name="WriteTrigger" Id="{e5b6a375-7f80-4a3b-b055-517d3a3b6eb4}" FolderPath="Public\Control\">
       <Declaration><![CDATA[METHOD PUBLIC WriteTrigger //software side: set or clear trigger, with the request data
 VAR_INPUT
 	value		: BOOL;

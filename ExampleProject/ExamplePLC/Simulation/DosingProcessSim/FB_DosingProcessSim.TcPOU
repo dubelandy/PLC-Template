@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_DosingProcessSim" Id="{0e8b6728-10f9-4202-b031-f5e8032fd27c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DosingProcessSim
+(*
+	Simulates the process behind FB_DosingStation so the loop runs without hardware.
+	Main flow swings around cfg.mainFlowBase; dosing flow follows the valve position
+	through a first-order lag. Both are written to the analog inputs' simulation values.
+*)
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	cfg					: ST_DosingProcessSimConfiguration; //configuration
+END_VAR
+VAR_IN_OUT
+	station				: FB_DosingStation; //station to simulate
+END_VAR
+VAR_OUTPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	{attribute 'OPC.UA.DA.StructuredType' := '1'}
+	sts					: ST_DosingProcessSimStatus;
+END_VAR
+VAR
+	elapsed				: LREAL; //seconds since start, for the main flow swing
+	
+	//Timers
+	deltaTime			: FB_DeltaTime; //scan time
+END_VAR
+VAR CONSTANT
+	TWO_PI				: LREAL := 6.283185307179586;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT cfg.enable THEN
+	RETURN;
+END_IF
+
+Simulate();]]></ST>
+    </Implementation>
+    <Folder Name="Protected" Id="{61516e0d-9757-4548-8a26-331a53f19aff}">
+      <Folder Name="Logic" Id="{9099db6a-9205-4403-96e7-c46d289b3bb6}" />
+    </Folder>
+    <Method Name="Simulate" Id="{c1a84c7c-247f-4081-9f73-163752156223}" FolderPath="Protected\Logic\">
+      <Declaration><![CDATA[METHOD PROTECTED Simulate
+VAR
+	period	: LREAL; //swing period in s
+	lag		: LREAL; //process lag in s
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[deltaTime();
+elapsed := elapsed + deltaTime.dt;
+period := TIME_TO_LREAL(cfg.swingPeriod) / 1000.0;
+lag := TIME_TO_LREAL(cfg.processLag) / 1000.0;
+
+//Main flow: slow swing around the base value
+IF period > 0 THEN
+	sts.mainFlow := cfg.mainFlowBase + cfg.mainFlowSwing * SIN(TWO_PI * elapsed / period);
+ELSE
+	sts.mainFlow := cfg.mainFlowBase;
+END_IF
+
+//Dosing flow: follows the valve position with a first-order lag
+sts.dosingFlow := sts.dosingFlow + deltaTime.dt / (lag + deltaTime.dt)
+				* (station.dosingValve.sts.position / 100.0 * cfg.maxDosingFlow - sts.dosingFlow);
+
+station.flowMain.ctrl.sim := TRUE;
+station.flowMain.ctrl.simValue := sts.mainFlow;
+station.flowDosing.ctrl.sim := TRUE;
+station.flowDosing.ctrl.simValue := sts.dosingFlow;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

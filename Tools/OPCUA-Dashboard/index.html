@@ -58,6 +58,8 @@
   #banner { display: none; margin: 12px 16px 0; padding: 10px 12px; border-radius: 6px;
             background: var(--bad); color: #fff; }
   #missing { display: none; color: var(--warn); font-size: 12px; white-space: pre-wrap; }
+  .bar { height: 10px; border-radius: 5px; background: var(--off); margin-top: 8px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
 </style>
 </head>
 <body>
@@ -162,6 +164,36 @@
     </div>
   </section>
 
+  <section class="wide">
+    <h2>Dosing station (ratio control)</h2>
+    <div class="cols">
+      <div>
+        <div class="big" id="d_state">–</div>
+        <div class="row"><span>Main flow</span><span id="d_main">–</span></div>
+        <div class="row"><span>Dosing flow / setpoint</span><span id="d_dose">–</span></div>
+        <div class="row"><span>Ratio actual / target</span><span id="d_ratio">–</span></div>
+        <div class="row"><span>Main flow alarms</span><span id="d_alarms">–</span></div>
+      </div>
+      <div>
+        <div class="row"><span>PID mode</span><span id="d_mode">–</span></div>
+        <div class="row"><span>PID output</span><span id="d_out">–</span></div>
+        <div class="row"><span>Deviation alarm</span><span id="d_dev">–</span></div>
+        <div class="row"><span>Valve</span><span id="d_valve">–</span></div>
+        <div class="row"><span>Valve fault</span><span id="d_vfault">–</span></div>
+        <div class="bar"><i id="d_bar"></i></div>
+      </div>
+      <div>
+        <label class="ctl">Ratio target
+          <span><input type="number" id="c_ratio" min="0" max="1" step="0.05"> <button onclick="setNum('c_ratio', DS + '.cfg.ratio')">Set</button></span></label>
+        <label class="ctl">Sim main flow base (l/min)
+          <span><input type="number" id="c_base" min="0" step="10"> <button onclick="setNum('c_base', DSIM + '.cfg.mainFlowBase')">Set</button></span></label>
+        <label class="ctl">Sim main flow swing (l/min)
+          <span><input type="number" id="c_swing" min="0" step="10"> <button onclick="setNum('c_swing', DSIM + '.cfg.mainFlowSwing')">Set</button></span></label>
+        <div class="row"><span>Interlock test</span><span>base 40, swing 0 → main flow low-low closes the valve and stops the station; Reset after</span></div>
+      </div>
+    </div>
+  </section>
+
   <section class="wide" id="missingBox" style="display:none">
     <h2>Not found on the OPC UA server</h2>
     <div id="missing"></div>
@@ -170,6 +202,7 @@
 
 <script>
 const M = "MAIN.machine", ST = M + ".exampleStation", TR = ST + ".transaction", SIM = "MAIN.softwareSim";
+const DS = M + ".dosingStation", DSIM = "MAIN.dosingSim";
 
 const ENUM = {
   moduleState: {0: "Unknown", 1: "Starting", 2: "Started", 4: "Stopping", 8: "Stopped"},
@@ -182,6 +215,8 @@ const ENUM = {
             40: "Wait tell", 50: "Send tell_ack", 60: "Wait tell drop", 70: "Drop tell_ack"},
   actuator: {0: "All off", 1: "Open", 2: "Closed", 3: "Opening…", 4: "Closing…"},
   sysMode: {0: "Idle", 1: "Auto", 2: "Manual", 3: "Semi-auto", 4: "Step"},
+  pidMode: {0: "Off", 1: "Open loop", 2: "Setpoint", 3: "Ratio"},
+  valve: {0: "Closed", 1: "Open", 2: "At position", 3: "Positioning…"},
 };
 
 let V = {};
@@ -256,6 +291,25 @@ function render(d) {
   if (document.activeElement !== $("c_dwell") && v(SIM + ".cfg.closeDwell") !== undefined)
     $("c_dwell").value = v(SIM + ".cfg.closeDwell");
 
+  const f1 = x => x === undefined || x === null ? "–" : Number(x).toFixed(1);
+  const f2 = x => x === undefined || x === null ? "–" : Number(x).toFixed(2);
+  set("d_state", en(ENUM.moduleState, v(DS + ".sts.State")));
+  set("d_main", f1(v(DS + ".stsStation.mainFlow")) + " l/min");
+  set("d_dose", `${f1(v(DS + ".stsStation.dosingFlow"))} / ${f1(v(DS + ".stsStation.dosingSetpoint"))} l/min`);
+  set("d_ratio", `${f2(v(DS + ".stsStation.ratioActual"))} / ${f2(v(DS + ".cfg.ratio"))}`);
+  const al = [["LL", v(DS + ".stsStation.mainFlowLow")], ["L", v(DS + ".flowMain.sts.low")],
+              ["H", v(DS + ".flowMain.sts.high")], ["HH", v(DS + ".flowMain.sts.highHigh")]];
+  $("d_alarms").innerHTML = al.map(([n, on]) => `<span class="pill ${on ? (n.length > 1 ? "bad" : "warn") : ""}">${n}</span>`).join(" ");
+  set("d_mode", en(ENUM.pidMode, v(DS + ".dosingPid.sts.loopMode")));
+  set("d_out", f1(v(DS + ".dosingPid.sts.output")) + " %");
+  flag("d_dev", v(DS + ".dosingPid.sts.deviationAlarm"));
+  set("d_valve", `${en(ENUM.valve, v(DS + ".dosingValve.sts.state"))}, ${f1(v(DS + ".stsStation.valvePosition"))} % (setpoint ${f1(v(DS + ".dosingValve.sts.setpoint"))} %)`);
+  const vf = v(DS + ".dosingValve.fault.active");
+  $("d_vfault").innerHTML = vf ? `<span class="pill bad">${v(DS + ".dosingValve.fault.text") || "Fault"}</span>` : (vf === false ? '<span class="pill">None</span>' : "–");
+  $("d_bar").style.width = Math.max(0, Math.min(100, Number(v(DS + ".stsStation.valvePosition")) || 0)) + "%";
+  for (const [id, p] of [["c_ratio", DS + ".cfg.ratio"], ["c_base", DSIM + ".cfg.mainFlowBase"], ["c_swing", DSIM + ".cfg.mainFlowSwing"]])
+    if (document.activeElement !== $(id) && v(p) !== undefined) $(id).value = v(p);
+
   const miss = d.missing || [];
   $("missingBox").style.display = miss.length ? "block" : "none";
   $("missing").style.display = miss.length ? "block" : "none";
@@ -278,6 +332,7 @@ async function write(path, value) {
 const cmd = c => write(M + ".ocmd", c);
 const setCfg = (k, val) => write(`${SIM}.cfg.${k}`, val);
 const setDwell = () => setCfg("closeDwell", Number($("c_dwell").value));
+const setNum = (id, path) => write(path, Number($(id).value));
 
 poll();
 </script>

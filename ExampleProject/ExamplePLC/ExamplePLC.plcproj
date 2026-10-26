@@ -69,6 +69,24 @@
     <Compile Include="Stations\ExampleStation\Transaction\FB_ExampleTransaction.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Simulation\DosingProcessSim\_DUTs\ST_DosingProcessSimConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Simulation\DosingProcessSim\_DUTs\ST_DosingProcessSimStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Simulation\DosingProcessSim\FB_DosingProcessSim.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Stations\DosingStation\_DUTs\ST_DosingStationConfiguration.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Stations\DosingStation\_DUTs\ST_DosingStationStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Stations\DosingStation\FB_DosingStation.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Communication" />
@@ -86,6 +104,10 @@
     <Folder Include="Simulation\SoftwareSim\_ENUMs" />
     <Folder Include="Stations\ExampleStation\Transaction" />
     <Folder Include="Stations\ExampleStation\Transaction\_DUTs" />
+    <Folder Include="Simulation\DosingProcessSim" />
+    <Folder Include="Simulation\DosingProcessSim\_DUTs" />
+    <Folder Include="Stations\DosingStation" />
+    <Folder Include="Stations\DosingStation\_DUTs" />
   </ItemGroup>
   <ItemGroup>
     <PlaceholderReference Include="MachineLibrary">

@@ -330,15 +330,13 @@ IF limited = sts.setpoint AND NOT sts.positioning THEN // ignore command if alre
 END_IF
 
 IF limited = cfg.safePosition THEN // going to the safe position is always allowed
-	sts.setpoint := limited;
-	sts.state := E_ActuatorModulatingState.Positioning;
+	PrvMove(limited);
 ELSIF NOT intlk.sts.ok THEN // check intlk before moving away from safe
 	fault.intlkNOK S= TRUE;
 ELSIF NOT perm.sts.ok AND sts.setpoint = cfg.safePosition THEN // perm only needed to leave the safe position
 	fault.permNOK S= TRUE;
 ELSE
-	sts.setpoint := limited;
-	sts.state := E_ActuatorModulatingState.Positioning;
+	PrvMove(limited);
 END_IF]]></ST>
       </Implementation>
     </Method>
@@ -457,6 +455,20 @@ ELSIF sts.position >= cfg.openLimit THEN
 	SettledState := E_ActuatorModulatingState.Open;
 ELSE
 	SettledState := E_ActuatorModulatingState.AtPosition;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PrvMove" Id="{c02d1281-c9dd-4fa5-a2d0-af0827d3bc6a}" FolderPath="Protected\Commands\">
+      <Declaration><![CDATA[METHOD PROTECTED PrvMove //accept a new setpoint
+VAR_INPUT
+	target		: LREAL; //checked target position in %
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sts.setpoint := target;
+//Small trims (e.g. from a PID) stay settled; StateMachine starts positioning if the
+//actuator falls behind by more than driftTolerance
+IF ABS(target - sts.position) > cfg.positionTolerance THEN
+	sts.state := E_ActuatorModulatingState.Positioning;
 END_IF]]></ST>
       </Implementation>
     </Method>

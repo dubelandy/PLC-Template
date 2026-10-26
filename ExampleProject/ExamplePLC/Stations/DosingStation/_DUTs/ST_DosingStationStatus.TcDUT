@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_DosingStationStatus" Id="{63c8f4dc-fe3b-4e1f-a586-7dab2bb37c1e}">
+    <Declaration><![CDATA[TYPE ST_DosingStationStatus :
+STRUCT
+	dosing				: BOOL; //PID in ratio control
+	mainFlow			: LREAL; //main flow in l/min
+	dosingFlow			: LREAL; //dosing flow in l/min
+	dosingSetpoint		: LREAL; //dosing flow setpoint from the ratio, in l/min
+	ratioActual			: LREAL; //dosing flow / main flow
+	valvePosition		: LREAL; //dosing valve position in %
+	mainFlowLow			: BOOL; //main flow below its low-low limit: dosing valve interlocked closed
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>
