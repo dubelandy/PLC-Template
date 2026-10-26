@@ -301,9 +301,9 @@ positionFdbk(cfg := cfg.positionFdbk);
 //position tracks the real one, so switching to simulation does not jump.
 IF cfg.noFdbk OR sts.sim THEN
 	IF cfg.strokeTime > T#0S THEN
-		simPosition := simPosition + LIMIT(-100.0 * deltaTime.dt / (TIME_TO_LREAL(cfg.strokeTime) / 1000.0),
+		simPosition := simPosition + LIMIT(-100.0 * deltaTime.seconds / (TIME_TO_LREAL(cfg.strokeTime) / 1000.0),
 										   sts.commandPosition - simPosition,
-										   100.0 * deltaTime.dt / (TIME_TO_LREAL(cfg.strokeTime) / 1000.0));
+										   100.0 * deltaTime.seconds / (TIME_TO_LREAL(cfg.strokeTime) / 1000.0));
 	ELSE
 		simPosition := sts.commandPosition;
 	END_IF
@@ -373,9 +373,9 @@ pcmd := E_ActuatorModulatingCommand.Position;]]></ST>
       <Implementation>
         <ST><![CDATA[//Ramp the output toward the setpoint
 IF cfg.rampRate > 0 THEN
-	sts.commandPosition := sts.commandPosition + LIMIT(-cfg.rampRate * deltaTime.dt,
+	sts.commandPosition := sts.commandPosition + LIMIT(-cfg.rampRate * deltaTime.seconds,
 													   sts.setpoint - sts.commandPosition,
-													   cfg.rampRate * deltaTime.dt);
+													   cfg.rampRate * deltaTime.seconds);
 ELSE
 	sts.commandPosition := sts.setpoint;
 END_IF

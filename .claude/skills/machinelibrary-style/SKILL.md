@@ -75,6 +75,7 @@ Rules:
 - **Every public command has a matching `Prv` handler.** `Open()` sets `pcmd := Open`; `ProcessCommands` routes the accepted command to `PrvOpen()`. Shared logic goes in one handler that the others call (`PrvOpen` → `PrvPosition(cfg.maxPosition)`).
 - **Name commands after the command enum**, so `E_XCommand.Ratio` ↔ `Ratio()` ↔ `PrvRatio()`.
 - **Parameters never reuse the method's name** (names are case-insensitive: `Ratio(ratio : LREAL)` does not compile). Use `value`, `position`, `output`.
+- **No reserved words or standard function names as variable names**, including short ones that look harmless: `dt` (DATE_AND_TIME), `tod`, `limit`, `min`, `max`, `sel`, `len`, `left`, `right`, `mid`, `find`, `move`, `abs`, `exp`, `ln`, `log`. Use `seconds`, `stepTime`, `threshold`, `lowest` instead.
 - `INTERNAL` is allowed where a method must be callable from elsewhere in the library but not from applications.
 - Inputs and utilities with no commands use only `Public\Control` and `Protected\Logic`.
 

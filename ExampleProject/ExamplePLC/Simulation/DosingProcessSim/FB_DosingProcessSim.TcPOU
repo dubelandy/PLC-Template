@@ -50,7 +50,7 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[deltaTime();
-elapsed := elapsed + deltaTime.dt;
+elapsed := elapsed + deltaTime.seconds;
 period := TIME_TO_LREAL(cfg.swingPeriod) / 1000.0;
 lag := TIME_TO_LREAL(cfg.processLag) / 1000.0;
 
@@ -62,7 +62,7 @@ ELSE
 END_IF
 
 //Dosing flow: follows the valve position with a first-order lag
-sts.dosingFlow := sts.dosingFlow + deltaTime.dt / (lag + deltaTime.dt)
+sts.dosingFlow := sts.dosingFlow + deltaTime.seconds / (lag + deltaTime.seconds)
 				* (station.dosingValve.sts.position / 100.0 * cfg.maxDosingFlow - sts.dosingFlow);
 
 station.flowMain.ctrl.sim := TRUE;

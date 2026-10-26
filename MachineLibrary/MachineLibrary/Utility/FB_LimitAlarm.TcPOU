@@ -3,14 +3,14 @@
   <POU Name="FB_LimitAlarm" Id="{15488189-7294-462f-928a-2f67960bcc3c}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_LimitAlarm
 (*
-	One high or low limit alarm with deadband, on-delay and optional latching.
-	High alarm: on when value >= limit for delay, off when value < limit - deadband.
-	Low alarm:  on when value <= limit for delay, off when value > limit + deadband.
+	One high or low threshold alarm with deadband, on-delay and optional latching.
+	High alarm: on when value >= threshold for delay, off when value < threshold - deadband.
+	Low alarm:  on when value <= threshold for delay, off when value > threshold + deadband.
 	A latched alarm stays on until reset is TRUE and the condition has cleared.
 *)
 VAR_INPUT
 	value				: LREAL; //value to check
-	limit				: LREAL; //alarm limit
+	threshold				: LREAL; //alarm threshold
 	highAlarm			: BOOL; //TRUE = high alarm, FALSE = low alarm
 	enable				: BOOL; //alarm is enabled
 	deadband			: LREAL; //hysteresis before the condition clears
@@ -20,7 +20,7 @@ VAR_INPUT
 END_VAR
 VAR_OUTPUT
 	active				: BOOL; //alarm is on
-	condition			: BOOL; //limit currently exceeded (before delay and latch)
+	condition			: BOOL; //threshold currently exceeded (before delay and latch)
 END_VAR
 VAR
 	//Timers
@@ -38,15 +38,15 @@ END_VAR
       <Implementation>
         <ST><![CDATA[//Condition with hysteresis
 IF highAlarm THEN
-	IF value >= limit THEN
+	IF value >= threshold THEN
 		condition := TRUE;
-	ELSIF value < limit - deadband THEN
+	ELSIF value < threshold - deadband THEN
 		condition := FALSE;
 	END_IF
 ELSE
-	IF value <= limit THEN
+	IF value <= threshold THEN
 		condition := TRUE;
-	ELSIF value > limit + deadband THEN
+	ELSIF value > threshold + deadband THEN
 		condition := FALSE;
 	END_IF
 END_IF

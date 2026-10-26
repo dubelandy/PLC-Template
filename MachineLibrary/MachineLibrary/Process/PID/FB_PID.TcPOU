@@ -66,7 +66,7 @@ VAR
 	//Controller state
 	integral			: LREAL; //integral term in % output
 	pvLast				: LREAL; //PV on the previous scan, for the derivative
-	pvSlopeFiltered		: LREAL; //filtered dPV/dt
+	pvSlopeFiltered		: LREAL; //filtered dPV/stepTime
 	firstScan			: BOOL := TRUE; //no derivative on the first scan
 	
 	//Alarms
@@ -105,30 +105,30 @@ StatusOut();]]></ST>
 VAR
 	direction	: LREAL; //+1 reverse acting, -1 direct acting
 	target		: LREAL; //output before the rate limit
-	pvSlope		: LREAL; //unfiltered dPV/dt
+	pvSlope		: LREAL; //unfiltered dPV/stepTime
 	tiSec		: LREAL; //integral time in s
 	tdSec		: LREAL; //derivative time in s
 	tfSec		: LREAL; //derivative filter in s
-	dt			: LREAL; //scan time in s
+	stepTime			: LREAL; //scan time in s
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[dt		:= deltaTime.dt;
+        <ST><![CDATA[stepTime		:= deltaTime.seconds;
 tiSec	:= TIME_TO_LREAL(cfg.ti) / 1000.0;
 tdSec	:= TIME_TO_LREAL(cfg.td) / 1000.0;
 tfSec	:= TIME_TO_LREAL(cfg.tdFilter) / 1000.0;
 direction := SEL(cfg.directActing, 1.0, -1.0);
 
 //Derivative on the PV (not the error) so setpoint changes don't kick the output
-IF firstScan OR dt <= 0 THEN
+IF firstScan OR stepTime <= 0 THEN
 	pvSlope := 0;
 	firstScan := FALSE;
 ELSE
-	pvSlope := (sts.pv - pvLast) / dt;
+	pvSlope := (sts.pv - pvLast) / stepTime;
 END_IF
 pvLast := sts.pv;
 IF tfSec > 0 THEN
-	pvSlopeFiltered := pvSlopeFiltered + dt / (tfSec + dt) * (pvSlope - pvSlopeFiltered);
+	pvSlopeFiltered := pvSlopeFiltered + stepTime / (tfSec + stepTime) * (pvSlope - pvSlopeFiltered);
 ELSE
 	pvSlopeFiltered := pvSlope;
 END_IF
@@ -142,7 +142,7 @@ CASE sts.loopMode OF
 		//Anti-windup: only integrate when it moves the output away from a limit it is not at
 		IF tiSec > 0 AND NOT ((sts.output >= cfg.outputMax - LIMIT_BAND AND direction * sts.error > 0)
 							 OR (sts.output <= cfg.outputMin + LIMIT_BAND AND direction * sts.error < 0)) THEN
-			integral := integral + direction * cfg.kp * sts.error * dt / tiSec;
+			integral := integral + direction * cfg.kp * sts.error * stepTime / tiSec;
 		END_IF
 		IF tiSec <= 0 THEN
 			integral := 0;
@@ -171,7 +171,7 @@ END_IF
 
 //Rate limit
 IF cfg.outputRateLimit > 0 AND sts.closedLoop THEN
-	sts.output := sts.output + LIMIT(-cfg.outputRateLimit * dt, target - sts.output, cfg.outputRateLimit * dt);
+	sts.output := sts.output + LIMIT(-cfg.outputRateLimit * stepTime, target - sts.output, cfg.outputRateLimit * stepTime);
 ELSE
 	sts.output := target;
 END_IF
@@ -378,7 +378,7 @@ END_CASE
 
 sts.error := sts.setpoint - sts.pv;
 
-deviationAlarm(value := ABS(sts.error), limit := cfg.deviationLimit, highAlarm := TRUE,
+deviationAlarm(value := ABS(sts.error), threshold := cfg.deviationLimit, highAlarm := TRUE,
 			   enable := cfg.deviationEnable AND sts.closedLoop, deadband := cfg.deviationLimit * 0.1,
 			   delay := cfg.deviationDelay, latch := FALSE, reset := FALSE);]]></ST>
       </Implementation>

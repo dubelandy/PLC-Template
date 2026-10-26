@@ -18,7 +18,7 @@
     <LibraryReferences>{281383dd-322d-4a7c-9da0-90330d29b7eb}</LibraryReferences>
     <Company>PLC-Template</Company>
     <Title>MachineLibrary</Title>
-    <ProjectVersion>1.1.1.0</ProjectVersion>
+    <ProjectVersion>1.1.2.0</ProjectVersion>
     <DefaultNamespace>MachineLibrary</DefaultNamespace>
     <Author>Andy Dubel</Author>
     <Description>Reusable machine building blocks: devices (actuators, motors, inputs), modules, permissives, sequencer functions and utilities.</Description>

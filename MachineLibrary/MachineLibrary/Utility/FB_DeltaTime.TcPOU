@@ -8,7 +8,7 @@
 	Returns 0 on the first call.
 *)
 VAR_OUTPUT
-	dt					: LREAL; //seconds since the previous call
+	seconds					: LREAL; //seconds since the previous call
 END_VAR
 VAR
 	lastTime			: ULINT; //system time of the previous call (100 ns units)
@@ -29,9 +29,9 @@ END_VAR
       <Implementation>
         <ST><![CDATA[now := F_GetSystemTime();
 IF lastTime = 0 OR now < lastTime THEN
-	dt := 0;
+	seconds := 0;
 ELSE
-	dt := ULINT_TO_LREAL(now - lastTime) * 1E-7;
+	seconds := ULINT_TO_LREAL(now - lastTime) * 1E-7;
 END_IF
 lastTime := now;]]></ST>
       </Implementation>

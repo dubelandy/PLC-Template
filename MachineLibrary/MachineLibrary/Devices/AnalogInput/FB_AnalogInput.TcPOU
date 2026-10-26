@@ -67,13 +67,13 @@ StatusOut();]]></ST>
     <Method Name="Alarms" Id="{b035433b-b3f6-4c0f-b42b-f43de2ad0b6d}" FolderPath="Protected\Logic\">
       <Declaration><![CDATA[METHOD PROTECTED Alarms //limit alarms on the filtered value]]></Declaration>
       <Implementation>
-        <ST><![CDATA[alarmLowLow(value := sts.value, limit := cfg.limits.LowLow, highAlarm := FALSE, enable := cfg.alarmEnable.lowLow,
+        <ST><![CDATA[alarmLowLow(value := sts.value, threshold := cfg.limits.LowLow, highAlarm := FALSE, enable := cfg.alarmEnable.lowLow,
 			deadband := cfg.alarmDeadband, delay := cfg.alarmDelay, latch := cfg.latchAlarms, reset := resetFault);
-alarmLow(value := sts.value, limit := cfg.limits.Low, highAlarm := FALSE, enable := cfg.alarmEnable.low,
+alarmLow(value := sts.value, threshold := cfg.limits.Low, highAlarm := FALSE, enable := cfg.alarmEnable.low,
 			deadband := cfg.alarmDeadband, delay := cfg.alarmDelay, latch := cfg.latchAlarms, reset := resetFault);
-alarmHigh(value := sts.value, limit := cfg.limits.High, highAlarm := TRUE, enable := cfg.alarmEnable.high,
+alarmHigh(value := sts.value, threshold := cfg.limits.High, highAlarm := TRUE, enable := cfg.alarmEnable.high,
 			deadband := cfg.alarmDeadband, delay := cfg.alarmDelay, latch := cfg.latchAlarms, reset := resetFault);
-alarmHighHigh(value := sts.value, limit := cfg.limits.HighHigh, highAlarm := TRUE, enable := cfg.alarmEnable.highHigh,
+alarmHighHigh(value := sts.value, threshold := cfg.limits.HighHigh, highAlarm := TRUE, enable := cfg.alarmEnable.highHigh,
 			deadband := cfg.alarmDeadband, delay := cfg.alarmDelay, latch := cfg.latchAlarms, reset := resetFault);]]></ST>
       </Implementation>
     </Method>
@@ -159,7 +159,7 @@ IF filterInit OR cfg.filterTime <= T#0S THEN
 	sts.value := sts.valueUnfiltered;
 	filterInit := FALSE;
 ELSE
-	alpha := deltaTime.dt / (TIME_TO_LREAL(cfg.filterTime) / 1000.0 + deltaTime.dt);
+	alpha := deltaTime.seconds / (TIME_TO_LREAL(cfg.filterTime) / 1000.0 + deltaTime.seconds);
 	sts.value := sts.value + alpha * (sts.valueUnfiltered - sts.value);
 END_IF]]></ST>
       </Implementation>
